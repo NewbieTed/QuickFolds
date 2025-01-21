@@ -1,5 +1,6 @@
 # Goals for the week:
 
+
 #### Task: Example 1
 Assignee: John Doe
 
