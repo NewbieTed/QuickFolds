@@ -20,7 +20,24 @@ document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+let camera = null;
+
+const frustumSize = 10; // Size of the orthographic view
+const aspect = window.innerWidth / window.innerHeight;
+
+const perspectiveCamera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const orthographicCamera = new THREE.OrthographicCamera(
+		-frustumSize * aspect / 2,  // left
+		frustumSize * aspect / 2,   // right
+		frustumSize / 2,            // top
+		-frustumSize / 2,           // bottom
+		0.01,  // Near clipping plane
+		100  // Far clipping plane
+);
+
+
+camera = perspectiveCamera;
+
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -103,14 +120,16 @@ function animate() {
 		console.log("movehapen");
 	} else {
 		groundAngle += diffX * 0.1;
-		upperAngle += diffY * 0.01;
+		upperAngle += diffY * 0.05;
+		upperAngle = Math.max(-Math.PI/2, upperAngle);
+		upperAngle = Math.min(Math.PI/2	, upperAngle);
 		console.log("happen stop");
 	}
 
 
 
 
-	camera.position.copy(camRotatePt).add(new THREE.Vector3(distance * Math.sin(groundAngle),  distance * Math.sin(upperAngle), distance * Math.cos(groundAngle)));
+	camera.position.copy(camRotatePt).add(new THREE.Vector3(distance * Math.sin(groundAngle), 1.25 * distance * Math.sin(upperAngle), distance * Math.cos(groundAngle)));
 	camera.lookAt(camRotatePt);
 
 	 diffX = 0;
