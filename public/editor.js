@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-let isShiftKeyPressed = true;
+let isShiftKeyPressed = false;
 let isMiddleMousePressed = false;
 
 let prevMouseXPos = null;
@@ -10,6 +10,9 @@ let diffX = 0;
 let diffY = 0;
 
 let camRotatePt = new THREE.Vector3(0, 0, 0);
+
+
+const UP_DIRECTION = new THREE.Vector3(0, 1, 0);
 
 document.addEventListener('mousedown', onMouseDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -53,7 +56,7 @@ function onMouseUp(event) {
 function onKeyDown(event) {
   if (event.shiftKey) {
     isShiftKeyPressed = true;
-		console.log("Shift key");
+
   }
 }
 
@@ -87,8 +90,17 @@ let upperAngle = 0;
 let distance = 5;
 function animate() {
 	if (isShiftKeyPressed) {
-		camRotatePt.add(new THREE.Vector3(diffX * 1,0,  diffY * 1));
-		console.log("hapen");
+		let forwardDirection = new THREE.Vector3();
+		camera.getWorldDirection(forwardDirection);
+		let xzProjectNormalized = new THREE.Vector3(forwardDirection.x, 0, forwardDirection.z).normalize();
+		let forwardVector = xzProjectNormalized.multiplyScalar(diffY * 	-0.5);
+
+		// compute direction.right vector
+		let rightVector = new THREE.Vector3().crossVectors(UP_DIRECTION, forwardDirection);
+		rightVector.normalize().multiplyScalar(diffX * -0.5);
+
+		camRotatePt.add(forwardVector).add(rightVector);
+		console.log("movehapen");
 	} else {
 		groundAngle += diffX * 0.1;
 		upperAngle += diffY * 0.01;
