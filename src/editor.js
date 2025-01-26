@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+let prevRotateChange = true; // used for reducing rendering work
+let isRotateSphereVisible = true;
 let isShiftKeyPressed = false;
 let isMiddleMousePressed = false;
 
@@ -11,8 +13,9 @@ let diffY = 0;
 
 let camRotatePt = new THREE.Vector3(0, 0, 0);
 
-
+const ORIGIN = new THREE.Vector3(0, 0, 0);
 const UP_DIRECTION = new THREE.Vector3(0, 1, 0);
+
 
 document.addEventListener('mousedown', onMouseDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -44,13 +47,25 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 
-const geometry = new THREE.PlaneGeometry(5, 5);
-const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const plane = new THREE.Mesh( geometry, material );
+const geometryPlane = new THREE.PlaneGeometry(5, 5);
+const materialGreen = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+
+const plane = new THREE.Mesh(geometryPlane, materialGreen);
+
+
+const geometrySphere = new THREE.SphereGeometry(0.05);
+const whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+
+const lookAtSphere = new THREE.Mesh(geometrySphere, whiteMaterial);
+lookAtSphere.visible = isRotateSphereVisible;
+
+
+
 plane.material.side = THREE.DoubleSide;
 
 
 scene.add( plane );
+scene.add(lookAtSphere);
 plane.rotateX(90);
 camera.position.z = 5;
 
@@ -73,8 +88,15 @@ function onMouseUp(event) {
 function onKeyDown(event) {
   if (event.shiftKey) {
     isShiftKeyPressed = true;
-
   }
+	if (event.key === 'p') {
+		isRotateSphereVisible = !isRotateSphereVisible;
+	}
+	if (event.key === 'o') {
+		camRotatePt = new THREE.Vector3(0, 0, 0);
+		lookAtSphere.position.copy(camRotatePt);
+		renderer.render( scene, camera );
+	}
 }
 
 function onKeyUp(event) {
@@ -117,7 +139,7 @@ function animate() {
 		rightVector.normalize().multiplyScalar(diffX * -0.5);
 
 		camRotatePt.add(forwardVector).add(rightVector);
-		console.log("movehapen");
+		lookAtSphere.position.set(camRotatePt.x, camRotatePt.y, camRotatePt.z)
 	} else {
 		groundAngle += diffX * 0.1;
 		upperAngle += diffY * 0.05;
@@ -134,8 +156,12 @@ function animate() {
 
 	 diffX = 0;
 	 diffY = 0;
-
+	if (prevRotateChange !== isRotateSphereVisible) {
+		lookAtSphere.visible = isRotateSphereVisible;
+		prevRotateChange = isRotateSphereVisible;
+	}
 	renderer.render( scene, camera );
+
 }
 renderer.setAnimationLoop( animate );
 
