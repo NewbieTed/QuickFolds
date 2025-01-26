@@ -25,9 +25,9 @@ Once `npm install` finishes, you can run the editor:
 
 3. Below the message in 2., you should see text saying `Local: http:/localhost:PORT_NUMBER_HERE/`, this is where your localhost is running (usually 5173)
 
-4. Pressing this should result in `This localhost page can’t be found`. _THIS IS INTENDED_. Vite is looking for a index.html file (the "base file" in any web server). However, with multiple people working on this at once, we won't do this [and it's also good practice]. Instead, you can access the file you want by doing `http:/localhost:PORT_NUMBER_HERE/FILE.html`
+4. Pressing this should result in `This localhost page can’t be found`. _THIS IS INTENDED_. Vite is looking for a index.html file (the "base file" in any web server). However, with multiple people working on this at once, we won't do this [and it's also good practice]. Instead, you can access the file you want putting the directory path`http:/localhost:PORT_NUMBER_HERE/PATH.html`
 
-5. To open the editor, type in `http:/localhost:PORT_NUMBER_HERE/editor.html`
+5. To open the editor, type in `http:/localhost:PORT_NUMBER_HERE/Frontend/public/editor.html`. Normally, you can just do `/editor.html` without the directories in front, but because we have both front-end and back-end at the same time, Vite doesn't see the `public/` directory inside frontend, so we have to manually list it.
 
 6. The editor should appear and you should be good to go
 

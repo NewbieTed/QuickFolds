@@ -4,7 +4,7 @@
 
 
 import * as THREE from 'three';
-import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed} from './editorInputCapture';
+import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed} from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY	} from './globalSettings.js';
 
 document.addEventListener('keydown', onKeyDown);
