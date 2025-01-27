@@ -1,8 +1,33 @@
 # QuickFolds
 
-## For Devs
+## Overview
 
-### Setup
+### Idea of Project
+
+QuickFolds is a Web Application Designed for those who create their own origami and
+want to share it with others in the community, but don't want to do it through paper
+instructions, or videos where the hands often get in the way. QuickFolds allows
+user to create _animations_ for their origami, without needing to have a steep learning curve
+with programs such as Blender and Maya. QuickFolds allows user to edit
+their origami through Mountain and Valley Folds, and creating step-by-step actions
+to showcase their creations with others.
+
+### Repository Structure
+
+There are Three main folders in our repository: Frontend, Backend, and Status reports
+
++ Status Reports will hold the template and weekly reports
+
++ Frontend contains all the HTML, CSS, and JS needed to display the website. Inside frontend
+contains a public and src folder. The public folder is designed for static files (such as images and
+basic CSS), while the src folder contains module dependent code (such as JS files that need Three.js)
+
++ Backend Folder will contain all the Spring Boot code needed
+
+
+## Current Setup
+
+### Add Modules
 
 Go to your terminal and run:
 `npm install`
