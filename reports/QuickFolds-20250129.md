@@ -1,6 +1,24 @@
+# TA Report [Section 1]
+
+## Goals for the Weeks:
++ Create Repository
++ Added Basic Viewer
++ Create Basic Algorithms for Features
+
+## Issues
++ High level Summary of current issue and attempts to resolve it
++ High level Summary of current issue and attempts to resolve it
+
+## Plan for Next Week
++ Quick Level Description of Plans for Next week
++ Quick Level Description of Plans for Next week
+
+## Discussion Topics With TA
++ Common Ideas are: Any advice on current issues?
++ How does this look grade wise for 403?
+
+# Details Report [Section 2]
 # Goals for the week:
-
-
 #### Task: Example 1
 Assignee: John Doe
 
@@ -9,7 +27,7 @@ Is it Finished: Yes
 #### Task: Example 2
 Assignee: Jane Adam
 
-Is it Finished: Yes 
+Is it Finished: Yes
 
 
 ---
@@ -36,7 +54,7 @@ Result (What worked/What didn’t):
 
 What did you learn:
 
-Any Current Issues:  
+Any Current Issues:
 
 Team Discussion if still having issues:
 
