@@ -18,8 +18,7 @@
 + Get AWS Backend Ready to go so Editor Team can start to save their work
 
 ## Discussion Topics With TA
-+ Common Ideas are: Any advice on current issues?
-+ How does this look grade wise for 403?
++ The origami is essentially represented by a graph, and the algorithms to fold it involve traversal of that graph. Sending an entire graph from backend to frontend to do algorithmic computation may be expensive. Alternatively, holding the graph in frontend, only saving *changes* to backend, and doing graph algorithms in frontend may possible make the frontend slower. How do you think we should approach this?
 
 # Details Report [Section 2]
 # Goals for the week:
