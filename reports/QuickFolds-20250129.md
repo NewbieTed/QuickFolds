@@ -100,6 +100,18 @@ Any Current Issues: N/A
 
 Team Discussion if still having issues: N/A
 
+#### Team Member 5: Dennis Lam
+
+Action Items/What you did: Participated in the project description and completed the respective sections, conceptualized tools and frameworks for project, and understood the basic algorithm for storing origami data. Starting to learn basic about redis and databases.
+
+Result (What worked/What didn’t): Project description completed, algorithm understood.
+
+What did you learn: The basic algorithm for processing and storing origami data.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
 ---
 # Goals for next week:
 ### Overall Plan For This Week:
