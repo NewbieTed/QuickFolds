@@ -2,17 +2,20 @@
 # TA Report [Section 1]
 
 ## Goals for the Weeks:
-+ Create Repository
-+ Added Basic Viewer
-+ Create Basic Algorithms for Features
++ Create GitHub repository and project 
++ Added basic origami Viewer code
++ Create basic algorithms for folding and backend
++ Understand the data structure for storing origami
++ Documented project requirements
 
 ## Issues
-+ High level Summary of current issue and attempts to resolve it
-+ High level Summary of current issue and attempts to resolve it
++ Writing the folding algorithm descriptively and completely; verifying that it is correct.
++ Designing a database scheme to store the origami data structure; deciding which algorithmic computations should be done in backend vs frontend.
 
 ## Plan for Next Week
-+ Quick Level Description of Plans for Next week
-+ Quick Level Description of Plans for Next week
++ Origami viewer: Be able to rotate, move, and click on planes to create a vertex (just get the 2D to 3D pointing to work via raycasting)
++ Finish All UI For the search engine and have the SQL commands ready. Basically, everything, apart from the process of clicking actual origami should work
++ Get AWS Backend Ready to go so Editor Team can start to save their work
 
 ## Discussion Topics With TA
 + Common Ideas are: Any advice on current issues?
@@ -20,35 +23,46 @@
 
 # Details Report [Section 2]
 # Goals for the week:
+#### Task: Create GitHub repository and project
+Assignee: Ryan Rozsnyai, Hady Fawal
+
+Completed: Yes
+
+#### Task: Add basic origami viewer code, explore Three.js
+Assignee: Ryan Rozsnyai
+
+Completed: Yes
+
 #### Task: Complete Project Description
-Assignee: Hady Fawal, Ryan Rozsnyai, Yixuan Wang, Weizi Wu, Bernice Tian, ________
+Assignee: Hady Fawal, Ryan Rozsnyai, Yixuan Wang, Weizi Wu, Bernice Tian, Dennis Lam
 
-Is it Finished: Yes
+Completed: Yes
 
-#### Task: Design and Share Basic Algorithm for storing origami objects
-Assignee: Hady Fawal, Ryan Rozsnyai,
+#### Task: Design and share algorithm for storing/manipulating origami objects
+Assignee: Hady Fawal, Ryan Rozsnyai
 
-Is it Finished: Yes
+Completed: Yes
 
-#### Task: Understand Basic Algorithm for storing origami objects
-Assignee: Yixuan Wang, Weizi Wu, Bernice Tian, ________
+#### Task: Understand basic data structure / algorithm for storing origami objects
+Assignee: Yixuan Wang, Weizi Wu, Bernice Tian, Dennis Lam
 
-Is it Finished: Yes
+Completed: Yes
 
 ---
 # Progress and issues:
 
-#### Team Member 1:
+#### Team Member 1: Hady Fawal
 
-Action Items/What you did:
+Action Items/What you did: Helped set up github project and also designed a data structure to represent origami. Worked with Ryan on algorithms to manipulate the data structure.
 
-Result (What worked/What didn’t):
+Result (What worked/What didn’t): We have a graph-based data structure that represents the folded origami and is relatively easy to manipulate to change the state of the paper.
 
-What did you learn:
+What did you learn: By restricting the project's initial (MVP) scope to only basic folds like the mountain and valley fold,
+we actually have algorithms that catch several (though not all) errors in folding that the user might make. (By error, I mean that the user attempts a physically impossible fold.)
 
-Any Current Issues:
+Any Current Issues: N/A. In the next week I will try to write these algorithms is more detail so that it becomes clear how they should be actually written in code.
 
-Team Discussion if still having issues:
+Team Discussion if still having issues: N/A
 
 
 #### Team Member 2: Yixuan Wang
