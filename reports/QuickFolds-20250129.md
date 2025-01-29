@@ -21,7 +21,7 @@
 # Details Report [Section 2]
 # Goals for the week:
 #### Task: Complete Project Description
-Assignee: Hady Fawal, Ryan Rozsnyai, Yixuan Wang, Weizi Wu, ________
+Assignee: Hady Fawal, Ryan Rozsnyai, Yixuan Wang, Weizi Wu, Bernice Tian, ________
 
 Is it Finished: Yes
 
@@ -31,7 +31,7 @@ Assignee: Hady Fawal, Ryan Rozsnyai,
 Is it Finished: Yes
 
 #### Task: Understand Basic Algorithm for storing origami objects
-Assignee: Yixuan Wang, Weizi Wu, ________
+Assignee: Yixuan Wang, Weizi Wu, Bernice Tian, ________
 
 Is it Finished: Yes
 
@@ -70,6 +70,18 @@ Action Items/What you did: Understand the basic algorithm for storing origami da
 Result (What worked/What didn’t): Project description completed, algorithm understood, and started to have basic idea of how to use the Three.js library
 
 What did you learn: The basic algorithm for processing and storing origami data includes data structures, the use of connected components, and methods for representing folds.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
+#### Team Member 4: Bernice Tian
+
+Action Items/What you did: Completed assigned portion of project description, understand the basic algorithm for storing origami data, and start learning about databases.
+
+Result (What worked/What didn’t): Project description completed, algorithm understood, have a basic understanding of databases.
+
+What did you learn: The basic algorithm for processing and storing an origami model, and the general details of database tables.
 
 Any Current Issues: N/A
 
