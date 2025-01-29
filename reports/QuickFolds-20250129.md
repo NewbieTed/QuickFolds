@@ -1,3 +1,4 @@
+
 # TA Report [Section 1]
 
 ## Goals for the Weeks:
@@ -19,16 +20,20 @@
 
 # Details Report [Section 2]
 # Goals for the week:
-#### Task: Example 1
-Assignee: John Doe
+#### Task: Complete Project Description
+Assignee: Hady Fawal, Ryan Rozsnyai, Yixuan Wang, Weizi Wu, ________
 
 Is it Finished: Yes
 
-#### Task: Example 2
-Assignee: Jane Adam
+#### Task: Design and Share Basic Algorithm for storing origami objects
+Assignee: Hady Fawal, Ryan Rozsnyai,
 
 Is it Finished: Yes
 
+#### Task: Understand Basic Algorithm for storing origami objects
+Assignee: Yixuan Wang, Weizi Wu, ________
+
+Is it Finished: Yes
 
 ---
 # Progress and issues:
@@ -46,17 +51,17 @@ Any Current Issues:
 Team Discussion if still having issues:
 
 
-#### Team Member 2:
+#### Team Member 2: Yixuan Wang
 
-Action Items/What you did:
+Action Items/What you did: Completed assigned share of the project description, understand the basic algorithm for storing origami data, starting to design the database table sturctures
 
-Result (What worked/What didn’t):
+Result (What worked/What didn’t): Project description completed, algorithm understood
 
-What did you learn:
+What did you learn: The basic algorithm for processing and storing origami data (data structures, how to add/edit entries, etc.)
 
-Any Current Issues:
+Any Current Issues: N/A
 
-Team Discussion if still having issues:
+Team Discussion if still having issues: N/A
 
 ---
 # Goals for next week:
