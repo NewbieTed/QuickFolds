@@ -63,6 +63,18 @@ Any Current Issues: N/A
 
 Team Discussion if still having issues: N/A
 
+#### Team Member 3: Weizi Wu
+
+Action Items/What you did: Understand the basic algorithm for storing origami data, start learning how to use the Three.js library for 3D rendering, and finish writing the project documents with the rest of the team.
+
+Result (What worked/What didn’t): Project description completed, algorithm understood, and started to have basic idea of how to use the Three.js library
+
+What did you learn: The basic algorithm for processing and storing origami data includes data structures, the use of connected components, and methods for representing folds.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
 ---
 # Goals for next week:
 ### Overall Plan For This Week:
