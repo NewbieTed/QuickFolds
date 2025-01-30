@@ -2,7 +2,7 @@
 # TA Report [Section 1]
 
 ## Goals for the Weeks:
-+ Create GitHub repository and project 
++ Create GitHub repository and project
 + Added basic origami Viewer code
 + Create basic algorithms for folding and backend
 + Understand the data structure for storing origami
@@ -112,13 +112,67 @@ Any Current Issues: N/A
 
 Team Discussion if still having issues: N/A
 
+#### Team Member 6: Ryan Rozsnyai
+
+Action Items/What you did: Participated in the project description and completed the respective sections, created a basic movement option for the user on GitHub using Three.js. Helped Hady to come up with a basic algorithm to process plane rotation and rendering.
+
+Result (What worked/What didn’t): Editor Movement completed, basic algorithm created.
+
+What did you learn: Graphs are definitly the way to go in reasoning about the simulation aspects of paper. For example, say you have several folds, and rotate one of them. Planes, or faces, not directly adjecent to the crease itself can also move. The current way to solve this is to create a new Graph, call it G', and merge any planes that are 180 degree apart from each other then run BFS.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
 ---
 # Goals for next week:
-### Overall Plan For This Week:
+### Overall Plan For This Week: There are three big goals:
++ Be able to rotate, move, and click on planes to create a vertex (just get the 2D to 3D pointing to work via raycasting) [Due in 1 week]
++   Finish Up UI For the search engine and have the SQL commands ready. Basically, everything, apart from the process of clicking actual origami should work. So the search feature [Due in 1 week]
++ Get AWS Backend Ready to go so Editor Team can start to save their work [Due in 2 week]
+
 ### Overall Plan For Future Weeks (big picture):
 
-#### Task:
+> The goal of this week is to get the prepwork done so that once our architecture is set up, we can begin the difficult process of sending data back and forth between front and back end, and actually operate and manipulate paper. Over the next few weeks we'll have both sides ready to deal with transmitting folds.
 
-Assignee:
+#### Task: Create the ability to click on the mouse and "click" a plane. To be more formal, I want to know the point in which you hit a plane.
 
-Time Estimate:
+Assignee: Hady
+
+Time Estimate: 1 Week
+
+#### Task: Be able to take a point on a plane, and find the closest point on an edge of the plane. (i.e. given a point, what is the closest spot to the edge of the vertex?).
+
+Assignee: Weizi
+
+Time Estimate: 1 Week
+
+#### Task: Finish up dolly cam rotation between ortho and perspective camera. Set up modular structure for front end. Help other frontend team members if needed.
+
+Assignee: Ryan
+
+Time Estimate: 1 Week
+
+#### Task: Finish Up UI For the search engine and have the SQL commands ready. Basically, everything, apart from the process of clicking actual origami should work.
+
+Assignee: Dennis
+
+Time Estimate: 1 Week
+
+#### Task: Database Schema. Come up with a high level way to store our data.
+
+Assignee: Yixuan
+
+Time Estimate: 1 Week
+
+#### Task: Get AWS Backend Ready to go so Editor Team can start to save their work
+
+Assignee: Bernice
+
+Time Estimate: 2 Week
+
+#### Task: Get AWS Backend Ready to go so Editor Team can start to save their work
+
+Assignee: Dennis
+
+Time Estimate: 2 Week
