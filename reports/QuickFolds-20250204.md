@@ -27,6 +27,12 @@ Assignee: Yixuan Wang
 Completed: Yes
 
 
+#### Task: Create AWS Database
+Assignee: Yixuan Wang
+
+Completed: Yes
+
+
 
 ---
 # Progress and issues:
