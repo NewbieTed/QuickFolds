@@ -41,7 +41,10 @@ Assignee: Ryan Rozsnyai
 
 Completed: Yes
 
+#### Task: Create the ability to click on the mouse and "click" a plane. Find the point in space at which you hit a plane.
+Assignee: Hady Fawal
 
+Completed: No
 
 ---
 # Progress and issues:
@@ -70,6 +73,13 @@ What did you learn: Three.js pointers when rendering scenes and multicamera work
 Any Current Issues: N/A
 
 Team Discussion if still having issues: N/A
+
+#### Team Member 3: Hady Fawal
+Action Items/What you did: I spent the majority of my time this week designing the architecture of the frontend origami editor/viewer, and discussing with backend folks about the necessary data which will be sent, so that they could design their schema. While I did not complete the explicitly assigned task "Create the ability to use the mouse to 'click' a plane," in the rest of my time I did some research and learned about Three.js raycasting.
+
+Result (What worked/What didn't): We now have a relatively clear, modular architecture to follow for implementatation. I also have a better idea of where in that architecture the raycasting task I was assigned will be done, and so it should be fairly quick to implement in the future.
+
+What did you learn: How to architect a system and draw the diagrams; how to raycast in Three.js depending on the type of camera (Orthographic vs Perspective) being used to view the scene.
 
 ---
 # Goals for next week:
