@@ -108,6 +108,16 @@ What did you learn: Frontend graph handeling architecture and design choices. Me
 
 Any Current Issues: N/A
 
+#### Team Member 6: Bernice Tian
+
+Action Items/What you did: Didn't do as much this week due to poor health. Mainly made sure to understand the backend architecture, what frontend wants from backend, proofread the architecture and design document, and learned about SQL queries.
+
+Result (What worked/What didn't): Understood the database schema and what the frontend team wants from backend, insured correct completion of design document according to course specifications.
+
+What did you learn: The backend database schema, what data frontend wants from/will send to backend, and how to make SQL queries.
+
+Any Current Issues: N/A
+
 Team Discussion if still having issues: N/A
 ---
 # Goals for next week:
