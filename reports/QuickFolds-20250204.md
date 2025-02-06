@@ -81,6 +81,17 @@ Result (What worked/What didn't): We now have a relatively clear, modular archit
 
 What did you learn: How to architect a system and draw the diagrams; how to raycast in Three.js depending on the type of camera (Orthographic vs Perspective) being used to view the scene.
 
+#### Team Member 4: Dennis Lam
+
+Action Items/What you did: Designed database schema for user information as in authentication and for storing data from frontend. Setting up AWS RDS database for future use.
+
+Result (What worked/What didn’t): Database schema completed and verified. AWS database is now set up.
+
+What did you learn: Database architecture and design choices. Methods on setting up a Spring Boot environment on Maven.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
 ---
 # Goals for next week:
 ### Overall Plan For This Week:
