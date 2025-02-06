@@ -46,6 +46,11 @@ Assignee: Hady Fawal
 
 Completed: No
 
+#### Task: Be able to take a point on a plane, and find the closest point on an edge of the plane.
+Assignee: Weizi Wu
+
+Completed: No
+
 ---
 # Progress and issues:
 
@@ -88,6 +93,18 @@ Action Items/What you did: Designed database schema for user information as in a
 Result (What worked/What didn’t): Database schema completed and verified. AWS database is now set up.
 
 What did you learn: Database architecture and design choices. Methods on setting up a Spring Boot environment on Maven.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
+#### Team Member 5: Weizi Wu
+
+Action Items/What you did: Design and understand the architecture of the frontend. Use Three.js to design simple models for basic constructions.
+
+Result (What worked/What didn’t): Architecture and design choices completed. Simple models are now set up.
+
+What did you learn: Frontend graph handeling architecture and design choices. Methods on rendering simple boxes using three.js.
 
 Any Current Issues: N/A
 
