@@ -45,7 +45,7 @@ public class Origami {
     private boolean isPublic;
 
     @Column(name = "ratings", nullable = false)
-    private int ratings;
+    private double ratings;
 
     @Column(name = "created_by")
     private String createdBy;
