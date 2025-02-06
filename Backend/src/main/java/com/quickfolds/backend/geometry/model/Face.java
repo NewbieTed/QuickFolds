@@ -1,4 +1,4 @@
-package com.quickfolds.backend.user.model;
+package com.quickfolds.backend.geometry.model;
 
 import com.quickfolds.backend.community.model.Origami;
 import jakarta.persistence.*;
@@ -14,19 +14,35 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "face")
+public class Face {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+    @Column(name = "origami_id", insertable = false, updatable = false)
+    private Long origamiId;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "origami_id", nullable = false)
+    @JsonIgnore
+    private Origami origami;
+
+    @Column(name = "face_id_in_origami", nullable = false)
+    private int faceIdInOrigami;
+
+    @Column(name = "step_id", insertable = false, updatable = false)
+    private Long stepId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "step_id")
+    @JsonIgnore
+    private Step step;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -41,7 +57,8 @@ public class User {
     private OffsetDateTime updatedAt;
 
     // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "face", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<Origami> origamis;
+    private List<Vertex> vertices;
+
 }

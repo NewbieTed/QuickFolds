@@ -6,8 +6,8 @@ CREATE TABLE users (
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -17,10 +17,10 @@ CREATE TABLE origami (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
-    ratings INTEGER NOT NULL DEFAULT 0,
+    ratings DOUBLE PRECISION NOT NULL DEFAULT 0.0,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -30,8 +30,8 @@ CREATE TABLE step_type (
     id SERIAL PRIMARY KEY,
     step_type TEXT UNIQUE NOT NULL,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -42,8 +42,8 @@ CREATE TABLE step (
     origami_id INTEGER NOT NULL REFERENCES origami(id) ON DELETE CASCADE,
     step_type_id INTEGER NOT NULL REFERENCES step_type(id) ON DELETE RESTRICT,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -56,8 +56,8 @@ CREATE TABLE face (
     step_id INTEGER REFERENCES step(id) ON DELETE CASCADE,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -67,8 +67,8 @@ CREATE TABLE fold_step (
     step_id INTEGER PRIMARY KEY REFERENCES step(id) ON DELETE CASCADE,
     anchored_face_id INTEGER REFERENCES face(id) ON DELETE SET NULL,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -80,8 +80,8 @@ CREATE TABLE vertex (
     x_pos DOUBLE PRECISION NOT NULL,
     y_pos DOUBLE PRECISION NOT NULL,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -94,8 +94,8 @@ CREATE TABLE edge (
     face_2_id INTEGER REFERENCES face(id) ON DELETE SET NULL,
     angle DOUBLE PRECISION NOT NULL,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -110,8 +110,8 @@ CREATE TABLE annotated_point (
     vertex_id INTEGER REFERENCES vertex(id) ON DELETE SET NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -124,11 +124,10 @@ CREATE TABLE annotated_line (
     point_2_id INTEGER NOT NULL REFERENCES annotated_point(id) ON DELETE CASCADE,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    created_by INTEGER DEFAULT NULL,
-    updated_by INTEGER DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 COMMIT;
-

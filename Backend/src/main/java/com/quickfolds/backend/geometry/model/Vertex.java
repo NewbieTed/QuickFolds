@@ -1,32 +1,36 @@
-package com.quickfolds.backend.user.model;
+package com.quickfolds.backend.geometry.model;
 
-import com.quickfolds.backend.community.model.Origami;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "vertex")
+public class Vertex {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+    @Column(name = "face_id", insertable = false, updatable = false)
+    private Long faceId;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "face_id", nullable = false)
+    private Face face;
+
+    @Column(name = "x_pos", nullable = false)
+    private double xPos;
+
+    @Column(name = "y_pos", nullable = false)
+    private double yPos;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -39,9 +43,4 @@ public class User {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Origami> origamis;
 }

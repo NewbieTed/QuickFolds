@@ -1,4 +1,4 @@
-package com.quickfolds.backend.user.model;
+package com.quickfolds.backend.geometry.model;
 
 import com.quickfolds.backend.community.model.Origami;
 import jakarta.persistence.*;
@@ -14,19 +14,28 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "step")
+public class Step {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+    @Column(name = "origami_id", insertable = false, updatable = false)
+    private Long origamiId;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "origami_id", nullable = false)
+    @JsonIgnore
+    private Origami origami;
+
+    @Column(name = "step_type_id", insertable = false, updatable = false)
+    private Long stepTypeId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "step_type_id", nullable = false)
+    private StepType stepType;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -41,7 +50,11 @@ public class User {
     private OffsetDateTime updatedAt;
 
     // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "step", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<Origami> origamis;
+    private List<AnnotatedPoint> annotatedPoints;
+
+    @OneToMany(mappedBy = "step", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<AnnotatedLine> annotatedLines;
 }

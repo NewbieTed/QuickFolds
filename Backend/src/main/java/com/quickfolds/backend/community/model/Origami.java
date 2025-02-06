@@ -1,6 +1,7 @@
-package com.quickfolds.backend.user.model;
+package com.quickfolds.backend.community.model;
 
-import com.quickfolds.backend.community.model.Origami;
+import com.quickfolds.backend.geometry.model.Step;
+import com.quickfolds.backend.user.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,19 +15,27 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "origami")
+public class Origami {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private Long userId;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User user;
+
+    @Column(name = "is_public", nullable = false)
+    private boolean isPublic;
+
+    @Column(name = "ratings", nullable = false)
+    private int ratings;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -41,7 +50,7 @@ public class User {
     private OffsetDateTime updatedAt;
 
     // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "origami", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<Origami> origamis;
+    private List<Step> steps;
 }
