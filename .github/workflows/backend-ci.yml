@@ -44,7 +44,7 @@ jobs:
           cache: 'maven'
 
       - name: Update Maven Wrapper Permissions
-        run: chmod +x backend/mvnw
+        run: chmod +x Backend/mvnw
 
       - name: Build and Run Tests
         env:
