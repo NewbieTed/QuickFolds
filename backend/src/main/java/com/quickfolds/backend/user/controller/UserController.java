@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/problem")
+@RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
 
