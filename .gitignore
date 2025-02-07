@@ -28,6 +28,7 @@ Frontend/public/**/*.map
 
 # Backend
 /Backend/target/
+/Backend/backend.iml
 
 # Sensitive information
 /Backend/env/*
