@@ -56,4 +56,4 @@ jobs:
           TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
         run: |
           cd Backend
-          ../mvnw -f pom.xml clean test
+          ./mvnw clean test
