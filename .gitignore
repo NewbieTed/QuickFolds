@@ -26,6 +26,14 @@ Thumbs.db
 # Frontend
 Frontend/public/**/*.map
 
+# Backend
+/Backend/target/
+/Backend/backend.iml
+
+# Sensitive information
+/Backend/env/*
+!/Backend/env/README.md
+
 # Temporary files
 *.tmp
 *.swp
