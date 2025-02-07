@@ -5,12 +5,12 @@ on:
     branches:
       - '**'
     paths:
-      - 'Backend/**'
+      - 'backend/**'
   pull_request:
     branches:
       - '**'
     paths:
-      - 'Backend/**'
+      - 'backend/**'
   workflow_dispatch:
   
 jobs:
@@ -44,7 +44,7 @@ jobs:
           cache: 'maven'
 
       - name: Update Maven Wrapper Permissions
-        run: chmod +x Backend/mvnw
+        run: chmod +x backend/mvnw
 
       - name: Build and Run Tests
         env:
@@ -55,5 +55,5 @@ jobs:
           TEST_DB_USER: ${{ secrets.TEST_DB_USER }}
           TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
         run: |
-          cd Backend
+          cd backend
           ./mvnw clean test
