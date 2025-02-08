@@ -1,5 +1,6 @@
-package com.quickfolds.backend.geometry.model;
+package com.quickfolds.backend.geometry.model.database;
 
+import com.quickfolds.backend.community.model.Origami;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -19,37 +20,37 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "annotated_line")
-public class AnnotatedLine {
+@Table(name = "edge")
+public class Edge {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "step_id", insertable = false, updatable = false)
-    private Long stepId;
+    @Column(name = "origami_id", insertable = false, updatable = false)
+    private Long origamiId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "step_id", nullable = false)
-    private Step step;
+    @JoinColumn(name = "origami_id", nullable = false)
+    private Origami origami;
 
-    @Column(name = "point_1_id", insertable = false, updatable = false)
-    private Long point1Id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "point_1_id", nullable = false)
-    private AnnotatedPoint point1;
-
-    @Column(name = "point_2_id", insertable = false, updatable = false)
-    private Long point2Id;
+    @Column(name = "face_1_id", insertable = false, updatable = false)
+    private Long face1Id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "point_2_id", nullable = false)
-    private AnnotatedPoint point2;
+    @JoinColumn(name = "face_1_id")
+    private Face face1;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+    @Column(name = "face_2_id", insertable = false, updatable = false)
+    private Long face2Id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "face_2_id")
+    private Face face2;
+
+    @Column(name = "angle", nullable = false)
+    private double angle;
 
     @Column(name = "created_by")
     private String createdBy;

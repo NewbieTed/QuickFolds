@@ -1,6 +1,6 @@
 package com.quickfolds.backend.community.model;
 
-import com.quickfolds.backend.geometry.model.Step;
+import com.quickfolds.backend.geometry.model.database.Step;
 import com.quickfolds.backend.user.model.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

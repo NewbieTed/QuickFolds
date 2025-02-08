@@ -1,5 +1,6 @@
-package com.quickfolds.backend.geometry.model;
+package com.quickfolds.backend.geometry.model.database;
 
+import com.quickfolds.backend.community.model.Origami;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -9,50 +10,46 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "annotated_point")
-public class AnnotatedPoint {
+@Table(name = "face")
+public class Face {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
+    @Column(name = "origami_id", insertable = false, updatable = false)
+    private Long origamiId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "origami_id", nullable = false)
+    @JsonIgnore
+    private Origami origami;
+
+    @Column(name = "face_id_in_origami", nullable = false)
+    private int faceIdInOrigami;
+
     @Column(name = "step_id", insertable = false, updatable = false)
     private Long stepId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "step_id", nullable = false)
+    @JoinColumn(name = "step_id")
+    @JsonIgnore
     private Step step;
-
-    @Column(name = "x_pos", nullable = false)
-    private double xPos;
-
-    @Column(name = "y_pos", nullable = false)
-    private double yPos;
-
-    @Column(name = "on_edge_id", insertable = false, updatable = false)
-    private Long onEdgeId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "on_edge_id")
-    private Edge onEdge;
-
-    @Column(name = "vertex_id", insertable = false, updatable = false)
-    private Long vertexId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vertex_id")
-    private Vertex vertex;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
@@ -68,4 +65,10 @@ public class AnnotatedPoint {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    // Lazy-loaded one to many fields
+    @OneToMany(mappedBy = "face", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Vertex> vertices;
+
 }

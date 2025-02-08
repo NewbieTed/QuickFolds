@@ -1,4 +1,4 @@
-package com.quickfolds.backend.geometry.model;
+package com.quickfolds.backend.geometry.model.database;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
