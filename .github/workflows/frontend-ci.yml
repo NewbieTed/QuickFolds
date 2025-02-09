@@ -52,8 +52,7 @@ jobs:
 
           ls
 
-          npx eslint --config ./eslint.config.mjs  ./frontend/**/*.ts
-          npx eslint .
+          npx eslint --config ./eslint.config.mjs
 
           LINTER_EXIT_CODE=$?
           if [ $LINTER_EXIT_CODE -ne 0 ]; then
