@@ -22,16 +22,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Check source branch
-        run: |
-          if [[ "${{ github.event.pull_request.head.ref }}" == frontend-* ]]; then
-            echo "Merging branch is a frontend- branch"
-          else
-            echo "Merging branch is not a frontend- branch"
-            echo "Finishing this task..."
-            #exit 0
-          fi
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
