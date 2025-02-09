@@ -44,7 +44,13 @@ const orthographicCamera = new THREE.OrthographicCamera(
 		100  // Far clipping plane
 );
 
-camera = perspectiveCamera;
+if (prevRotateChange) {
+	camera = perspectiveCamera;
+} else {
+	camera = orthographicCamera;
+}
+
+
 
 // create plane
 const geometryPlane = new THREE.PlaneGeometry(5, 5);
