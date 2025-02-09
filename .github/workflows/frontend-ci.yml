@@ -51,8 +51,8 @@ jobs:
           pwd
 
           ls
-
-          npx eslint --config ./eslint.config.mjs
+          run: ls -R /home/runner/work/QuickFolds/QuickFolds
+          npx eslint --config "/home/runner/work/QuickFolds/QuickFolds/eslint.config.mjs"
 
           LINTER_EXIT_CODE=$?
           if [ $LINTER_EXIT_CODE -ne 0 ]; then
