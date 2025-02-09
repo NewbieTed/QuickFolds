@@ -41,6 +41,7 @@ CREATE TABLE step (
     id BIGSERIAL PRIMARY KEY,
     origami_id BIGINT NOT NULL REFERENCES origami(id) ON DELETE CASCADE,
     step_type_id BIGINT NOT NULL REFERENCES step_type(id) ON DELETE RESTRICT,
+    id_In_Origami INTEGER NOT NULL,
 
     created_by TEXT DEFAULT NULL,
     updated_by TEXT DEFAULT NULL,
@@ -52,7 +53,7 @@ CREATE TABLE step (
 CREATE TABLE face (
     id BIGSERIAL PRIMARY KEY,
     origami_id BIGINT NOT NULL REFERENCES origami(id) ON DELETE CASCADE,
-    face_id_in_origami INTEGER NOT NULL,
+    id_in_origami INTEGER NOT NULL,
     step_id BIGINT REFERENCES step(id) ON DELETE CASCADE,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -79,6 +80,7 @@ CREATE TABLE vertex (
     face_id BIGINT NOT NULL REFERENCES face(id) ON DELETE CASCADE,
     x_pos DOUBLE PRECISION NOT NULL,
     y_pos DOUBLE PRECISION NOT NULL,
+    id_in_face INTEGER NOT NULL,
 
     created_by TEXT DEFAULT NULL,
     updated_by TEXT DEFAULT NULL,
@@ -108,6 +110,7 @@ CREATE TABLE annotated_point (
     y_pos DOUBLE PRECISION NOT NULL,
     on_edge_id BIGINT REFERENCES edge(id) ON DELETE SET NULL,
     vertex_id BIGINT REFERENCES vertex(id) ON DELETE SET NULL,
+    id_in_face INTEGER NOT NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     created_by TEXT DEFAULT NULL,

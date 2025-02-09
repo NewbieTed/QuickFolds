@@ -54,6 +54,9 @@ public class AnnotatedPoint {
     @JoinColumn(name = "vertex_id")
     private Vertex vertex;
 
+    @Column(name = "id_in_face", nullable = false)
+    private int idInFace;
+
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
 

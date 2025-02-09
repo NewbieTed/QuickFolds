@@ -40,6 +40,9 @@ public class Vertex {
     @Column(name = "y_pos", nullable = false)
     private double yPos;
 
+    @Column(name = "id_in_face", nullable = false)
+    private int idInFace;
+
     @Column(name = "created_by")
     private String createdBy;
 

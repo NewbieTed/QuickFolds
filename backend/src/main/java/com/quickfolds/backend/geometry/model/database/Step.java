@@ -47,6 +47,9 @@ public class Step {
     @JoinColumn(name = "step_type_id", nullable = false)
     private StepType stepType;
 
+    @Column(name = "id_in_origami", nullable = false)
+    private int idInOrigami;
+
     @Column(name = "created_by")
     private String createdBy;
 
