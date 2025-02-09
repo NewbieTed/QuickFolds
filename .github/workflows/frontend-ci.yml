@@ -29,7 +29,7 @@ jobs:
           else
             echo "Merging branch is not a frontend- branch"
             echo "Finishing this task..."
-            #exit 0
+            exit 0
           fi
 
       - name: Set up Node.js
