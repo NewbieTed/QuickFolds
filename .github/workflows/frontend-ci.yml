@@ -1,0 +1,58 @@
+name: Frontend CI Pipeline
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Check source branch
+        run: |
+          if [[ "${{ github.event.pull_request.head.ref }}" == frontend-* ]]; then
+            echo "Merging branch is a frontend- branch"
+          else
+            echo "Merging branch is not a frontend- branch"
+            echo "Finishing this task..."
+            #exit 0
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'  # You can change to your desired Node version
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Run TS Linter
+        run: |
+          echo "Running linter locally on all ts files in ./frontend/"
+
+          cd ../../../
+
+          npx eslint .
+
+          LINTER_EXIT_CODE=$?
+          if [ $LINTER_EXIT_CODE -ne 0 ]; then
+            echo "TS Linter found errors, failing the job."
+            exit $LINTER_EXIT_CODE
+          else
+            echo "TS Linter passed, no errors found."
+          fi
