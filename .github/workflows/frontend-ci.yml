@@ -42,7 +42,7 @@ jobs:
           npm install
 
       - name: Run ESLint
-        run: npx eslint --config eslint.config.mjs .
+        run: npx eslint --no-cache --config eslint.config.mjs .
 
 
       - name: Run TS Linter
