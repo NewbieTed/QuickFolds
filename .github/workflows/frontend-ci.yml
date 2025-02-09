@@ -51,6 +51,8 @@ jobs:
 
           cd ../../../
 
+          pwd
+
           npx eslint .
 
           LINTER_EXIT_CODE=$?
