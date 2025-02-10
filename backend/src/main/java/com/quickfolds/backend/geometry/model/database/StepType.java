@@ -24,8 +24,8 @@ public class StepType {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "step_type", nullable = false, unique = true)
-    private String stepType;
+    @Column(name = "step_type_name", nullable = false, unique = true)
+    private String stepTypeName;
 
     @Column(name = "created_by")
     private String createdBy;

@@ -27,19 +27,8 @@ public class FoldStep {
     @Column(name = "step_id", nullable = false, updatable = false)
     private Long stepId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "step_id", nullable = false)
-    @MapsId
-    @JsonIgnore
-    private Step step;
-
-    @Column(name = "anchored_face_id", insertable = false, updatable = false)
+    @Column(name = "anchored_face_id", nullable = false)
     private Long anchoredFaceId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "anchored_face_id")
-    @JsonIgnore
-    private Face anchoredFace;
 
     @Column(name = "created_by")
     private String createdBy;

@@ -39,20 +39,17 @@ public class Face {
     /**
      * Foreign key to the Origami table.
      * Represents the ID of the associated Origami entity.
-     * This field is not directly updatable or insertable.
      */
-    @Column(name = "origami_id", insertable = false, updatable = false)
+    @Column(name = "origami_id", nullable = false)
     private Long origamiId;
 
     /**
-     * Many-to-one relationship to the Origami entity.
-     * Used to fetch the Origami this Face belongs to.
-     * Lazy loading is used to optimize performance.
+     * Foreign key to the Step table.
+     * Represents the ID of the step where this face was created or modified.
+     * This field is not directly updatable or insertable.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "origami_id", nullable = false)
-    @JsonIgnore
-    private Origami origami;
+    @Column(name = "step_id", nullable = false)
+    private Long stepId;
 
     /**
      * A unique identifier for this face within an Origami.
@@ -61,30 +58,8 @@ public class Face {
     @Column(name = "id_in_origami", nullable = false)
     private int idInOrigami;
 
-    /**
-     * Foreign key to the Step table.
-     * Represents the ID of the step where this face was created or modified.
-     * This field is not directly updatable or insertable.
-     */
-    @Column(name = "step_id", insertable = false, updatable = false)
-    private Long stepId;
-
-    /**
-     * Many-to-one relationship to the Step entity.
-     * Represents the folding step this face is associated with.
-     * Lazy loading is used to improve performance.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "step_id")
-    @JsonIgnore
-    private Step step;
-
-    /**
-     * Indicates whether this face is marked as deleted.
-     * True if the face is deleted, false otherwise.
-     */
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+    @Column(name = "deleted_step_id")
+    private Long deletedStepId;
 
     /**
      * The username or identifier of the user who created this face.
@@ -113,15 +88,4 @@ public class Face {
      */
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    /**
-     * One-to-many relationship to the Vertex entity.
-     * Represents the vertices that define the polygon for this face.
-     * Lazy loading is used to optimize performance.
-     * Cascade operations are enabled to handle related Vertex entities.
-     */
-    @OneToMany(mappedBy = "face", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Vertex> vertices;
-
 }

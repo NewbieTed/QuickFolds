@@ -28,29 +28,23 @@ public class Edge {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "origami_id", insertable = false, updatable = false)
-    private Long origamiId;
+    @Column(name = "step_id", nullable = false)
+    private Long stepId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "origami_id", nullable = false)
-    private Origami origami;
-
-    @Column(name = "face_1_id", insertable = false, updatable = false)
+    @Column(name = "face_1_id", nullable = false)
     private Long face1Id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "face_1_id")
-    private Face face1;
-
-    @Column(name = "face_2_id", insertable = false, updatable = false)
+    @Column(name = "face_2_id", nullable = false)
     private Long face2Id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "face_2_id")
-    private Face face2;
 
     @Column(name = "angle", nullable = false)
     private double angle;
+
+    @Column(name = "id_in_face", nullable = false)
+    private Integer idInFace;
+
+    @Column(name = "deleted_step_id")
+    private Long deleted_step;
 
     @Column(name = "created_by")
     private String createdBy;

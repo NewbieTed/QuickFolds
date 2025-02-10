@@ -47,9 +47,4 @@ public class User {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Origami> origamis;
 }

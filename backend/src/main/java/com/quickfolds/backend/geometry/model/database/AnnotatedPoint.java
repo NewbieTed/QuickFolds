@@ -27,12 +27,11 @@ public class AnnotatedPoint {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "step_id", insertable = false, updatable = false)
+    @Column(name = "step_id", nullable = false)
     private Long stepId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "step_id", nullable = false)
-    private Step step;
+    @Column(name = "face_id", nullable = false)
+    private Long faceId;
 
     @Column(name = "x_pos", nullable = false)
     private double xPos;
@@ -40,25 +39,17 @@ public class AnnotatedPoint {
     @Column(name = "y_pos", nullable = false)
     private double yPos;
 
-    @Column(name = "on_edge_id", insertable = false, updatable = false)
+    @Column(name = "on_edge_id", nullable = false)
     private Long onEdgeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "on_edge_id")
-    private Edge onEdge;
-
-    @Column(name = "vertex_id", insertable = false, updatable = false)
+    @Column(name = "vertex_id", nullable = false)
     private Long vertexId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vertex_id")
-    private Vertex vertex;
 
     @Column(name = "id_in_face", nullable = false)
     private int idInFace;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+    @Column(name = "deleted_step_id")
+    private Long deletedStepId;
 
     @Column(name = "created_by")
     private String createdBy;

@@ -32,20 +32,11 @@ public class Step {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "origami_id", insertable = false, updatable = false)
+    @Column(name = "origami_id", nullable = false)
     private Long origamiId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "origami_id", nullable = false)
-    @JsonIgnore
-    private Origami origami;
-
-    @Column(name = "step_type_id", insertable = false, updatable = false)
+    @Column(name = "step_type_id", nullable = false)
     private Long stepTypeId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "step_type_id", nullable = false)
-    private StepType stepType;
 
     @Column(name = "id_in_origami", nullable = false)
     private int idInOrigami;
@@ -61,13 +52,4 @@ public class Step {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "step", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<AnnotatedPoint> annotatedPoints;
-
-    @OneToMany(mappedBy = "step", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<AnnotatedLine> annotatedLines;
 }

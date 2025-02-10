@@ -27,12 +27,11 @@ public class Vertex {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "face_id", insertable = false, updatable = false)
-    private Long faceId;
+    @Column(name = "step_id", nullable = false)
+    private Long stepId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "face_id", nullable = false)
-    private Face face;
+    @Column(name = "face_id", nullable = false)
+    private Long faceId;
 
     @Column(name = "x_pos", nullable = false)
     private double xPos;
@@ -42,6 +41,9 @@ public class Vertex {
 
     @Column(name = "id_in_face", nullable = false)
     private int idInFace;
+
+    @Column(name = "deleted_step")
+    private Long deletedStepId;
 
     @Column(name = "created_by")
     private String createdBy;

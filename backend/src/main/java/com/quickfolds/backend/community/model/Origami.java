@@ -33,13 +33,8 @@ public class Origami {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "user_id", insertable = false, updatable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore
-    private User user;
 
     @Column(name = "is_public", nullable = false)
     private boolean isPublic;
@@ -58,9 +53,4 @@ public class Origami {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    // Lazy-loaded one to many fields
-    @OneToMany(mappedBy = "origami", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Step> steps;
 }
