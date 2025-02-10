@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "Running Test locally on all *.test.ts files in ./unit_test/"
 
-          cd ../.. && npx mocha -r ts-node/register "**/*.test.ts" && cd -
+          npx mocha -r ts-node/register "**/*.test.ts"
 
           TESTING_EXIT_CODE=$?
           if [ $TESTING_EXIT_CODE -ne 0 ]; then
