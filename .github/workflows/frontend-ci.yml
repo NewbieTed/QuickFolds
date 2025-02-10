@@ -46,7 +46,7 @@ jobs:
             echo "TS Linter passed, no errors found."
           fi
 
-        - name: Run TS Tests
+      - name: Run TS Tests
         run: |
           echo "Running Test locally on all *.test.ts files in ./unit_test/"
 
