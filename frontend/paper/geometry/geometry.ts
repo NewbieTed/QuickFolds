@@ -124,3 +124,125 @@ function copyPoint<T extends Point>(
     }
 
 }
+
+
+/**
+ * Adds two points of the same dimension together.
+ * @param a First point, must have same dimension as b.
+ * @param b Second point, must have same dimension as a.
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns The coordinate-wise sum of a + b (vector addition),
+ *          a new point with the given context.
+ */
+function addPoints<T extends Point>(
+            a: T, b: T, 
+            context: PointContext = "Annotation"): T {
+
+    if (a.dim === "2D" && b.dim == "2D") {
+
+        const result: Point2D = {
+            x: a.x + b.x,
+            y: a.y + b.y,
+            context: context,
+            dim: "2D"
+        }
+
+        return result as T;
+
+    } else if (a.dim == "3D" && b.dim == "3D") {
+
+        const result: Point3D = {
+            x: a.x + b.x,
+            y: a.y + b.y,
+            z: a.z + b.z,
+            context: context,
+            dim: "3D"
+        }
+
+        return result as T;
+    }
+
+    // This line of code never runs; the compiler in fact 
+    // catches when we pass in a and b with different dimension.
+    return a;
+}
+
+/**
+ * Subtracts two points of the same dimension.
+ * @param a First point, must have same dimension as b.
+ * @param b Second point, must have same dimension as a.
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns The coordinate-wise sum of a - b (vector subtraction),
+ *          a new point with the given context.
+ */
+function subtractPoints<T extends Point>(
+            a: T, b: T, 
+            context: PointContext = "Annotation"): T {
+
+    if (a.dim === "2D" && b.dim == "2D") {
+
+        const result: Point2D = {
+            x: a.x - b.x,
+            y: a.y - b.y,
+            context: context,
+            dim: "2D"
+        }
+
+        return result as T;
+
+    } else if (a.dim == "3D" && b.dim == "3D") {
+
+        const result: Point3D = {
+            x: a.x - b.x,
+            y: a.y - b.y,
+            z: a.z - b.z,
+            context: context,
+            dim: "3D"
+        }
+
+        return result as T;
+    }
+
+    // This line of code never runs; the compiler in fact 
+    // catches when we pass in a and b with different dimension.
+    return a;
+}
+
+
+/**
+ * Computes the scalar product (dot product) of two 3D points.
+ * @param a The first point.
+ * @param b The second point.
+ * @returns The scalar product a * b (component-wise multiply and add).
+ */
+function scalarProduct(a: Point3D, b: Point3D): number {
+
+    let result = 0;
+    result += a.x * b.x;
+    result += a.y * b.y;
+    result += a.z * b.z;
+
+    return result;
+}
+
+
+/**
+ * Computes the distance between two points.
+ * @param a First point, must have same dimension as b.
+ * @param b Second point, must have same dimension as a.
+ * @returns The Euclidean distance between points a and b.
+ */
+function distance<T extends Point>(a: T, b: T): number {
+
+    let squaredDist = 0;
+    squaredDist += (a.x - b.x)**2;
+    squaredDist += (a.y - b.y)**2;
+    
+    if (a.dim == "3D" && b.dim == "3D") {
+        squaredDist += (a.z - b.z)**2;
+    }
+
+    return Math.sqrt(squaredDist);
+}
