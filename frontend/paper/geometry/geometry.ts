@@ -255,6 +255,7 @@ function distance<T extends Point>(a: T, b: T): number {
 }
 
 
+// TODO
 function rotatePoint(point: Point3D, axis: null, angle: null) {
 
 }

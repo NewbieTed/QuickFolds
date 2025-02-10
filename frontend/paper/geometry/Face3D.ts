@@ -4,6 +4,7 @@
  */
 
 import * as THREE from 'three';
+import {getNextFaceID} from "../view/SceneManager" 
 
 
 
@@ -15,19 +16,36 @@ class Face3D {
      * annotatedPoints - annotated points id'd at integers > the # of vertices
      * annotatedLines - annotated lines
      * paperThickness - how thick the paper is
-     * offset - the number of paper thicknesses away from 
+     * offset - the number of paper thicknesses away from the underlying plane
+     * mesh: the three JS object which appears in this scene.
+     * nextLineID: 
      */
     private readonly ID: bigint;
     private readonly vertices: Point3D[];
     private annotatedPoints: Map<bigint, AnnotatedPoint>;
     private annotatedLines: Map<bigint, AnnotatedLine>;
-    // private pointToLine: Map<bigint, Set<bigint>>;
-    private THREE.Object3D
+    private mesh: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
+    private nextLineID: bigint;
+    private nextPointID: bigint;
 
-    public constructor() {
+    public constructor(
+                vertices: Point3D[],
+                paperThickness: number,
+                offset: number,
+                ) {
 
+        this.ID = getNextFaceID();
+        this.vertices = vertices;
+        this.nextPointID = BigInt(vertices.length);
+        this.nextLineID = 0n;
+        this.annotatedPoints = new Map<bigint, AnnotatedPoint>();
+        this.annotatedLines = new Map<bigint, AnnotatedLine>();
+        this.paperThickness = paperThickness;
+        this.offset = offset;
+
+        // create mesh object.
     }
 
 
