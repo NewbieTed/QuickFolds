@@ -9,8 +9,7 @@
     "types": ["node", "mocha"]
   },
   "include": [
-    "src/**/*.ts",
-    "tests/**/*.ts"
+    "frontend/**/*.ts"
   ],
   "exclude": [
     "node_modules"

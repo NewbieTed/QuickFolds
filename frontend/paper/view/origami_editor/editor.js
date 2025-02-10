@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed} from './editorInputCapture.js';
-import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY	} from './globalSettings.js';
+import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from './globalSettings.js';
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -79,10 +79,29 @@ function returnCameraToOrigin() {
 	renderer.render( scene, camera );
 }
 
+
+// swaps between ortho and persective camera
+function swapCameraType() {
+	if (camera == perspectiveCamera) {
+		orthographicCamera.position.set(perspectiveCamera.x, perspectiveCamera.y, perspectiveCamera.z);
+		orthographicCamera.setRotationFromEuler(perspectiveCamera.rotation);
+		camera = orthographicCamera;
+	} else {
+		perspectiveCamera.position.set(orthographicCamera.x, orthographicCamera.y, orthographicCamera.z);
+		perspectiveCamera.setRotationFromEuler(orthographicCamera.rotation);
+		camera = perspectiveCamera	;
+	}
+}
+
+
+
 // dom function that activates when a key is pressed
 function onKeyDown(event) {
 	if (event.key === RETURN_TO_ORIGIN_KEY) {
     returnCameraToOrigin();
+  }
+	if (event.key === SWAP_CAM_TYPE) {
+    swapCameraType();
   }
 }
 
