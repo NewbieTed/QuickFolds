@@ -28,11 +28,13 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 // TODO: swap between two
-const perspectiveCamera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const PERSPECTIVE_CAMERA = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
 const frustumSize = 10; // Size of the orthographic view
 const aspect = window.innerWidth / window.innerHeight;
-const orthographicCamera = new THREE.OrthographicCamera(
+
+
+const ORTHOGRAPHIC_CAMERA = new THREE.OrthographicCamera(
 		-frustumSize * aspect / 2,  // left
 		frustumSize * aspect / 2,   // right
 		frustumSize / 2,            // top
@@ -42,10 +44,10 @@ const orthographicCamera = new THREE.OrthographicCamera(
 );
 
 
-let camera = orthographicCamera;
+let camera = ORTHOGRAPHIC_CAMERA;
 
 if (prevRotateChange) {
-	camera = perspectiveCamera;
+	camera = PERSPECTIVE_CAMERA;
 }
 
 
@@ -80,14 +82,14 @@ function returnCameraToOrigin() {
 
 // swaps between ortho and persective camera
 function swapCameraType() {
-	if (camera === perspectiveCamera) {
-		orthographicCamera.position.set(perspectiveCamera.x, perspectiveCamera.y, perspectiveCamera.z);
-		orthographicCamera.setRotationFromEuler(perspectiveCamera.rotation);
-		camera = orthographicCamera;
-	} else if (camera === orthographicCamera) {
-		perspectiveCamera.position.set(orthographicCamera.x, orthographicCamera.y, orthographicCamera.z);
-		perspectiveCamera.setRotationFromEuler(orthographicCamera.rotation);
-		camera = perspectiveCamera	;
+	if (camera === PERSPECTIVE_CAMERA) {
+		ORTHOGRAPHIC_CAMERA.position.set(PERSPECTIVE_CAMERA.x, PERSPECTIVE_CAMERA.y, PERSPECTIVE_CAMERA.z);
+		ORTHOGRAPHIC_CAMERA.setRotationFromEuler(PERSPECTIVE_CAMERA.rotation);
+		camera = ORTHOGRAPHIC_CAMERA;
+	} else if (camera === ORTHOGRAPHIC_CAMERA) {
+		PERSPECTIVE_CAMERA.position.set(ORTHOGRAPHIC_CAMERA.x, ORTHOGRAPHIC_CAMERA.y, ORTHOGRAPHIC_CAMERA.z);
+		PERSPECTIVE_CAMERA.setRotationFromEuler(ORTHOGRAPHIC_CAMERA.rotation);
+		camera = PERSPECTIVE_CAMERA	;
 	}
 }
 
