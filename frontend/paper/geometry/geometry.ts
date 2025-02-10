@@ -3,6 +3,9 @@
  */
 
 
+// ----------------------------- Types ------------------------------------- //
+
+
 /**
  * Describes the two classes of points that could appear in the program:
  * annotations, and vertices. Vertices define faces, while annotations
@@ -35,6 +38,9 @@ type Point3D = {
  * Union type of points.
  */
 type Point = Point2D | Point3D;
+
+
+// ----------------------------- Functions --------------------------------- //
 
 
 /**
@@ -168,6 +174,7 @@ function addPoints<T extends Point>(
     return a;
 }
 
+
 /**
  * Subtracts two points of the same dimension.
  * @param a First point, must have same dimension as b.
@@ -245,4 +252,9 @@ function distance<T extends Point>(a: T, b: T): number {
     }
 
     return Math.sqrt(squaredDist);
+}
+
+
+function rotatePoint(point: Point3D, axis: null, angle: null) {
+
 }
