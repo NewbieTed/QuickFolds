@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",       // Change from ESNext to CommonJS temporarily
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node", "mocha"]
+  },
+  "include": [
+    "frontend/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

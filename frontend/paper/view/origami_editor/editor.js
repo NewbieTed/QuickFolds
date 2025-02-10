@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed} from './editorInputCapture.js';
-import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY	} from './globalSettings.js';
+import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from './globalSettings.js';
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -28,14 +28,13 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 
-let camera = null;
-
-// TODO: swap between two
-const perspectiveCamera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const PERSPECTIVE_CAMERA = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
 const frustumSize = 10; // Size of the orthographic view
 const aspect = window.innerWidth / window.innerHeight;
-const orthographicCamera = new THREE.OrthographicCamera(
+
+
+const ORTHOGRAPHIC_CAMERA = new THREE.OrthographicCamera(
 		-frustumSize * aspect / 2,  // left
 		frustumSize * aspect / 2,   // right
 		frustumSize / 2,            // top
@@ -44,7 +43,14 @@ const orthographicCamera = new THREE.OrthographicCamera(
 		100  // Far clipping plane
 );
 
-camera = perspectiveCamera;
+
+let camera = ORTHOGRAPHIC_CAMERA;
+
+if (prevRotateChange) {
+	camera = PERSPECTIVE_CAMERA;
+}
+
+
 
 // create plane
 const geometryPlane = new THREE.PlaneGeometry(5, 5);
@@ -73,10 +79,29 @@ function returnCameraToOrigin() {
 	renderer.render( scene, camera );
 }
 
+
+// swaps between ortho and persective camera
+function swapCameraType() {
+	if (camera === PERSPECTIVE_CAMERA) {
+		ORTHOGRAPHIC_CAMERA.position.set(PERSPECTIVE_CAMERA.x, PERSPECTIVE_CAMERA.y, PERSPECTIVE_CAMERA.z);
+		ORTHOGRAPHIC_CAMERA.setRotationFromEuler(PERSPECTIVE_CAMERA.rotation);
+		camera = ORTHOGRAPHIC_CAMERA;
+	} else if (camera === ORTHOGRAPHIC_CAMERA) {
+		PERSPECTIVE_CAMERA.position.set(ORTHOGRAPHIC_CAMERA.x, ORTHOGRAPHIC_CAMERA.y, ORTHOGRAPHIC_CAMERA.z);
+		PERSPECTIVE_CAMERA.setRotationFromEuler(ORTHOGRAPHIC_CAMERA.rotation);
+		camera = PERSPECTIVE_CAMERA	;
+	}
+}
+
+
+
 // dom function that activates when a key is pressed
 function onKeyDown(event) {
 	if (event.key === RETURN_TO_ORIGIN_KEY) {
     returnCameraToOrigin();
+  }
+	if (event.key === SWAP_CAM_TYPE) {
+    swapCameraType();
   }
 }
 
