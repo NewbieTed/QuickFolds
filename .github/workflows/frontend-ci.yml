@@ -40,3 +40,17 @@ jobs:
           else
             echo "TS Linter passed, no errors found."
           fi
+
+      - name: Run TS Tests
+        run: |
+          echo "Running Test locally on all *.test.ts files in ./unit_test/"
+
+          npx mocha -r ts-node/register "**/*.test.ts"
+
+          TESTING_EXIT_CODE=$?
+          if [ $TESTING_EXIT_CODE -ne 0 ]; then
+            echo "TS Found errors. Failing build..."
+            exit $TESTING_EXIT_CODE
+          else
+            echo "All Test pass"
+          fi
