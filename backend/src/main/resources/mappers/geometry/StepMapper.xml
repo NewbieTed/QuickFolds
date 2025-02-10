@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.quickfolds.backend.geometry.mapper.StepMapper">
+
+    <select id="getStepTypeByName" resultType="int">
+        SELECT id
+        FROM step_type
+        WHERE step_type_name = #{stepTypeName}
+        LIMIT 1
+    </select>
+
+
+    <insert id="addByFields" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO step (
+        origami_id,
+        step_type_id,
+        id_in_origami
+        <if test="createdBy != null">
+            , created_by
+        </if>
+        <if test="updatedBy != null">
+            , updated_by
+        </if>
+        )
+        VALUES (
+        #{origamiId},
+        #{stepTypeId},
+        #{idInOrigami}
+        <if test="createdBy != null">
+            , #{createdBy}
+        </if>
+        <if test="updatedBy != null">
+            , #{updatedBy}
+        </if>
+        );
+    </insert>
+
+</mapper>
