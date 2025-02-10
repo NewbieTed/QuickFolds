@@ -41,14 +41,11 @@ const orthographicCamera = new THREE.OrthographicCamera(
 		100  // Far clipping plane
 );
 
-console.log("loading editor:" + orthographicCamera);
 
 let camera = orthographicCamera;
 
 if (prevRotateChange) {
 	camera = perspectiveCamera;
-} else {
-	camera = orthographicCamera;
 }
 
 
@@ -83,11 +80,11 @@ function returnCameraToOrigin() {
 
 // swaps between ortho and persective camera
 function swapCameraType() {
-	if (camera == perspectiveCamera) {
+	if (camera === perspectiveCamera) {
 		orthographicCamera.position.set(perspectiveCamera.x, perspectiveCamera.y, perspectiveCamera.z);
 		orthographicCamera.setRotationFromEuler(perspectiveCamera.rotation);
 		camera = orthographicCamera;
-	} else {
+	} else if (camera === orthographicCamera) {
 		perspectiveCamera.position.set(orthographicCamera.x, orthographicCamera.y, orthographicCamera.z);
 		perspectiveCamera.setRotationFromEuler(orthographicCamera.rotation);
 		camera = perspectiveCamera	;
