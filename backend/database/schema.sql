@@ -2,9 +2,9 @@ BEGIN;
 
 -- Create Users Table
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
 
     created_by TEXT DEFAULT NULL,
     updated_by TEXT DEFAULT NULL,

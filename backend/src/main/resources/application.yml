@@ -6,4 +6,5 @@ spring:
   application:
     name: backend
 
-
+jwt:
+  secret: ${JWT_SECRET:secret}
