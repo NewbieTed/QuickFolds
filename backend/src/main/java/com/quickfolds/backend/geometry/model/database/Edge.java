@@ -40,8 +40,11 @@ public class Edge {
     @Column(name = "angle", nullable = false)
     private double angle;
 
-    @Column(name = "id_in_face", nullable = false)
-    private Integer idInFace;
+    @Column(name = "id_in_face_1", nullable = false)
+    private Integer idInFace1;
+
+    @Column(name = "id_in_face_2", nullable = false)
+    private Integer idInFace2;
 
     @Column(name = "deleted_step_id")
     private Long deleted_step;
