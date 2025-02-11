@@ -2,7 +2,6 @@ package com.quickfolds.backend.geometry.controller;
 
 import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.geometry.mapper.GeometryMapper;
-import com.quickfolds.backend.geometry.model.dto.Annotation;
 import com.quickfolds.backend.geometry.model.dto.AnnotationRequest;
 import com.quickfolds.backend.geometry.model.dto.FoldRequest;
 import com.quickfolds.backend.geometry.service.GeometryService;
@@ -20,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class GeometryController {
 
-    private GeometryService geometryService;
-    private GeometryMapper geometryMapper;
+    private final GeometryService geometryService;
+    private final GeometryMapper geometryMapper;
 
 
     @GetMapping("/fold")
@@ -31,14 +30,11 @@ public class GeometryController {
             return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
         }
 
-        geometryService.fold(request);
-
-        return BaseResponse.success();
+        return geometryService.fold(request);
     }
 
     @GetMapping("/annotate")
-    public BaseResponse<Boolean> annotate(@RequestBody AnnotationRequest request) {
-
+    public BaseResponse<Boolean> annotate(@Valid @RequestBody AnnotationRequest request) {
         // TODO: More checks needed
         if (request == null) {
             return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
@@ -54,6 +50,7 @@ public class GeometryController {
                     "Field 'stepIdInOrigami' in Annotate must not be null");
         }
 
+//        return BaseResponse.success();
         return  geometryService.annotate(request);
     }
 

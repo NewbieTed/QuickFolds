@@ -9,6 +9,7 @@ import com.quickfolds.backend.geometry.mapper.StepMapper;
 import com.quickfolds.backend.geometry.mapper.EdgeMapper;
 import com.quickfolds.backend.geometry.model.database.AnnotatedLine;
 import com.quickfolds.backend.geometry.model.database.AnnotatedPoint;
+import com.quickfolds.backend.geometry.model.database.Step;
 import com.quickfolds.backend.geometry.model.dto.*;
 import jakarta.persistence.PersistenceException;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,7 @@ public class GeometryService {
     private final AnnotatePointMapper annotatePointMapper;
 
 
-
-    public void fold(FoldRequest request) {
+    public BaseResponse<Boolean> fold(FoldRequest request) {
 //        List<Integer> deletedFaces = request.getDeletedFaces();
 //        List<FaceFoldRequest> faces = request.getFaces();
 //
@@ -38,9 +38,8 @@ public class GeometryService {
 //            // TODO: Implement this SQL code
 //            geometryMapper.deleteFaceByIdInOrigami(deleteFaceId);
 //        }
-
+        return BaseResponse.success();
     }
-
 
     @Transactional
     public BaseResponse<Boolean> annotate(AnnotationRequest request) {
@@ -49,6 +48,7 @@ public class GeometryService {
         List<FaceAnnotateRequest> faces = request.getFaces();
 
         // TODO: Case overwrite
+
 
         try {
             for (FaceAnnotateRequest face : faces) {
@@ -62,31 +62,57 @@ public class GeometryService {
 
                 if (stepTypeId == null) {
                     return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                            "Unknown step name: " + stepType + ", verify if db is correct");
+                            "Unknown step name: " + stepType + ", verify if DB is correct");
                 }
 
-                // TODO: Change to add by object
-                Long stepId = stepMapper.addByFields(origamiId,
-                        stepTypeId, stepIdInOrigami, null, null);
+                Step newStep = new Step();
+                newStep.setOrigamiId(origamiId);
+                newStep.setIdInOrigami(stepIdInOrigami);
 
-                // TODO: SQL section
-                annotateLineMapper.deleteMultipleByIdInFace(faceId,
-                        face.getAnnotations().getDeletedLines(), stepId);
+                Long stepId = stepMapper.addByObj(newStep);
+
+                List<Integer> deletedLinesIdInFace = face.getAnnotations().getDeletedLines();
+                int numUpdatedRows = annotateLineMapper.deleteMultipleByIdInFace(faceId,
+                        deletedLinesIdInFace, stepId);
+                if (numUpdatedRows > deletedLinesIdInFace.size()) {
+                    return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Extra rows are updated after deleting annotated lines, verify if DB is correct");
+                } else if (numUpdatedRows < deletedLinesIdInFace.size()) {
+                    List<Long> presentRows = annotateLineMapper.getMultipleId(faceId, deletedLinesIdInFace);
+                    if (presentRows.size() > numUpdatedRows) {
+                        return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(),
+                                "Invalid annotated line id(s) found in face id " +
+                                        faceId + " for origami" + origamiId +
+                                        ", verify if request is valid (double deletion)");
+                    } else if (presentRows.size() == numUpdatedRows) {
+                        return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(),
+                                "Invalid annotated line id(s) found in face id " +
+                                        faceId + " for origami" + origamiId +
+                                        ", verify if request is valid (no such annotated line)");
+                    } else {
+                        return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                                "Impossible state reached, verify backend/DB is " +
+                                        "correct (delete annotated line)");
+                    }
+                }
+
 
                 // TODO: Check if lines are present
                 annotatePointMapper.deleteMultipleByIdInFace(faceId,
                         face.getAnnotations().getDeletedPoints(), stepId);
-
-
-
-
 
                 List<PointAnnotationRequest> pointAnnotationRequests = face.getAnnotations().getPoints();
 
                 for (PointAnnotationRequest pointAnnotationRequest : pointAnnotationRequests) {
                     AnnotatedPoint point = new AnnotatedPoint();
 
-                    long edgeId = edgeMapper.getIdByIdInFace(faceId, pointAnnotationRequest.getOnEdgeIdInFace());
+                    Integer edgeIdInFace = pointAnnotationRequest.getOnEdgeIdInFace();
+                    Long edgeId = null;
+
+                    if (edgeIdInFace != null) {
+                        // issue: how to get the edge when a point is on an edge
+                        edgeId = edgeMapper.getIdByIdInFace(faceId, pointAnnotationRequest.getOnEdgeIdInFace());
+                    }
 
                     point.setStepId(stepId);
                     point.setFaceId(faceId);
@@ -109,9 +135,9 @@ public class GeometryService {
                     AnnotatedLine line = new AnnotatedLine();
 
                     Long point1Id = annotatePointMapper.getIdbyIdInFace(faceId,
-                            lineAnnotationRequest.getPointIdInOrigami1());
+                            lineAnnotationRequest.getPoint1IdInOrigami());
                     Long point2Id = annotatePointMapper.getIdbyIdInFace(faceId,
-                            lineAnnotationRequest.getPointIdInOrigami2());
+                            lineAnnotationRequest.getPoint2IdInOrigami());
 
                     line.setStepId(stepId);
                     line.setFaceId(faceId);
