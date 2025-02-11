@@ -1,5 +1,6 @@
 package com.quickfolds.backend.geometry.model.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
@@ -19,6 +20,6 @@ public class AnnotationRequest {
     @Positive(message = "Field 'stepIdInOrigami' in Annotate must be positive")
     private Integer stepIdInOrigami;
 
-
+    @Valid
     private List<FaceAnnotateRequest> faces;
 }

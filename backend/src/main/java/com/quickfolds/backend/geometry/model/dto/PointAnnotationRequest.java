@@ -17,6 +17,6 @@ public class PointAnnotationRequest {
     @NotNull(message = "Field 'y' in Point Annotation must not be null")
     private Double y;
 
-    @Positive(message = "Field 'onEdgeId' in Point Annotation must be positive")
+    @Positive(message = "Field 'onEdgeIdInFace' in Point Annotation must be positive")
     private Integer onEdgeIdInFace; // Edge this point lies on, or null if it doesn't lie on any edge
 }

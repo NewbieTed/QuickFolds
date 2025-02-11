@@ -15,10 +15,8 @@ public class Annotation {
     private List<LineAnnotationRequest> lines;
 
     @Valid
-    @Positive(message = "All elements in deletedPoints in Annotate must be positive.")
-    private List<Integer> deletedPoints;
+    private List<@Positive(message = "All elements in deletedPoints in Annotate must be positive.") Integer> deletedPoints;
 
     @Valid
-    @Positive(message = "All elements in deletedLines in Annotate must be positive.")
-    private List<Integer> deletedLines;
+    private List<@Positive(message = "All elements in deletedLines in Annotate must be positive.") Integer> deletedLines;
 }
