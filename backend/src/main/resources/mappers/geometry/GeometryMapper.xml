@@ -5,5 +5,13 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.GeometryMapper">
 
+<!--    <update id="deleteLineByIdInOrigami">-->
+<!--        UPDATE annotated_line-->
+<!--        <set>-->
+<!--            deleted_step = #{stepIdInOrgami}-->
+<!--        </set>-->
+
+<!--    </update>-->
+
 
 </mapper>

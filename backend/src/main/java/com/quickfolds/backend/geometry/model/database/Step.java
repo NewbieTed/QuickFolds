@@ -1,4 +1,4 @@
-package com.quickfolds.backend.community.model;
+package com.quickfolds.backend.geometry.model.database;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,19 +13,19 @@ import lombok.NoArgsConstructor;
 import java.time.OffsetDateTime;
 
 /**
- * Represents an origami model created by a user.
- * Maps to the "origami" table in the database.
+ * Represents a step in the process of creating an origami model.
+ * Maps to the "step" table in the database.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "origami")
-public class Origami {
+@Table(name = "step")
+public class Step {
 
     /**
-     * Primary key for the Origami table.
-     * Auto-generated value for each Origami record.
+     * Primary key for the Step table.
+     * Auto-generated value for each Step record.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,49 +33,49 @@ public class Origami {
     private Long id;
 
     /**
-     * Foreign key referencing the user who created the origami.
-     * Links this record to a specific user in the "users" table.
+     * Foreign key referencing the origami this step belongs to.
+     * Links this record to a specific origami in the "origami" table.
      */
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "origami_id", nullable = false)
+    private Long origamiId;
 
     /**
-     * Indicates whether the origami is public or private.
-     * Defaults to false (private).
+     * Foreign key referencing the type of step (e.g., fold or annotate).
+     * Links to a predefined step type in the "step_type" table.
      */
-    @Column(name = "is_public", nullable = false)
-    private boolean isPublic;
+    @Column(name = "step_type_id", nullable = false)
+    private Long stepTypeId;
 
     /**
-     * Average rating for the origami model.
-     * The value is between 0.0 and 5.0.
+     * The step number within the origami sequence.
+     * Helps order steps for a given origami model.
      */
-    @Column(name = "ratings", nullable = false)
-    private double ratings;
+    @Column(name = "id_in_origami", nullable = false)
+    private int idInOrigami;
 
     /**
-     * Identifier of the user who created this origami record.
+     * Identifier of the user who created this step record.
      * May be null if not explicitly set.
      */
     @Column(name = "created_by")
     private String createdBy;
 
     /**
-     * Identifier of the user who last updated this origami record.
+     * Identifier of the user who last updated this step record.
      * May be null if not explicitly set.
      */
     @Column(name = "updated_by")
     private String updatedBy;
 
     /**
-     * Timestamp when this origami record was created.
+     * Timestamp when this step record was created.
      * Automatically set at the time of creation and not updatable.
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     /**
-     * Timestamp when this origami record was last updated.
+     * Timestamp when this step record was last updated.
      * Updated automatically when the record is modified.
      */
     @Column(name = "updated_at")
