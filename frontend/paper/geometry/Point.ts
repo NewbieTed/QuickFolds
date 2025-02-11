@@ -142,7 +142,7 @@ function copyPoint<T extends Point>(
  * @returns The coordinate-wise sum of a + b (vector addition),
  *          a new point with the given context.
  */
-function addPoints<T extends Point>(
+function add<T extends Point>(
             a: T, b: T, 
             context: PointContext = "Annotation"
             ): T {
@@ -186,7 +186,7 @@ function addPoints<T extends Point>(
  * @returns The coordinate-wise sum of a - b (vector subtraction),
  *          a new point with the given context.
  */
-function subtractPoints<T extends Point>(
+function subtract<T extends Point>(
             a: T, b: T, 
             context: PointContext = "Annotation"
             ): T {
@@ -235,47 +235,6 @@ function dotProduct(a: Point3D, b: Point3D): number {
     result += a.z * b.z;
 
     return result;
-}
-
-
-/**
- * Computes scalar multiplication of a point by some real number.
- * @param vector The vector to multiply.
- * @param scalar The factor to multiply that vector by.
- * @param context Context of the resulting point.
- *                Defaults to Annotation.
- * @returns vec * scalar, the vector scaled component-wise by the scalar.
- */
-function scalarMult<T extends Point>(
-            vector: Point, 
-            scalar: number, 
-            context: PointContext = "Annotation"
-            ): T {
-    
-    if (vector.dim === "2D") {
-
-        const result: Point2D = {
-            x: vector.x * scalar,
-            y: vector.y * scalar,
-            context: context,
-            dim: "2D"
-        }
-
-        return result as T;
-
-    } else {
-
-        const result: Point3D = {
-            x: vector.x * scalar,
-            y: vector.y * scalar,
-            z: vector.z * scalar,
-            context: context,
-            dim: "3D"
-        }
-
-        return result as T;
-    }
-
 }
 
 
@@ -382,7 +341,7 @@ function average(
 
     let sum: Point3D = createPoint3D(0, 0, 0, context);
     for (let i = 0; i < vectors.length; i++) {
-        sum = addPoints(sum, vectors[i]);
+        sum = add(sum, vectors[i]);
     }
     
     // Edge case.

@@ -1,7 +1,7 @@
-/**
- * @fileoverview Implementation of the Face2D class, whose instances form
- * the graph data structure representing the paper.
- */
+// /**
+//  * @fileoverview Implementation of the Face2D class, whose instances form
+//  * the graph data structure representing the paper.
+//  */
 
 
 /**
@@ -24,51 +24,51 @@ type AnnotatedLine = {
 }
 
 
-class Face2D {
+// class Face2D {
 
-    /**
-     * ID - matches the ID of the corresponding Face3D. Unique identifier
-     * vertices - the vertices defining this face, in some adjacency order
-     * annotatedPoints - annotated points id'd at #s after Point
-     */
-    private readonly ID: bigint;
-    private readonly vertices: Point2D[];
-    private annotatedPoints: Map<bigint, AnnotatedPoint>;
-    private annotatedLines: Map<bigint, AnnotatedLine>;
-    // private pointToLine: Map<bigint, Set<bigint>>;
-
-
-    public constructor() {
-
-    }
+//     /**
+//      * ID - matches the ID of the corresponding Face3D. Unique identifier
+//      * vertices - the vertices defining this face, in some adjacency order
+//      * annotatedPoints - annotated points id'd at #s after Point
+//      */
+//     private readonly ID: bigint;
+//     private readonly vertices: Point2D[];
+//     private annotatedPoints: Map<bigint, AnnotatedPoint>;
+//     private annotatedLines: Map<bigint, AnnotatedLine>;
+//     // private pointToLine: Map<bigint, Set<bigint>>;
 
 
-    public addAnnotatedPoint(point: Point2D): void {
+//     public constructor() {
 
-    }
-
-    public addAnnotatedLine(startPointID: bigint, endPointID: bigint): void {
-        // handles intersections too
-    }
-
-    public delAnnotatedPoint(pointID: bigint): void {
-
-    }
-
-    public delAnnotatedLine(lineID: bigint): void {
-
-    }
+//     }
 
 
+//     public addAnnotatedPoint(point: Point2D): void {
 
-    public containedInFace(point: Point2D): boolean {
-        return false;
-    }
+//     }
 
-    public findNearestPoint(point: Point2D): bigint {
-        return 0n;
-    }
+//     public addAnnotatedLine(startPointID: bigint, endPointID: bigint): void {
+//         // handles intersections too
+//     }
+
+//     public delAnnotatedPoint(pointID: bigint): void {
+
+//     }
+
+//     public delAnnotatedLine(lineID: bigint): void {
+
+//     }
 
 
 
-}
+//     public containedInFace(point: Point2D): boolean {
+//         return false;
+//     }
+
+//     public findNearestPoint(point: Point2D): bigint {
+//         return 0n;
+//     }
+
+
+
+// }
