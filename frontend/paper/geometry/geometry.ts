@@ -103,7 +103,8 @@ function createPoint3D(
  */
 function copyPoint<T extends Point>(
             source: T, 
-            context: PointContext = source.context): T {
+            context: PointContext = source.context
+            ): T {
 
     if (source.dim === "2D") {
 
@@ -143,7 +144,8 @@ function copyPoint<T extends Point>(
  */
 function addPoints<T extends Point>(
             a: T, b: T, 
-            context: PointContext = "Annotation"): T {
+            context: PointContext = "Annotation"
+            ): T {
 
     if (a.dim === "2D" && b.dim == "2D") {
 
@@ -186,7 +188,8 @@ function addPoints<T extends Point>(
  */
 function subtractPoints<T extends Point>(
             a: T, b: T, 
-            context: PointContext = "Annotation"): T {
+            context: PointContext = "Annotation"
+            ): T {
 
     if (a.dim === "2D" && b.dim == "2D") {
 
@@ -224,7 +227,7 @@ function subtractPoints<T extends Point>(
  * @param b The second point.
  * @returns The scalar product a * b (component-wise multiply and add).
  */
-function scalarProduct(a: Point3D, b: Point3D): number {
+function dotProduct(a: Point3D, b: Point3D): number {
 
     let result = 0;
     result += a.x * b.x;
@@ -232,6 +235,163 @@ function scalarProduct(a: Point3D, b: Point3D): number {
     result += a.z * b.z;
 
     return result;
+}
+
+
+/**
+ * Computes scalar multiplication of a point by some real number.
+ * @param vector The vector to multiply.
+ * @param scalar The factor to multiply that vector by.
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns vec * scalar, the vector scaled component-wise by the scalar.
+ */
+function scalarMult<T extends Point>(
+            vector: Point, 
+            scalar: number, 
+            context: PointContext = "Annotation"
+            ): T {
+    
+    if (vector.dim === "2D") {
+
+        const result: Point2D = {
+            x: vector.x * scalar,
+            y: vector.y * scalar,
+            context: context,
+            dim: "2D"
+        }
+
+        return result as T;
+
+    } else {
+
+        const result: Point3D = {
+            x: vector.x * scalar,
+            y: vector.y * scalar,
+            z: vector.z * scalar,
+            context: context,
+            dim: "3D"
+        }
+
+        return result as T;
+    }
+
+}
+
+
+/**
+ * Computes scalar multiplication of a point by some real number.
+ * @param vector The vector to multiply.
+ * @param scalar The factor to multiply that vector by.
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns vec * scalar, the vector scaled component-wise by the scalar.
+ */
+function scalarMult<T extends Point>(
+            vector: Point, 
+            scalar: number, 
+            context: PointContext = "Annotation"
+            ): T {
+    
+    if (vector.dim === "2D") {
+
+        const result: Point2D = {
+            x: vector.x * scalar,
+            y: vector.y * scalar,
+            context: context,
+            dim: "2D"
+        }
+
+        return result as T;
+
+    } else {
+
+        const result: Point3D = {
+            x: vector.x * scalar,
+            y: vector.y * scalar,
+            z: vector.z * scalar,
+            context: context,
+            dim: "3D"
+        }
+
+        return result as T;
+    }
+
+}
+
+
+/**
+ * Computes scalar division of a point by some real number.
+ * @param vector The vector to divide.
+ * @param scalar The factor to divide that vector by.
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns vec / scalar, the vector scaled component-wise by the scalar.
+ * @throws Error if the given scalar to divide by is 0.
+ */
+function scalarDiv<T extends Point>(
+            vector: Point, 
+            scalar: number, 
+            context: PointContext = "Annotation"
+            ): T {
+
+    // Edge case.
+    if (scalar === 0) {
+        throw new Error("Cannot divide Point by 0!");
+    }
+
+    if (vector.dim === "2D") {
+
+        const result: Point2D = {
+            x: vector.x / scalar,
+            y: vector.y / scalar,
+            context: context,
+            dim: "2D"
+        }
+
+        return result as T;
+
+    } else {
+
+        const result: Point3D = {
+            x: vector.x / scalar,
+            y: vector.y / scalar,
+            z: vector.z / scalar,
+            context: context,
+            dim: "3D"
+        }
+
+        return result as T;
+    }
+
+}
+
+
+/**
+ * Computes the average of an array of 3D vectors.
+ * @param vectors The 3D vectors to average.
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns The sum of the vectors divided by how many there are.
+ *          The average of no vectors (empty array) is 0.
+ */
+function average(
+            vectors: Point3D[], 
+            context: PointContext = "Annotation"
+            ) {
+
+    let sum: Point3D = createPoint3D(0, 0, 0, context);
+    for (let i = 0; i < vectors.length; i++) {
+        sum = addPoints(sum, vectors[i]);
+    }
+    
+    // Edge case.
+    if (vectors.length == 0) {
+        return sum;
+    }
+
+    const avg: Point3D = scalarDiv(sum, vectors.length, context);
+    return avg;
 }
 
 
