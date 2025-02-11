@@ -187,7 +187,8 @@ CREATE TABLE edge (
     face_1_id BIGINT REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
     face_2_id BIGINT REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
     angle DOUBLE PRECISION NOT NULL,
-    id_in_face INTEGER NOT NULL,
+    id_in_face_1 INTEGER NOT NULL,
+    id_in_face_2 INTEGER NOT NULL,
     deleted_step_id BIGINT REFERENCES step(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
     created_by TEXT DEFAULT NULL,
@@ -203,7 +204,8 @@ COMMENT ON COLUMN edge.step_id IS 'Foreign key referencing the step where this e
 COMMENT ON COLUMN edge.face_1_id IS 'Foreign key referencing the first face connected by the edge.';
 COMMENT ON COLUMN edge.face_2_id IS 'Foreign key referencing the second face connected by the edge.';
 COMMENT ON COLUMN edge.angle IS 'Angle of the edge between the two connected faces.';
-COMMENT ON COLUMN edge.id_in_face IS 'Edge number within the face.';
+COMMENT ON COLUMN edge.id_in_face_1 IS 'Edge number within the first face.';
+COMMENT ON COLUMN edge.id_in_face_2 IS 'Edge number within the second face.';
 COMMENT ON COLUMN edge.deleted_step_id IS 'Foreign key referencing the step where this edge is deleted.';
 
 COMMENT ON COLUMN edge.created_by IS 'Identifier of the user who created this edge record.';
