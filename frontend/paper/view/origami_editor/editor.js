@@ -4,6 +4,8 @@
 
 
 import * as THREE from 'three';
+import {Face3D} from "../../geometry/Face3D.ts";
+import {createPoint3D} from "../../geometry/Point.ts";
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed} from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from './globalSettings.js';
 
@@ -64,6 +66,22 @@ const whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
 const lookAtSphere = new THREE.Mesh(geometrySphere, whiteMaterial);
 lookAtSphere.visible = getIsRotateSphereVisible();
 
+// Attempt to create a Face3D.
+const vertices = [
+	createPoint3D(0, 0, 1, "Vertex"),
+	createPoint3D(-1, 2.5, 1, "Vertex"),
+	createPoint3D(2, 4, 1, "Vertex"),
+	createPoint3D(4, 2, 1, "Vertex"),
+	createPoint3D(3, 0, 1, "Vertex")
+]
+const principalNormal = createPoint3D(0, 0, 1);
+const myFace = new Face3D(vertices, 1, 2, principalNormal);
+scene.add(myFace.getMesh());
+// Add a point light to be able to see it
+const pointLight = new THREE.PointLight(0xffffff, 1000, 1000, 1000);
+pointLight.position.set(0, 0, 10);
+scene.add(pointLight);
+scene.add(new THREE.PointLightHelper(pointLight, 2, 0xffff00));
 
 // put stuff in scene
 scene.add( plane );
