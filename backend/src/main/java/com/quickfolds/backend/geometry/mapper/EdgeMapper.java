@@ -5,5 +5,5 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface EdgeMapper {
-    Long getIdByIdInFace(@Param("faceId") Long faceId, @Param("edgeIdInFace") int edgeIdInFace);
+    Long getIdByIdInFace(@Param("faceId") long faceId, @Param("edgeIdInFace") int edgeIdInFace);
 }

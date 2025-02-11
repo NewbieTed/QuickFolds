@@ -5,13 +5,17 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.EdgeMapper">
 
-    <!--    <update id="deleteLineByIdInOrigami">-->
-    <!--        UPDATE annotated_line-->
-    <!--        <set>-->
-    <!--            deleted_step = #{stepIdInOrgami}-->
-    <!--        </set>-->
-
-    <!--    </update>-->
-
-
+    <select id="getIdByIdInFace">
+        SELECT id FROM edge
+        WHERE (
+        face_1_id = #{faceId}
+        AND
+        id_in_face_1 = #{edgeIdInFace}
+        ) OR (
+        face_2_id = #{faceId}
+        AND
+        id_in_face_2 = #{edgeIdInFace}
+        )
+        LIMIT 1
+    </select>
 </mapper>

@@ -16,5 +16,5 @@ public interface AnnotatePointMapper {
 
     void deleteMultipleByIdInFace(@Param("faceId") long faceId,
                                   @Param("idInFace") List<Integer> idsInFace,
-                                  @Param("stepId") long stepId);
+                                  @Param("deletedStepId") long deletedStepId);
 }

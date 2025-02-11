@@ -9,7 +9,7 @@ import java.util.List;
 @Mapper
 public interface AnnotateLineMapper {
 
-    List<Long> getMultipleId(@Param("faceId") long faceId, @Param("idInFace") int idInFace);
+    List<Long> getMultipleId(@Param("faceId") long faceId, @Param("idInFace") List<Integer> idInFace);
 
 
     void addByObj(@Param("annotatedLine") AnnotatedLine annotatedLine);
@@ -20,7 +20,7 @@ public interface AnnotateLineMapper {
 
     void deleteByIdInFace(@Param("faceId") long faceId, @Param("idInFace") int idInFace);
 
-    void deleteMultipleByIdInFace(@Param("faceId") long faceId,
+    int deleteMultipleByIdInFace(@Param("faceId") long faceId,
                                   @Param("idInFace") List<Integer> idsInFace,
                                   @Param("deletedStepId") long deletedStepId);
 

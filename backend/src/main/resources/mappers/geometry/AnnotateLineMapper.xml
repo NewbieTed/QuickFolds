@@ -19,19 +19,15 @@
         <result property="updatedAt" column="updated_at" />
     </resultMap>
 
-
-    <update id="deleteMultipleByIdInFace">
-        UPDATE annotated_line
-        <set>
-            deleted_step_id = #{deletedStepId}
-        </set>
+    <select id="getMultipleId" resultType="java.lang.Long">
+        SELECT id FROM annotated_line
         WHERE face_id = #{faceId}
         AND id_in_face IN (
         <foreach collection="idsInFace" item="idInFace" separator=",">
             #{idInFace}
         </foreach>
         )
-    </update>
+    </select>
 
 
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
@@ -60,7 +56,19 @@
         )
     </insert>
 
-
+    <update id="deleteMultipleByIdInFace">
+        UPDATE annotated_line
+        <set>
+            deleted_step_id = #{deletedStepId}
+        </set>
+        WHERE face_id = #{faceId}
+        AND deleted_step IS null
+        AND id_in_face IN (
+        <foreach collection="idsInFace" item="idInFace" separator=",">
+            #{idInFace}
+        </foreach>
+        )
+    </update>
 
 
 
