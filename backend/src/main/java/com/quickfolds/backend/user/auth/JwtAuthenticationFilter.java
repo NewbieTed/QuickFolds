@@ -1,4 +1,4 @@
-package com.quickfolds.backend.user.model;
+package com.quickfolds.backend.user.auth;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -6,14 +6,25 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
+@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private final JwtUtil jwtUtil;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -23,20 +34,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
-                Claims claims = JwtUtil.parseToken(token);
+                Claims claims = jwtUtil.parseToken(token);
                 String username = claims.getSubject();
-                Integer userId = (Integer) claims.get("id");
-
-                // 创建认证对象，这里仅简单设置用户名，实际可以加载更多用户信息
+                Long userId = ((Number) claims.get("id")).longValue();
+                logger.debug("Authenticated user: {} with id: {}", username, userId);
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
-                // 设置到 Spring Security 上下文中
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (JwtException e) {
-                // token 无效，返回 401
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token 无效或已过期");
+                logger.error("JWT Token invalid or expired: {}", e.getMessage());
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token invalid or expired");
                 return;
             }
+        } else {
+            logger.debug("No JWT token provided in the Authorization header");
         }
         filterChain.doFilter(request, response);
     }

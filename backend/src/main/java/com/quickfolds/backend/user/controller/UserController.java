@@ -3,12 +3,12 @@ package com.quickfolds.backend.user.controller;
 
 import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.user.model.User;
-import com.quickfolds.backend.user.mapper.UserMapper;
 import com.quickfolds.backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -23,13 +23,10 @@ public class UserController {
     @Autowired
     private final UserService userService;
 
-    private final UserMapper userMapper;
-
-
     @GetMapping("/getUser")
-    public BaseResponse<Boolean> verifyAnswer(@RequestBody String request) {
-
-        return BaseResponse.success();
+    public BaseResponse<?> getUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return BaseResponse.success(principal);
     }
 
     @PostMapping("/signup")
@@ -45,14 +42,13 @@ public class UserController {
         }
     }
 
-    // 登录接口
-    @PostMapping("/signin")
+    @PostMapping("/login")
     public ResponseEntity<?> signin(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
         String password = credentials.get("password");
         String token = userService.login(username, password);
         if (token != null) {
-            // 将 token 返回给客户端
+            // Return the generated token
             return ResponseEntity.ok(Collections.singletonMap("token", token));
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
