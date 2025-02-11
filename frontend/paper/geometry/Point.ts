@@ -11,12 +11,12 @@
  * annotations, and vertices. Vertices define faces, while annotations
  * merely live inside/on faces.
  */
-type PointContext = "Vertex" | "Annotation";
+export type PointContext = "Vertex" | "Annotation";
 
 /**
  * A two-dimensional point.
  */
-type Point2D = {
+export type Point2D = {
     readonly x: number,
     readonly y: number,
     readonly context: PointContext,
@@ -26,7 +26,7 @@ type Point2D = {
 /**
  * A three-dimensional point.
  */
-type Point3D = {
+export type Point3D = {
     readonly x: number,
     readonly y: number,
     readonly z: number,
@@ -37,8 +37,27 @@ type Point3D = {
 /**
  * Union type of points.
  */
-type Point = Point2D | Point3D;
+export type Point = Point2D | Point3D;
 
+
+/**
+ * An annotated point type - consists of the point object and
+ * also the ID of the edge on which it lies, if any.
+ * The value -1 is given if the annotated point lies on no edge.
+ */
+export type AnnotatedPoint = {
+    point: Point,
+    edgeID: bigint
+}
+
+/**
+ * An annotated line type. Its fields are the IDs of two points on
+ * the face - the points could be vertices, or annotated points.
+ */
+export type AnnotatedLine = {
+    startPointID: bigint,
+    endPointID: bigint
+}
 
 // ----------------------------- Functions --------------------------------- //
 
@@ -50,7 +69,7 @@ type Point = Point2D | Point3D;
  * @param context The context - defaults to Annotation.
  * @returns 
  */
-function createPoint2D(
+export function createPoint2D(
             x: number, y: number, 
             context: PointContext = "Annotation"
             ): Point2D {
@@ -74,7 +93,7 @@ function createPoint2D(
  * @param context The context - defaults to Annotation.
  * @returns 
  */
-function createPoint3D(
+export function createPoint3D(
             x: number, y: number, z: number,
             context: PointContext = "Annotation"
             ): Point3D {
@@ -101,7 +120,7 @@ function createPoint3D(
  *                Defaults to the same context as the source point.
  * @returns A copy of the given point with its kind potentially changed.
  */
-function copyPoint<T extends Point>(
+export function copyPoint<T extends Point>(
             source: T, 
             context: PointContext = source.context
             ): T {
@@ -142,7 +161,7 @@ function copyPoint<T extends Point>(
  * @returns The coordinate-wise sum of a + b (vector addition),
  *          a new point with the given context.
  */
-function add<T extends Point>(
+export function add<T extends Point>(
             a: T, b: T, 
             context: PointContext = "Annotation"
             ): T {
@@ -186,7 +205,7 @@ function add<T extends Point>(
  * @returns The coordinate-wise sum of a - b (vector subtraction),
  *          a new point with the given context.
  */
-function subtract<T extends Point>(
+export function subtract<T extends Point>(
             a: T, b: T, 
             context: PointContext = "Annotation"
             ): T {
@@ -227,7 +246,7 @@ function subtract<T extends Point>(
  * @param b The second point.
  * @returns The scalar product a * b (component-wise multiply and add).
  */
-function dotProduct(a: Point3D, b: Point3D): number {
+export function dotProduct(a: Point3D, b: Point3D): number {
 
     let result = 0;
     result += a.x * b.x;
@@ -246,7 +265,7 @@ function dotProduct(a: Point3D, b: Point3D): number {
  *                Defaults to Annotation.
  * @returns vec * scalar, the vector scaled component-wise by the scalar.
  */
-function scalarMult<T extends Point>(
+export function scalarMult<T extends Point>(
             vector: Point, 
             scalar: number, 
             context: PointContext = "Annotation"
@@ -288,7 +307,7 @@ function scalarMult<T extends Point>(
  * @returns vec / scalar, the vector scaled component-wise by the scalar.
  * @throws Error if the given scalar to divide by is 0.
  */
-function scalarDiv<T extends Point>(
+export function scalarDiv<T extends Point>(
             vector: Point, 
             scalar: number, 
             context: PointContext = "Annotation"
@@ -334,7 +353,7 @@ function scalarDiv<T extends Point>(
  * @returns The sum of the vectors divided by how many there are.
  *          The average of no vectors (empty array) is 0.
  */
-function average(
+export function average(
             vectors: Point3D[], 
             context: PointContext = "Annotation"
             ) {
@@ -360,7 +379,7 @@ function average(
  * @param b Second point, must have same dimension as a.
  * @returns The Euclidean distance between points a and b.
  */
-function distance<T extends Point>(a: T, b: T): number {
+export function distance<T extends Point>(a: T, b: T): number {
 
     let squaredDist = 0;
     squaredDist += (a.x - b.x)**2;
@@ -375,6 +394,6 @@ function distance<T extends Point>(a: T, b: T): number {
 
 
 // TODO
-function rotatePoint(point: Point3D, axis: null, angle: null) {
+export function rotatePoint(point: Point3D, axis: null, angle: null) {
 
 }

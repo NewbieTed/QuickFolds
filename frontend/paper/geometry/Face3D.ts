@@ -5,10 +5,11 @@
 
 import * as THREE from 'three';
 import {getNextFaceID} from "../view/SceneManager" 
+import * as pt from "./Point";
 
 
 
-class Face3D {
+export class Face3D {
 
     /**
      * ID - matches the ID of the corresponding Face3D. Unique identifier
@@ -26,29 +27,29 @@ class Face3D {
      *                  paper that was originally face-up in the crease pattern
      */
     private readonly ID: bigint;
-    private readonly vertices: Point3D[];
-    private annotatedPoints: Map<bigint, AnnotatedPoint>;
-    private annotatedLines: Map<bigint, AnnotatedLine>;
+    private readonly vertices: pt.Point3D[];
+    private annotatedPoints: Map<bigint, pt.AnnotatedPoint>;
+    private annotatedLines: Map<bigint, pt.AnnotatedLine>;
     private mesh: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
     private nextLineID: bigint;
     private nextPointID: bigint;
-    private principalNormal: Point3D;
+    private principalNormal: pt.Point3D;
 
     public constructor(
-                vertices: Point3D[],
+                vertices: pt.Point3D[],
                 paperThickness: number,
                 offset: number,
-                principalNormal: Point3D
+                principalNormal: pt.Point3D
                 ) {
 
         this.ID = getNextFaceID();
         this.vertices = vertices;
         this.nextPointID = BigInt(vertices.length);
         this.nextLineID = 0n;
-        this.annotatedPoints = new Map<bigint, AnnotatedPoint>();
-        this.annotatedLines = new Map<bigint, AnnotatedLine>();
+        this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint>();
+        this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = principalNormal;
@@ -60,33 +61,37 @@ class Face3D {
         // centroid is a natural way to create the polygon geometry we need. 
 
         // Vector for translating the slab off of the underlying plane.
-        const principalOffset: Point3D = scalarMult(
+        const principalOffset: pt.Point3D = pt.scalarMult(
             principalNormal, paperThickness * offset * 0.5
         );
         // The centroid of the slab.
-        const centroid: Point3D = add(average(this.vertices), principalOffset);
+        const centroid: pt.Point3D = pt.add(
+            pt.average(this.vertices), principalOffset
+        );
         // Vector for offsetting half the thickness of the paper
-        const centerOffset: Point3D = scalarMult(
+        const centerOffset: pt.Point3D = pt.scalarMult(
             principalNormal, paperThickness * 0.5
         );
-        const centroidTop: Point3D = add(centroid, centerOffset);
-        const centroidBot: Point3D = subtract(centroid, centerOffset);
+        const centroidTop: pt.Point3D = pt.add(centroid, centerOffset);
+        const centroidBot: pt.Point3D = pt.subtract(centroid, centerOffset);
 
         // Number of vertices in this Face3D.
         const N: bigint = BigInt(this.vertices.length);
 
-        // Create mesh object from vertices.
+        // Create mesh points from all the vertices.
         const points: number[] = [];
         points.push(centroidTop.x, centroidTop.y, centroidTop.z); // 0
         points.push(centroidBot.x, centroidBot.y, centroidBot.z); // 1
         for (let i = 0n; i < N; i++) {
     
             // Find the projection of the vertex onto the slab's center plane.
-            const center: Point3D = add(vertices[Number(i)], principalOffset);
+            const center: pt.Point3D = pt.add(
+                vertices[Number(i)], principalOffset
+            );
 
             // Compute the top and bottom points.
-            const bot: Point3D = subtract(center, centerOffset);
-            const top: Point3D = add(center, centerOffset);
+            const bot: pt.Point3D = pt.subtract(center, centerOffset);
+            const top: pt.Point3D = pt.add(center, centerOffset);
 
             points.push(top.x, top.y, top.z); // Index 2*i + 2
             points.push(bot.x, bot.y, bot.z); // Index 2*i + 3
@@ -115,16 +120,18 @@ class Face3D {
         const faceGeometry = new THREE.BufferGeometry();
         faceGeometry.setAttribute(
             'position', 
-            new THREE.BufferAttribute(new Float64Array(points), 3)
+            new THREE.BufferAttribute(new Float32Array(points), 3)
         );
         faceGeometry.setIndex(
-            new THREE.BufferAttribute(new Uint16Array(triangles), 1)
+            new THREE.BufferAttribute(new Uint32Array(triangles), 1)
         );
+        faceGeometry.computeVertexNormals();
 
         // Create the mesh.
         const faceMaterial = new THREE.MeshBasicMaterial({
             color: 0xdea7eb,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            // roughness: 0.5
         });
         this.mesh = new THREE.Mesh(faceGeometry, faceMaterial);
     }
@@ -133,7 +140,7 @@ class Face3D {
         return this.mesh;
     }
 
-    public addAnnotatedPoint(point: Point3D): void {
+    public addAnnotatedPoint(point: pt.Point3D): void {
 
     }
 
@@ -151,11 +158,11 @@ class Face3D {
 
 
 
-    public containedInFace(point: Point3D): boolean {
+    public containedInFace(point: pt.Point3D): boolean {
         return false;
     }
 
-    public findNearestPoint(point: Point3D): bigint {
+    public findNearestPoint(point: pt.Point3D): bigint {
         return 0n;
     }
 
