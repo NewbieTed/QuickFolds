@@ -8,12 +8,15 @@ import {SHOW_LOOK_AT_PT_KEY} from './globalSettings.js';
 let isRotateSphereVisible = true;
 let isShiftKeyPressed = false;
 let isLeftMousePressed = false;
+let isPickPointButtonPressed = false;
 
 
-document.addEventListener('mousedown', onMouseDown);
 document.addEventListener('mouseup', onMouseUp);
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
+document.getElementById('pick-point-button').addEventListener('click', () => {
+  isPickPointButtonPressed = true;
+});
 
 // getter method to see if the sphere the camera looks at is visible
 function getIsRotateSphereVisible() {
@@ -30,12 +33,22 @@ function getIsLeftMousePressed() {
   return isLeftMousePressed;
 }
 
-// dom function that activates when a mouse button is pressed
-function onMouseDown(event) {
-  if (event.button === 0) {  // 0 is LMB
-    isLeftMousePressed = true;
-  }
+// getter method to see if the "pick a point" button is pressed
+function getIsPickPointButtonPressed() {
+  return isPickPointButtonPressed;
 }
+
+// reset after picking a point
+function resetIsPickPointButtonPressed() {
+  isPickPointButtonPressed = false;
+}
+
+// // dom function that activates when a mouse button is pressed
+// function onMouseDown(event) {
+//   if (event.button === 0) {  // 0 is LMB
+//     isLeftMousePressed = true;
+//   }
+// }
 
 // dom function that activates when a mouse button is released
 function onMouseUp(event) {
@@ -64,4 +77,5 @@ function onKeyUp(event) {
 
 
 
-export {getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed};
+
+export {getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed};
