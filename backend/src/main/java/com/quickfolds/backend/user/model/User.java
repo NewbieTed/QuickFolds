@@ -1,5 +1,9 @@
 package com.quickfolds.backend.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.quickfolds.backend.community.model.Origami;
+import jakarta.persistence.*;
+import lombok.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -9,7 +13,6 @@ import jakarta.persistence.GenerationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.OffsetDateTime;
 
 /**
@@ -36,6 +39,8 @@ public class User {
      * Unique username for the user.
      * Acts as a unique identifier for user login or interaction.
      */
+    @Getter
+    @Setter
     @Column(name = "username", nullable = false, unique = true)
     private String username;
 
@@ -43,6 +48,8 @@ public class User {
      * Encrypted password for the user.
      * This field is stored securely.
      */
+    @Getter
+    @Setter
     @Column(name = "password", nullable = false)
     private String password;
 
@@ -73,4 +80,5 @@ public class User {
      */
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+  
 }
