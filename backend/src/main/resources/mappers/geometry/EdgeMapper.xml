@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.quickfolds.backend.geometry.mapper.EdgeMapper">
+
+    <select id="getIdByIdInFace">
+        SELECT id FROM edge
+        WHERE (
+        face_1_id = #{faceId}
+        AND
+        id_in_face_1 = #{edgeIdInFace}
+        ) OR (
+        face_2_id = #{faceId}
+        AND
+        id_in_face_2 = #{edgeIdInFace}
+        )
+        LIMIT 1
+    </select>
+</mapper>

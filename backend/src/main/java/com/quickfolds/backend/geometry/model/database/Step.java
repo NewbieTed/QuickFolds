@@ -1,9 +1,5 @@
-package com.quickfolds.backend.user.model;
+package com.quickfolds.backend.geometry.model.database;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.quickfolds.backend.community.model.Origami;
-import jakarta.persistence.*;
-import lombok.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -13,22 +9,23 @@ import jakarta.persistence.GenerationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.OffsetDateTime;
 
 /**
- * Represents a user entity in the system.
- * Maps to the "users" table in the database.
+ * Represents a step in the process of creating an origami model.
+ * Maps to the "step" table in the database.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "step")
+public class Step {
 
     /**
-     * Primary key for the User table.
-     * Auto-generated value for each User record.
+     * Primary key for the Step table.
+     * Auto-generated value for each Step record.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,49 +33,51 @@ public class User {
     private Long id;
 
     /**
-     * Unique username for the user.
-     * Acts as a unique identifier for user login or interaction.
+     * Foreign key referencing the origami this step belongs to.
+     * Links this record to a specific origami in the "origami" table.
      */
-    @Getter
-    @Setter
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+    @Column(name = "origami_id", nullable = false)
+    private Long origamiId;
 
     /**
-     * Encrypted password for the user.
-     * This field is stored securely.
+     * Foreign key referencing the type of step (e.g., fold or annotate).
+     * Links to a predefined step type in the "step_type" table.
      */
-    @Getter
-    @Setter
-    @Column(name = "password", nullable = false)
-    private String password;
+    @Column(name = "step_type_id", nullable = false)
+    private Long stepTypeId;
 
     /**
-     * Identifier of the user who created this record.
+     * The step number within the origami sequence.
+     * Helps order steps for a given origami model.
+     */
+    @Column(name = "id_in_origami", nullable = false)
+    private int idInOrigami;
+
+    /**
+     * Identifier of the user who created this step record.
      * May be null if not explicitly set.
      */
     @Column(name = "created_by")
     private String createdBy;
 
     /**
-     * Identifier of the user who last updated this record.
+     * Identifier of the user who last updated this step record.
      * May be null if not explicitly set.
      */
     @Column(name = "updated_by")
     private String updatedBy;
 
     /**
-     * Timestamp when this user record was created.
+     * Timestamp when this step record was created.
      * Automatically set at the time of creation and not updatable.
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     /**
-     * Timestamp when this user record was last updated.
+     * Timestamp when this step record was last updated.
      * Updated automatically when the record is modified.
      */
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-  
 }

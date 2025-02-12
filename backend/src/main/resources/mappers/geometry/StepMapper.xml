@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.quickfolds.backend.geometry.mapper.StepMapper">
+
+    <resultMap id="StepResultMap" type="com.quickfolds.backend.geometry.model.database.Step">
+        <id property="id" column="id" />
+        <result property="origamiId" column="origami_id" />
+        <result property="stepTypeId" column="step_type_id" />
+        <result property="idInOrigami" column="id_in_origami" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+    <select id="getStepTypeByName" resultType="int">
+        SELECT id
+        FROM step_type
+        WHERE step_type_name = #{stepTypeName}
+        LIMIT 1
+    </select>
+
+
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Step">
+        INSERT INTO step (
+        origami_id,
+        step_type_id,
+        id_in_origami
+        <if test="step.createdBy != null">, created_by</if>
+        <if test="step.updatedBy != null">, updated_by</if>
+        <if test="step.createdAt != null">, created_at</if>
+        <if test="step.updatedAt != null">, updated_at</if>
+        ) VALUES (
+        #{step.origamiId},
+        #{step.stepTypeId},
+        #{step.idInOrigami},
+        <if test="step.createdBy != null">, #{step.createdBy}</if>
+        <if test="step.updatedBy != null">, #{step.updatedBy}</if>
+        <if test="step.createdAt != null">, #{step.createdAt}</if>
+        <if test="step.updatedAt != null">, #{step.updatedAt}</if>
+        )
+    </insert>
+
+
+    <insert id="addByFields" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO step (
+        origami_id,
+        step_type_id,
+        id_in_origami
+        <if test="createdBy != null">, created_by</if>
+        <if test="updatedBy != null">, updated_by</if>
+        ) VALUES (
+        #{origamiId},
+        #{stepTypeId},
+        #{idInOrigami}
+        <if test="createdBy != null">
+            , #{createdBy}
+        </if>
+        <if test="updatedBy != null">
+            , #{updatedBy}
+        </if>
+        );
+    </insert>
+
+</mapper>
