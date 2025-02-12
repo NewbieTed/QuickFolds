@@ -12,12 +12,12 @@ import java.util.List;
 @Setter
 public class AnnotationRequest {
 
-    @NotNull(message = "Field 'origamiId' in Annotate must not be null")
-    @Positive(message = "Field 'origamiId' in Annotate must be positive")
+    @NotNull(message = "Field 'origamiId' in Annotate Request must not be null")
+    @Positive(message = "Field 'origamiId' in Annotate Request must be positive")
     private Long origamiId;
 
-    @NotNull(message = "Field 'stepIdInOrigami' in Annotate must not be null")
-    @Positive(message = "Field 'stepIdInOrigami' in Annotate must be positive")
+    @NotNull(message = "Field 'stepIdInOrigami' in Annotate Request must not be null")
+    @Positive(message = "Field 'stepIdInOrigami' in Annotate Request must be positive")
     private Integer stepIdInOrigami;
 
     @Valid

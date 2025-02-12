@@ -25,9 +25,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // Permit signup and signin endpoints
-                        .requestMatchers("/user/signup", "/user/login").permitAll()
+//                        .requestMatchers("/user/signup", "/user/login", "/geometry/annotate").permitAll()
                         // Protect any other endpoints
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Use the injected filter
