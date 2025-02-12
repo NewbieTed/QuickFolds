@@ -8,10 +8,7 @@ import com.quickfolds.backend.geometry.service.GeometryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -20,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class GeometryController {
 
     private final GeometryService geometryService;
-    private final GeometryMapper geometryMapper;
 
 
     @GetMapping("/fold")
@@ -33,7 +29,7 @@ public class GeometryController {
         return geometryService.fold(request);
     }
 
-    @GetMapping("/annotate")
+    @PostMapping("/annotate")
     public BaseResponse<Boolean> annotate(@Valid @RequestBody AnnotationRequest request) {
         // TODO: More checks needed
         if (request == null) {
@@ -50,8 +46,8 @@ public class GeometryController {
                     "Field 'stepIdInOrigami' in Annotate must not be null");
         }
 
-//        return BaseResponse.success();
-        return  geometryService.annotate(request);
+        return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "TEST");
+//        return  geometryService.annotate(request);
     }
 
     @GetMapping("/get/step")

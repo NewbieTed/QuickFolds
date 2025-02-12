@@ -153,10 +153,10 @@ public class GeometryService {
             }
         } catch (PersistenceException e) {
             return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                    "SQL error occurred" + e.getMessage());
+                    "SQL error occurred: " + e.getMessage());
         } catch (Exception e) {
             return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                    "Unexpected error occurred" + e.getMessage());
+                    "Unexpected error occurred: " + e.getMessage());
         }
         return BaseResponse.success();
     }
