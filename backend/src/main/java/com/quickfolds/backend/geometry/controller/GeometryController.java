@@ -8,6 +8,7 @@ import com.quickfolds.backend.geometry.service.GeometryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -16,11 +17,12 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class GeometryController {
 
+
     private final GeometryService geometryService;
 
 
     @GetMapping("/fold")
-    public BaseResponse<Boolean> fold(@Valid @RequestBody FoldRequest request) {
+    public ResponseEntity<BaseResponse<Boolean>> fold(@Valid @RequestBody FoldRequest request) {
 
         if (request == null) {
             return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
@@ -30,8 +32,9 @@ public class GeometryController {
     }
 
     @PostMapping("/annotate")
-    public BaseResponse<Boolean> annotate(@Valid @RequestBody AnnotationRequest request) {
+    public ResponseEntity<BaseResponse<Boolean>> annotate(@Valid @RequestBody AnnotationRequest request) {
         // TODO: More checks needed
+        System.out.println("Inside annotate controller method");
         if (request == null) {
             return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
         }
@@ -46,12 +49,12 @@ public class GeometryController {
                     "Field 'stepIdInOrigami' in Annotate must not be null");
         }
 
-        return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "TEST");
-//        return  geometryService.annotate(request);
+//        return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "TEST");
+        return  geometryService.annotate(request);
     }
 
     @GetMapping("/get/step")
-    public BaseResponse<Boolean> getStep(@RequestBody long request) {
+    public ResponseEntity<BaseResponse<Boolean>> getStep(@RequestBody long request) {
 
 
         return BaseResponse.success();

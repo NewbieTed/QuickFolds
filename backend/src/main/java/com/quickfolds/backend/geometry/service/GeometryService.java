@@ -14,6 +14,7 @@ import com.quickfolds.backend.geometry.model.dto.*;
 import jakarta.persistence.PersistenceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +31,7 @@ public class GeometryService {
     private final AnnotatePointMapper annotatePointMapper;
 
 
-    public BaseResponse<Boolean> fold(FoldRequest request) {
+    public ResponseEntity<BaseResponse<Boolean>> fold(FoldRequest request) {
 //        List<Integer> deletedFaces = request.getDeletedFaces();
 //        List<FaceFoldRequest> faces = request.getFaces();
 //
@@ -42,7 +43,7 @@ public class GeometryService {
     }
 
     @Transactional
-    public BaseResponse<Boolean> annotate(AnnotationRequest request) {
+    public ResponseEntity<BaseResponse<Boolean>> annotate(AnnotationRequest request) {
         long origamiId = request.getOrigamiId();
         int stepIdInOrigami = request.getStepIdInOrigami();
         List<FaceAnnotateRequest> faces = request.getFaces();
@@ -71,7 +72,7 @@ public class GeometryService {
 
                 Long stepId = stepMapper.addByObj(newStep);
 
-                List<Integer> deletedLinesIdInFace = face.getAnnotations().getDeletedLines();
+                List<Integer> deletedLinesIdInFace = annotations.getDeletedLines();
                 int numUpdatedRows = annotateLineMapper.deleteMultipleByIdInFace(faceId,
                         deletedLinesIdInFace, stepId);
                 if (numUpdatedRows > deletedLinesIdInFace.size()) {
