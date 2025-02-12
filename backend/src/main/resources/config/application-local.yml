@@ -8,3 +8,15 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+jwt:
+  secret: ${JWT_SECRET:secret}
+
+logging:
+  level:
+    root: DEBUG # Root log
+    com.quickfolds.backend: DEBUG # Backend log
+    org.apache.coyote.http11.Http11InputBuffer: DEBUG # Incoming HTTP requests
+    org.springframework.security: DEBUG # Security log
+    org.springframework.jdbc.datasource.init: DEBUG # SQL init log
+    org.springframework.jdbc.core: DEBUG # SQL log
