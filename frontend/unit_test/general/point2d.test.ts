@@ -20,21 +20,21 @@ import * as assert from 'assert';
 
 describe('Basic Creation Tests', () => {
   it('Test Constructor', () => {
-    let pt: Point2D = createPoint2D(1, 2);
+    const pt: Point2D = createPoint2D(1, 2);
     assert.strictEqual(pt.x, 1);
     assert.strictEqual(pt.y, 2);
     assert.equal(pt.context, "Annotation");
   });
 
   it('Test Constructor Negative', () => {
-    let pt: Point2D = createPoint2D(-2, -1.5);
+    const pt: Point2D = createPoint2D(-2, -1.5);
     assert.strictEqual(pt.x, -2);
     assert.strictEqual(pt.y, -1.5);
   });
 
   it('Test copyPoint', () => {
-    let pt: Point2D = createPoint2D(1, 2);
-    let copyPt: Point2D = copyPoint(pt);
+    const pt: Point2D = createPoint2D(1, 2);
+    const copyPt: Point2D = copyPoint(pt);
     assert.notStrictEqual(copyPt, pt);
   });
 });
@@ -43,8 +43,8 @@ describe('Basic Creation Tests', () => {
 
 describe('Basic Operations Tests', () => {
   it('Test add', () => {
-    let pt1: Point2D = createPoint2D(1, 2);
-    let pt2: Point2D = createPoint2D(3, 4);
+    const pt1: Point2D = createPoint2D(1, 2);
+    const pt2: Point2D = createPoint2D(3, 4);
 
     let resultPt: Point2D = add(pt1, pt2);
     assert.strictEqual(resultPt.x, 4);
@@ -56,8 +56,8 @@ describe('Basic Operations Tests', () => {
   });
 
   it('Test Subtract', () => {
-    let pt1: Point2D = createPoint2D(1, 2);
-    let pt2: Point2D = createPoint2D(3, 10);
+    const pt1: Point2D = createPoint2D(1, 2);
+    const pt2: Point2D = createPoint2D(3, 10);
 
     let resultPt: Point2D = subtract(pt1, pt2);
     assert.strictEqual(resultPt.x, -2);
@@ -71,7 +71,7 @@ describe('Basic Operations Tests', () => {
 
 
   it('Test Scalar Mult', () => {
-    let pt1: Point2D = createPoint2D(1, 2);
+    const pt1: Point2D = createPoint2D(1, 2);
     let result: Point2D = scalarMult(pt1, 2);
     assert.equal(result.x, 2);
     assert.equal(result.y, 4);
@@ -85,7 +85,7 @@ describe('Basic Operations Tests', () => {
 
 
   it('Test Scalar Div', () => {
-    let pt1: Point2D = createPoint2D(1, 2);
+    const pt1: Point2D = createPoint2D(1, 2);
     let result: Point2D = scalarDiv(pt1, 2);
     assert.equal(result.x, 0.5);
     assert.equal(result.y, 1);
