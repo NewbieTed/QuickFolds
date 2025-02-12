@@ -12,6 +12,7 @@ let isPickPointButtonPressed = false;
 
 
 document.addEventListener('mouseup', onMouseUp);
+document.addEventListener('mousedown', onMouseDown);
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
 document.getElementById('pick-point-button').addEventListener('click', () => {
@@ -44,11 +45,11 @@ function resetIsPickPointButtonPressed() {
 }
 
 // // dom function that activates when a mouse button is pressed
-// function onMouseDown(event) {
-//   if (event.button === 0) {  // 0 is LMB
-//     isLeftMousePressed = true;
-//   }
-// }
+function onMouseDown(event) {
+  if (event.button === 0) {  // 0 is LMB
+    isLeftMousePressed = true;
+  }
+}
 
 // dom function that activates when a mouse button is released
 function onMouseUp(event) {

@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed} from './editorInputCapture.js';
-import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from './globalSettings.js';
+import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -134,19 +134,19 @@ function onMouseUp(event) {
 
 // dom function that activates when a mouse button is pressed
 function onMouseDown(event) {
-	if (!getIsPickPointButtonPressed()) return;
-  
+	//if (!getIsPickPointButtonPressed()) return;
+
 	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  
+
 	raycaster.setFromCamera(mouse, camera);
 	const intersects = raycaster.intersectObjects(faces);
-  
+
 	if (intersects.length > 0) {
 	  const intersect = intersects[0];
 	  const point = intersect.point;
 	  console.log(`Clicked coordinates: x=${point.x.toFixed(2)}, y=${point.y.toFixed(2)}, z=${point.z.toFixed(2)}`);
-  
+
 	  intersect.object.material.color.set(0xffff00);
 	  resetIsPickPointButtonPressed(); // Reset after picking
 	}
@@ -195,6 +195,7 @@ function animate() {
 			lookAtSphere.position.set(camRotatePt.x, camRotatePt.y, camRotatePt.z)
 		} else {
 			// do camera rotation
+			console.log("camera rot");
 			groundAngle += diffX * 0.1;
 			upperAngle += diffY * 0.05;
 			upperAngle = Math.max(-Math.PI/2, upperAngle);
