@@ -1,42 +1,27 @@
 package com.quickfolds.backend.geometry.controller;
 
+import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.geometry.model.dto.AnnotationRequest;
 import com.quickfolds.backend.geometry.service.GeometryService;
-import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.user.auth.JwtAuthenticationFilter;
-import com.quickfolds.backend.user.auth.JwtUtil;
-import com.quickfolds.backend.user.auth.TestSecurityConfig;
-import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@Import(TestSecurityConfig.class)
-@AutoConfigureMockMvc(addFilters = false) // Disable filters
+@WebMvcTest(controllers = GeometryController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class GeometryControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockBean
-    private JwtUtil jwtUtil;
-
-    @MockBean
-    private EntityManagerFactory entityManagerFactory;
 
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -44,14 +29,9 @@ public class GeometryControllerTest {
     @MockBean
     private GeometryService geometryService;
 
-    @Autowired
-    private ApplicationContext context;
 
     @Test
     public void handlesValidAnnotateRequest() throws Exception {
-        // Generate a mock CSRF token
-        HttpSessionCsrfTokenRepository csrfTokenRepository = new HttpSessionCsrfTokenRepository();
-        CsrfToken csrfToken = csrfTokenRepository.generateToken(null);
 
         Mockito.when(geometryService.annotate(Mockito.any(AnnotationRequest.class)))
                 .thenReturn(BaseResponse.success(true));
@@ -89,20 +69,13 @@ public class GeometryControllerTest {
 
         mockMvc.perform(post("/geometry/annotate")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody)
-                        .header(csrfToken.getHeaderName(), csrfToken.getToken())) // Add the CSRF token
+                        .content(requestBody))
                 .andExpect(status().isOk());
     }
 
 
     @Test
     public void handlesInvalidAnnotateRequest_MissingOrigamiId() throws Exception {
-        HttpSessionCsrfTokenRepository csrfTokenRepository = new HttpSessionCsrfTokenRepository();
-        CsrfToken csrfToken = csrfTokenRepository.generateToken(null);
-
-//        Mockito.when(geometryService.annotate(Mockito.any(AnnotationRequest.class)))
-//                .thenReturn(BaseResponse.success(true));
-
         String invalidRequest = """
                 {
                       "stepIdInOrigami": 2,
@@ -144,7 +117,6 @@ public class GeometryControllerTest {
 
         mockMvc.perform(post("/geometry/annotate")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(csrfToken.getHeaderName(), csrfToken.getToken())
                         .content(invalidRequest))
                 .andExpect(status().isBadRequest());
     }
