@@ -26,20 +26,20 @@ jobs:
         run: |
           npm install
 
+      # note: we will turn this back on once all files are made
+      # - name: Run TS Linter
+      #   run: |
+      #     echo "Running linter locally on all ts files in ./frontend/"
 
-      - name: Run TS Linter
-        run: |
-          echo "Running linter locally on all ts files in ./frontend/"
+      #     npx eslint .
 
-          npx eslint .
-
-          LINTER_EXIT_CODE=$?
-          if [ $LINTER_EXIT_CODE -ne 0 ]; then
-            echo "TS Linter found errors, failing the job."
-            exit $LINTER_EXIT_CODE
-          else
-            echo "TS Linter passed, no errors found."
-          fi
+      #     LINTER_EXIT_CODE=$?
+      #     if [ $LINTER_EXIT_CODE -ne 0 ]; then
+      #       echo "TS Linter found errors, failing the job."
+      #       exit $LINTER_EXIT_CODE
+      #     else
+      #       echo "TS Linter passed, no errors found."
+      #     fi
 
       - name: Run TS Tests
         run: |

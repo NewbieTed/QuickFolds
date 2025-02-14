@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotateLineMapper">
+
+    <resultMap id="AnnotatedLineResultMap" type="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
+        <id property="id" column="id" />
+        <result property="stepId" column="step_id" />
+        <result property="faceId" column="face_id" />
+        <result property="point1Id" column="point_1_id" />
+        <result property="point2Id" column="point_2_id" />
+        <result property="idInFace" column="id_in_face" />
+        <result property="deletedStepId" column="deleted_step_id" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+    <select id="getMultipleId" resultType="java.lang.Long">
+        SELECT id FROM annotated_line
+        WHERE face_id = #{faceId}
+        AND id_in_face IN (
+        <foreach collection="idsInFace" item="idInFace" separator=",">
+            #{idInFace}
+        </foreach>
+        )
+    </select>
+
+
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
+        INSERT INTO annotated_line (
+        step_id,
+        face_id,
+        point_1_id,
+        point_2_id,
+        id_in_face,
+        deleted_step_id
+        <if test="annotatedLine.createdBy != null">, created_by</if>
+        <if test="annotatedLine.updatedBy != null">, updated_by</if>
+        <if test="annotatedLine.createdAt != null">, created_at</if>
+        <if test="annotatedLine.updatedAt != null">, updated_at</if>
+        ) VALUES (
+        #{annotatedLine.stepId},
+        #{annotatedLine.faceId},
+        #{annotatedLine.point1Id},
+        #{annotatedLine.point2Id},
+        #{annotatedLine.idInFace},
+        #{annotatedLine.deletedStepId}
+        <if test="annotatedLine.createdBy != null">, #{annotatedLine.createdBy}</if>
+        <if test="annotatedLine.updatedBy != null">, #{annotatedLine.updatedBy}</if>
+        <if test="annotatedLine.createdAt != null">, #{annotatedLine.createdAt}</if>
+        <if test="annotatedLine.updatedAt != null">, #{annotatedLine.updatedAt}</if>
+        )
+    </insert>
+
+    <update id="deleteMultipleByIdInFace">
+        UPDATE annotated_line
+        <set>
+            deleted_step_id = #{deletedStepId}
+        </set>
+        WHERE face_id = #{faceId}
+        AND deleted_step IS null
+        AND id_in_face IN (
+        <foreach collection="idsInFace" item="idInFace" separator=",">
+            #{idInFace}
+        </foreach>
+        )
+    </update>
+
+
+
+</mapper>
