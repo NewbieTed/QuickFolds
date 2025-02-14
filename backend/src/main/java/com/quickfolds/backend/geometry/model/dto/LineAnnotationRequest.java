@@ -2,9 +2,13 @@ package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class LineAnnotationRequest {
     @NotNull(message = "Field 'idInFace' in Line Annotation must not be null")
     @Positive(message = "Field 'idInFace' in Line Annotation must be positive")

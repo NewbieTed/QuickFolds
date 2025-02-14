@@ -2,11 +2,15 @@ package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Annotation {
     @Valid
     private List<PointAnnotationRequest> points;
