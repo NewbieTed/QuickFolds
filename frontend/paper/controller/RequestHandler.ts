@@ -6,12 +6,15 @@
  * and frontend data (that is, serialization and deserialization).
  */
 
+import { serializeAddPoint } from "./Serializer";
 
 
-async function addAnnotationPointToDB(point: Point2D, faceId: bigint) {
+
+export async function addAnnotationPointToDB(point: Point2D, faceId: bigint) {
   // add points locally
   const url = 'https://your-api-endpoint.com';
-  const data = Serializer.serializeAddPoint(point, faceId);
+  const idOfPoint: SceneManager.getIdFrom
+  const data = serializeAddPoint(point, faceId);
 
 
   try {

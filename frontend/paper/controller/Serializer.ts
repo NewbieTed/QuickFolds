@@ -3,7 +3,7 @@
 
 
 
-function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigint, isPointOnEdge: bigint | null) {
+export function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigint, isPointOnEdge: bigint | null) {
   let origamiID: bigint = SceneManager.getOrigamiID();
   let stepID: bigint = SceneManager.getStepID();
 
@@ -35,7 +35,7 @@ function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigint, isPo
 
 
 
-function serializeAddLine(point1Id: bigint, point2Id: bigint, newAnnoLineId: bigint, faceId: bigint | null) {
+export function serializeAddLine(point1Id: bigint, point2Id: bigint, newAnnoLineId: bigint, faceId: bigint | null) {
   let origamiID: bigint = SceneManager.getOrigamiID();
   let stepID: bigint = SceneManager.getStepID();
 
