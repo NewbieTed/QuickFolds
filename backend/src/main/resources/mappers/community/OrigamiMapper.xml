@@ -6,4 +6,10 @@
 <mapper namespace="com.quickfolds.backend.origami.mapper.OrigamiMapper">
 
 
+    <select id="getPublicOrigamiIds" resultType="java.lang.Long">
+        SELECT id FROM origami
+        WHERE
+        is_public = true
+    </select>
+
 </mapper>
