@@ -26,9 +26,10 @@
 }
 
 .card {
-  background-color: rgb(66, 168, 107);
-  width: 40vb;
-  height: 60vb;
+  background-color: rgb(130, 130, 130);
+  width: 30vb;
+  height: 40vb;
+  padding: 2%;
 }
 
 body {
