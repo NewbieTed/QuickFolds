@@ -4,7 +4,7 @@
 
 
 import * as THREE from 'three';
-import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed} from './editorInputCapture.js';
+import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed, resetIsDeletePointButtonPressed} from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
 
 document.addEventListener('keydown', onKeyDown);
@@ -55,6 +55,17 @@ if (prevRotateChange) {
 	camera = PERSPECTIVE_CAMERA;
 }
 
+// window resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    // update renderer size
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    console.log("Window resized: Updated camera & renderer");
+});
+
 
 
 // create plane
@@ -70,9 +81,17 @@ const lookAtSphere = new THREE.Mesh(geometrySphere, whiteMaterial);
 lookAtSphere.visible = getIsRotateSphereVisible();
 
 
+// raycast test pt
+const raycastSphere = new THREE.SphereGeometry(0.05);
+const blueMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
+const raySphere = new THREE.Mesh(raycastSphere, blueMaterial);
+raySphere.visible = true;
+
+
 // put stuff in scene
 scene.add( plane );
 scene.add(lookAtSphere);
+scene.add(raySphere);
 plane.rotateX(90);
 camera.position.z = 5;
 
@@ -132,25 +151,68 @@ function onMouseUp(event) {
   }
 }
 
+function getClosestAnnotationPointToMouse(points, raycaster) {
+    let closestPoint = null;
+    let minDistance = Infinity;
+
+    points.forEach(point => {
+        const pointVector = new THREE.Vector3(point.x, point.y, point.z);
+        const distance = raycaster.ray.distanceToPoint(pointVector);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestPoint = point;
+        }
+    });
+
+    // Define a threshold for clicking accuracy (e.g., 0.1 units in 3D space)
+    return minDistance < 0.1 ? closestPoint : null;
+}
+
 // dom function that activates when a mouse button is pressed
 function onMouseDown(event) {
-	//if (!getIsPickPointButtonPressed()) return;
+	if (getIsPickPointButtonPressed()) {
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1.015;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.02;
 
-	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+		raycaster.setFromCamera(mouse, camera);
+		const intersects = raycaster.intersectObjects(faces);
 
-	raycaster.setFromCamera(mouse, camera);
-	const intersects = raycaster.intersectObjects(faces);
 
-	if (intersects.length > 0) {
-	  const intersect = intersects[0];
-	  const point = intersect.point;
-	  console.log(`Clicked coordinates: x=${point.x.toFixed(2)}, y=${point.y.toFixed(2)}, z=${point.z.toFixed(2)}`);
 
-	  intersect.object.material.color.set(0xffff00);
-	  resetIsPickPointButtonPressed(); // Reset after picking
-	}
-  }
+		if (intersects.length > 0) {
+			const intersect = intersects[0];
+			const point = intersect.point;
+				raySphere.position.set(point.x, point.y, point.z);
+			console.log(`Clicked coordinates: x=${point.x.toFixed(2)}, y=${point.y.toFixed(2)}, z=${point.z.toFixed(2)}`);
+
+			intersect.object.material.color.set(0xffff00);
+			resetIsPickPointButtonPressed(); // Reset after picking
+		}
+	} else if (getIsDeletePointButtonPressed()) {
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+
+        raycaster.setFromCamera(mouse, camera);
+        
+        // get the list of annotation points
+        const annotationPoints = getAllAnnotationPoints();
+
+        // find the closest annotation point to the mouse click
+        const closestPoint = getClosestAnnotationPointToMouse(annotationPoints, raycaster);
+
+        if (closestPoint) {
+            // remove the closest annotation point
+            removeAnnotationPoint(closestPoint);
+            console.log(`Deleted annotation point at: x=${closestPoint.x}, y=${closestPoint.y}, z=${closestPoint.z}`);
+        } else {
+            console.log('No annotation point found near the click.');
+        }
+
+        resetIsDeletePointButtonPressed(); // Reset the delete button state
+    }
+	
+}
 
 // dom function that runs when the mouse move
 document.onmousemove = (event) => {

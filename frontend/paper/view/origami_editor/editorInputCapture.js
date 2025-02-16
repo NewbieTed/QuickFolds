@@ -9,6 +9,7 @@ let isRotateSphereVisible = true;
 let isShiftKeyPressed = false;
 let isLeftMousePressed = false;
 let isPickPointButtonPressed = false;
+let isDeletePointButtonPressed = false;
 
 
 document.addEventListener('mouseup', onMouseUp);
@@ -17,6 +18,9 @@ document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
 document.getElementById('pick-point-button').addEventListener('click', () => {
   isPickPointButtonPressed = true;
+});
+document.getElementById('delete-point-button').addEventListener('click', () => {
+  isDeletePointButtonPressed = true;
 });
 
 // getter method to see if the sphere the camera looks at is visible
@@ -39,12 +43,22 @@ function getIsPickPointButtonPressed() {
   return isPickPointButtonPressed;
 }
 
+// getter method to see if the "delete a point" button is pressed
+function getIsDeletePointButtonPressed() {
+  return isDeletePointButtonPressed;
+}
+
 // reset after picking a point
 function resetIsPickPointButtonPressed() {
   isPickPointButtonPressed = false;
 }
 
-// // dom function that activates when a mouse button is pressed
+// reset after deleting a point
+function resetIsDeletePointButtonPressed() {
+  isDeletePointButtonPressed = false;
+}
+
+// dom function that activates when a mouse button is pressed
 function onMouseDown(event) {
   if (event.button === 0) {  // 0 is LMB
     isLeftMousePressed = true;
@@ -79,4 +93,4 @@ function onKeyUp(event) {
 
 
 
-export {getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed};
+export {getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed, resetIsDeletePointButtonPressed};
