@@ -5,65 +5,413 @@
  * making appropriate calls to backend through the RequestHandler.
  */
 
-// import {getFace3dFromId} from "../view/SceneManager"
-import {addAnnotationPointToDB} from "./RequestHandler";
 
 
-// just give me the raycast shot point, and the plane it hit, i will calculate
-// the rest (ie translated onto flat plane, 2d cal, etc)
-async function addAnnotationPoint(point: Point3D, faceId: bigint) {
+import * as THREE from 'three';
+import { Face3D } from "../geometry/Face3D";
+import { Face2D } from '../geometry/Face2D'; // export Face 2d
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine } from "../geometry/Point";
+import {addAnnotationPointToDB, addAnnotationLineToDB, deleteAnnotationLineToDB, deleteAnnotationPointToDB} from "./RequestHandler";
+import * as pt from "../geometry/Point";
+
+
+
+/**
+ * Returns a boolean as to whether the provided object is a Point3D class
+
+ * @param obj - any object you want to check
+ * @returns - true/false whether object can be treated as a Point3D
+ */
+function isPoint3D(obj: any): obj is Point3D {
+  return (
+    obj &&
+    typeof obj.x === 'number' &&
+    typeof obj.y === 'number' &&
+    typeof obj.z === 'number'
+  );
+}
+
+/**
+ * Given two basis vectors in 3 space, and a target point,
+ * returns the coordinates using the basis to get to the target point,
+ * or null if there is no solution
+ *
+ * ux + vy = b
+ * where the function returns {u, v}
+ *
+ *
+ * @param x1 - basis 1 x value
+ * @param y1 - basis 1 y value
+ * @param z1 - basis 1 z value
+ * @param x2 - basis 2 x value
+ * @param y2 - basis 2 y value
+ * @param z2 - basis 2 z value
+ * @param bx - target x value
+ * @param by - target y value
+ * @param bz - target z value
+ * @returns  given ux + vy = b; where u, v, b in R3. returns {u, v} or null if no sol
+ */
+export function solveBasisSystem(
+  x1: number, y1: number, z1: number,
+  x2: number, y2: number, z2: number,
+  bx: number, by: number, bz: number
+): { alpha: number, beta: number } | null{
+
+  // Calculate the determinant of the coefficient matrix
+  const det = x1 * y2 - x2 * y1;
+
+  // Use Cramer's rule to calculate alpha and beta
+  const detAlpha = bx * y2 - x2 * by;  // Replace first column with bx, by
+  const detBeta = x1 * bz - bx * z1;   // Replace second column with bx, bz
+
+  const alpha = detAlpha / det;
+  const beta = detBeta / det;
+
+  // system is overdetermined, so check that z values match
+  if (Math.abs((z1 * alpha + z2 * beta) - bz) > 0.01) {
+    return null; // system undetermined
+  }
+
+  return { alpha, beta };
+}
+
+
+/**
+ * PUT in GeomeryModule
+ * takes a 3d point and projects it onto the face3d start position. intended for when hitting
+ * a layer on the render since these planes have an offset
+ * @param point - the point to be projected
+ * @param face3d - the plane to be projected on
+ * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
+ */
+function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
+  const points: THREE.Vector3[] = [];
+
+  // TODO: ask hady to give me 3 vertices
+  for (let i = 0; i < 3; i++) {
+    points.push(new THREE.Vector3(face3d.vertices[0].x, face3d.vertices[0].y, face3d.vertices[0].z));
+  }
+
+  // idea is to create a plane as Three.js has a project point method
+  const plane = new THREE.Plane();
+  plane.setFromCoplanarPoints(points[0], points[1], points[2]);
+
+  const projectedPoint = new THREE.Vector3();
+  const originalPtThreeVerison = new THREE.Vector3(point.x, point.y, point.z);
+  plane.projectPoint(originalPtThreeVerison, projectedPoint);
+
+  // create our version of 3d point
+  const translatedBackPt: Point3D = createPoint3D(projectedPoint.x,
+                                                  projectedPoint.y,
+                                                  projectedPoint.z
+                                                );
+
+  if (!face3d.containedInFace(translatedBackPt)) {
+    console.error("Point is not on plane when projected");
+    return null;
+  }
+  return translatedBackPt;
+}
+
+/**
+ * PUT in PaperModule
+ * take a 3d point on the layered version of face3d (given with faceid),
+ * return the corresponding 2d point in the paper map version
+ * @param point - the 3d point to translate to 2d
+ * @param faceId - the faceId the point lines on
+ * @returns the corresponding point2d, or null if the 3d point isn't on the face
+ */
+function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
+  let face3d: Face3D = getFace3dFromId(faceId);
+  let face2d: Face2D = getFace2dFromId(faceId);
+
+  return processTransationFrom3dTo2d(point, face3d, face2d);
+}
+
+export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
+  let idMap : Map<bigint, pt.AnnotatedPoint> = face3d.annotatedPoints; // fine, add map access
+  let counter : bigint = 0n;
+  let points : Point3D[] = [];
+  let pointsId : bigint[] = [];
+  for (let [pointId, annoPoint] of idMap) {
+    if (counter >= 3n) {
+      break;
+    }
+    if (isPoint3D(annoPoint.point)) {
+      points.push(annoPoint.point);
+      pointsId.push(pointId);
+    }
+
+    counter++;
+  }
+
+  const basis1 : Point3D = createPoint3D(
+    points[1].x - points[0].x,
+    points[1].y - points[0].y,
+    points[1].z - points[0].z,
+  );
+
+  const basis2 : Point3D = createPoint3D(
+    points[2].x - points[0].x,
+    points[2].y - points[0].y,
+    points[2].z - points[0].z,
+  );
+
+  let basisResult = solveBasisSystem(
+  basis1.x, basis1.y, basis2.z,
+  basis2.x, basis2.y, basis2.z,
+  point.x, point.y, point.z
+  );
+
+  if (basisResult == null) {
+    return null;
+  }
+
+
+  // because our problem is isometric, use the same coordinates for our
+  // new basis vectors rotated on the 2d plane
+  const point0in2D : Point2D = face2d.annotatedPoints.get(pointsId[0]);
+  const point1in2D : Point2D = face2d.annotatedPoints.get(pointsId[1]);
+  const point2in2D : Point2D = face2d.annotatedPoints.get(pointsId[2]);
+
+  const basis1in2d : Point2D = createPoint2D(
+    point1in2D.x - point0in2D.x,
+    point1in2D.y - point0in2D.y
+  );
+
+  const basis2in2d : Point2D = createPoint2D(
+    point2in2D.x - point0in2D.x,
+    point2in2D.y - point0in2D.y
+  );
+
+  const coverted2dPoint = createPoint2D(
+    basis1in2d.x * basisResult.alpha +  basis2in2d.x * basisResult.beta,
+    basis1in2d.y * basisResult.alpha +  basis2in2d.y * basisResult.beta,
+  );
+
+  return coverted2dPoint;
+}
+
+
+
+// paper graph to get face 2d
+function getFace2dFromId(id: bigint) {
+  return Face2D();
+}
+
+
+// ScreenManager to get face 3d
+function getFace3dFromId(id: bigint) {
+  return Face3D();
+}
+
+
+/**
+ * Given a provided point (ie you can provided the layered shot, no need to
+ * project), and a face id, updates all frontend systems and backend systems
+ * with adding a new annotation point
+ * @param point - the point to be added [note: will be projected onto face]
+ * @param faceId - the face to add the point to
+ * @returns either true, or a message about while the action failed
+ */
+async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<string | true> {
   // add points to frontend
-
-
-  // todo: add locking here
 
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D = getFace3dFromId(faceId);
-  let flattedPoint: Point3D = GeomeryModule.translatePointToFace(point, face3d);
-  face3d.addAnnotatedPoint(flattedPoint);
+  let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
+  if (flattedPoint == null) {
+    console.error("Point creation isn't on plane");
+    return "Point creation isn't on plane";
+  }
+  let pointId: bigint = face3d.addAnnotatedPoint(flattedPoint);
+  let isPointOnEdge = null; // for now, assume no edge points;
 
   // add annotated point to face2d [ie in paper module]
-  let face2d: Face2D = PaperModule.getFace2dFromId(faceId);
-  let getTranslated2dPoint: Point2D = PaperModule.translate3dTo2d(flattedPoint);
+  let face2d: Face2D = getFace2dFromId(faceId);
+  let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
+
+  if (getTranslated2dPoint == null) {
+    console.error("Error translating to 2d");
+    return "Error translating to 2d";
+  }
   face2d.addAnnotatedPoint(getTranslated2dPoint);
-  let result: boolean = await addAnnotationPointToDB(flattedPoint, faceId);
+  let result: boolean = await addAnnotationPointToDB(getTranslated2dPoint, faceId, pointId, isPointOnEdge);
+
+  if (!result) {
+    console.error("Error occured with adding point to DB");
+    return "Error occured with adding point to DB";
+  }
+
+  SceneManager.IncrementStepID();
+
+  return result;
+}
+
+/**
+ * Given a provided point id, and face the point is in, updates all frontend systems
+ * and backend systems with deleting the annotaiton point
+ * Note: pointId cannot be apart of any annotated line, or it will return a fail
+ * @param point - the point to be added [note: will be projected onto face]
+ * @param faceId - the face to add the point to
+ * @returns either true, or a message about while the action failed
+ */
+async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) {
+  // check to make sure point isn't being used in line
+  // user can only remove a "hanging" (ie unlined) point
+  if (lineUsesPoint(faceId, pointId)) {
+    return null;
+  }
+
+
+  // add annotation point to face3d [ie in SceneManager]
+  let face3d: Face3D = getFace3dFromId(faceId);
+
+  face3d.delAnnotatedPoint(pointId);
+  let result: boolean = await deleteAnnotationPointToDB(faceId, pointId);
+
+  if (!result) {
+    console.error("Error occured with adding point to DB");
+    return null;
+  }
+
+  SceneManager.IncrementStepID();
+
+  return result;
+}
+
+
+/**
+ * Given two provided point ids, and face the point is in, updates all frontend
+ * and backend systems with creating a new annotation line
+ * Note: system will return a fail if the same point is provided or
+ *       annotation line already exists (ie you try to recreate an existing line)
+ * @param point1Id - the id of a point in the line
+ * @param point2Id - the id of the other point in the line
+ * @param faceId - the id of the face the line is in
+ * @returns either true, or a message about while the action failed
+ */
+async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) {
+  // add points to frontend
+
+  // add annotation point to face3d [ie in SceneManager]
+  let face3d: Face3D = getFace3dFromId(faceId);
+
+  if (point1Id == point2Id || false) {
+    return false; // todo: update will fail
+  }
+
+  if (doesLineAlreadyExist(point1Id, point2Id, faceId)) {
+    return "Line already exists";
+  }
+
+
+  // todo: check line doesn't already exist
+  const minId : bigint = intMin(point1Id, point2Id);
+  const maxId : bigint = intMax(point1Id, point2Id);
+
+  let annotationLineId: bigint = face3d.addAnnotatedLine(minId, maxId);
+
+  let result: boolean = await addAnnotationLineToDB(minId, maxId, annotationLineId, faceId);
 
 
   SceneManager.IncrementStepID();
 }
 
-// assumption: point1 and point2 already exist via addAnnotatedPoint
-// just give me the raycast shot point, and the plane it hit, i will calculate
-// the rest
-async function addAnnotationLine(point1: Point3D, point2: Point3D, faceId: bigint) {
+/**
+ * Returns a boolean as to whether a given line exists
+ * @param point1Id - the id of point 1 in the line to check
+ * @param point2Id  - the id of point 2 in the line to check
+ * @param faceId - the face id this occurs in
+ * @returns Returns a boolean as to whether a given line exists
+ */
+function doesLineAlreadyExist(point1Id : bigint, point2Id : bigint, faceId : bigint) : boolean {
+  const face3d : Face3D = getFace3dFromId(faceId);
+  const lineIdMap : Map<bigint, AnnotatedLine> = face3d.annotatedLines; // fine, add map access
+  for (let lineObj of lineIdMap.values()) {
+    if ((lineObj.startPointID == point1Id || lineObj.startPointID == point2Id) &&
+        (lineObj.endPointID == point1Id || lineObj.endPointID == point2Id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+/**
+ * Given an existing line id, and face the line is in, updates all frontend
+ * and backend systems with deleting a new annotation line
+ * @param lineId - the id of a point in the line
+ * @param faceId - the id of the face the line is in
+ * @returns either true, or a message about while the action failed
+ */
+async function deleteAnnotationLine(lineId: bigint, faceId: bigint) {
   // add points to frontend
 
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D = getFace3dFromId(faceId);
-  let face2d: Face2D = PaperModule.getFace2dFromId(faceId);
-
-  let flattedPoint1: Point3D = GeomeryModule.translatePointToFace(point1, face3d);
-  let getTranslated2dPoint1: Point2D = PaperModule.translate3dTo2d(flattedPoint1);
-
-  let flattedPoint2: Point3D = GeomeryModule.translatePointToFace(point2, face3d);
-  let getTranslated2dPoint2: Point2D = PaperModule.translate3dTo2d(flattedPoint2);
-
-  // add annotated point to face2d [ie in paper module]
-  let closestPointToPt1 : bigint = face2d.findNearestPoint(getTranslated2dPoint1);
-  let closestPointToPt2 : bigint = face2d.findNearestPoint(getTranslated2dPoint2);
-
-  if (closestPointToPt1 == closestPointToPt2) {
-    return false; // todo: update will fail
+  if (!containsLine(lineId, faceId)) {
+    return "No line exists";
   }
 
-  // todo: check line doesn't already exist
 
-  // TODO: where do i get the line id from face? do ids match up between face2d and 3d
-  // need face id to send to back end
-  let annotationLineId: bigint = null;
+  face3d.delAnnotatedLine(lineId);
+  let result: boolean = await deleteAnnotationLineToDB(lineId, faceId);
 
-  let result: boolean = await addAnnotationLineToDB(closestPointToPt1, closestPointToPt2, annotationLineId, faceId);
-
+  if (!result) {
+    console.error("Error occured with deleting line to DB");
+    return null;
+  }
 
   SceneManager.IncrementStepID();
+
+  return result;
+}
+
+/**
+ * @param lineId - the line to check
+ * @returns true/false as to whether a given line exists
+ */
+function containsLine(lineId : bigint, faceId : bigint) {
+  let face3d : Face3D = getFace3dFromId(faceId);
+  return face3d.annotatedLines.keys().includes(lineId);
+}
+
+/**
+ * @param pointId - the id of the point to check for
+ * @returns a boolean as to whether a given line uses the provided point as an endpoint
+ */
+function lineUsesPoint(faceId: bigint, pointId: bigint) {
+  const face3d : Face3D = getFace3dFromId(faceId);
+  const lineIdMap : Map<bigint, AnnotatedLine> = face3d.annotatedLines; // fine, add map access
+  for (let lineObj of lineIdMap.values()) {
+    if (lineObj.startPointID == pointId || lineObj.endPointID == pointId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @param a - the first value to check
+ * @param b - the second value to check
+ * @returns BigInt(min(a, b))
+ */
+function intMin(a: bigint, b: bigint) : bigint {
+  if (a < b) {
+    return a;
+  }
+  return b;
+}
+
+/**
+ * @param a - the first value to check
+ * @param b - the second value to check
+ * @returns BigInt(max(a, b))
+ */
+function intMax(a: bigint, b: bigint) : bigint {
+  if (a > b) {
+    return a;
+  }
+  return b;
 }
