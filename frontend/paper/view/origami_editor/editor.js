@@ -4,14 +4,18 @@
 
 
 import * as THREE from 'three';
+import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed, resetIsDeletePointButtonPressed} from './editorInputCapture.js';
+import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
 import {Face3D} from "../../geometry/Face3D.ts";
 import {createPoint3D} from "../../geometry/Point.ts";
-import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed} from './editorInputCapture.js';
-import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from './globalSettings.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
+
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
+document.addEventListener('mousedown', onMouseDown);
+
+let faces = []; // field to store all face objects
 
 let prevRotateChange = true; // used for reducing rendering work
 
@@ -45,6 +49,10 @@ const PERSPECTIVE_CAMERA = new THREE.PerspectiveCamera( 75, window.innerWidth / 
 const frustumSize = 10; // Size of the orthographic view
 const aspect = window.innerWidth / window.innerHeight;
 
+const mouse = new THREE.Vector2(); // Mouse position
+const raycaster = new THREE.Raycaster();
+
+
 
 const ORTHOGRAPHIC_CAMERA = new THREE.OrthographicCamera(
 		-frustumSize * aspect / 2,  // left
@@ -62,15 +70,36 @@ if (prevRotateChange) {
 	camera = PERSPECTIVE_CAMERA;
 }
 
+
+// window resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    // update renderer size
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    console.log("Window resized: Updated camera & renderer");
+});
+
+
+
 // zoom settings
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 2;
 const SCROLL_SPEED = 1;
 
+
 // Create visual axes/grid.
 const grid = new THREE.GridHelper(10, 10);
 scene.add(grid);
 
+// create plane
+const geometryPlane = new THREE.PlaneGeometry(5, 5);
+const materialGreen = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+const plane = new THREE.Mesh(geometryPlane, materialGreen);
+plane.material.side = THREE.DoubleSide;
+faces.push(plane);
 
 // create cam look at pt
 const geometrySphere = new THREE.SphereGeometry(0.05);
@@ -100,6 +129,17 @@ pointLight.castShadow = true;
 myFace.getMesh().receiveShadow = true;
 myFace.getMesh().castShadow = true;
 
+// raycast test pt
+const raycastSphere = new THREE.SphereGeometry(0.05);
+const blueMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
+const raySphere = new THREE.Mesh(raycastSphere, blueMaterial);
+raySphere.visible = true;
+
+// put stuff in scene
+scene.add( plane );
+scene.add(lookAtSphere);
+scene.add(raySphere);
+plane.rotateX(90);
 
 // Set camera position.
 camera.position.z = 5;
@@ -121,6 +161,20 @@ function returnCameraToOrigin() {
 	lookAtSphere.position.copy(camRotatePt);
 	renderer.render( scene, camera );
 }
+
+// // temporary mesh objects defined for raycasting
+// const tempGeometry = new THREE.PlaneGeometry(1, 1);
+// const tempMaterials = [
+//   new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide }),
+//   new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide })
+// ];
+
+// const faces = tempMaterials.map((material, index) => {
+//   const face = new THREE.Mesh(tempGeometry, material);
+//   face.position.set(index * 1.5 - 1.5, 0.5, 0);  // Adjust positions
+//   scene.add(face);
+//   return face;
+// });
 
 
 
@@ -157,6 +211,70 @@ function onMouseUp(event) {
   }
 }
 
+function getClosestAnnotationPointToMouse(points, raycaster) {
+    let closestPoint = null;
+    let minDistance = Infinity;
+
+    points.forEach(point => {
+        const pointVector = new THREE.Vector3(point.x, point.y, point.z);
+        const distance = raycaster.ray.distanceToPoint(pointVector);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestPoint = point;
+        }
+    });
+
+    // Define a threshold for clicking accuracy (e.g., 0.1 units in 3D space)
+    return minDistance < 0.1 ? closestPoint : null;
+}
+
+// dom function that activates when a mouse button is pressed
+function onMouseDown(event) {
+	if (getIsPickPointButtonPressed()) {
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1.015;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.02;
+
+		raycaster.setFromCamera(mouse, camera);
+		const intersects = raycaster.intersectObjects(faces);
+
+
+
+		if (intersects.length > 0) {
+			const intersect = intersects[0];
+			const point = intersect.point;
+				raySphere.position.set(point.x, point.y, point.z);
+			console.log(`Clicked coordinates: x=${point.x.toFixed(2)}, y=${point.y.toFixed(2)}, z=${point.z.toFixed(2)}`);
+
+
+			resetIsPickPointButtonPressed(); // Reset after picking
+		}
+	} else if (getIsDeletePointButtonPressed()) {
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+
+        raycaster.setFromCamera(mouse, camera);
+        return; // ignore code for now
+
+        // get the list of annotation points
+        const annotationPoints = getAllAnnotationPoints();
+
+        // find the closest annotation point to the mouse click
+        const closestPoint = getClosestAnnotationPointToMouse(annotationPoints, raycaster);
+
+        if (closestPoint) {
+            // remove the closest annotation point
+            removeAnnotationPoint(closestPoint);
+            console.log(`Deleted annotation point at: x=${closestPoint.x}, y=${closestPoint.y}, z=${closestPoint.z}`);
+        } else {
+            console.log('No annotation point found near the click.');
+        }
+
+        resetIsDeletePointButtonPressed(); // Reset the delete button state
+    }
+
+}
+
 // dom function that runs when the mouse move
 document.onmousemove = (event) => {
 	// calculate how much you move left and right on mouse move
@@ -182,40 +300,43 @@ let upperAngle = 0;  // radian on the yz plane to store direction
 // runs every animation frame
 // similar to SetInterval, but less computationally expensive for Three.js
 function animate() {
-	if (getIsShiftKeyPressed()) {
-		// do camera movement
-		let forwardDirection = new THREE.Vector3();
-		camera.getWorldDirection(forwardDirection);
-		let xzProjectNormalized = new THREE.Vector3(forwardDirection.x, 0, forwardDirection.z).normalize();
-		let forwardVector = xzProjectNormalized.multiplyScalar(diffY * 	-0.5);
+	if (!getIsPickPointButtonPressed()) {
+		if (getIsShiftKeyPressed()) {
+			// do camera movement
+			let forwardDirection = new THREE.Vector3();
+			camera.getWorldDirection(forwardDirection);
+			let xzProjectNormalized = new THREE.Vector3(forwardDirection.x, 0, forwardDirection.z).normalize();
+			let forwardVector = xzProjectNormalized.multiplyScalar(diffY * 	-0.5);
 
-		// compute direction.right vector
-		let rightVector = new THREE.Vector3().crossVectors(UP_DIRECTION, forwardDirection);
-		rightVector.normalize().multiplyScalar(diffX * -0.5);
+			// compute direction.right vector
+			let rightVector = new THREE.Vector3().crossVectors(UP_DIRECTION, forwardDirection);
+			rightVector.normalize().multiplyScalar(diffX * -0.5);
 
-		camRotatePt.add(forwardVector).add(rightVector);
-		lookAtSphere.position.set(camRotatePt.x, camRotatePt.y, camRotatePt.z)
-	} else {
-		// do camera rotation
-		groundAngle += diffX * 0.1;
-		upperAngle += diffY * 0.05;
-		upperAngle = Math.max(-Math.PI/2, upperAngle);
-		upperAngle = Math.min(Math.PI/2	, upperAngle);
-	}
+			camRotatePt.add(forwardVector).add(rightVector);
+			lookAtSphere.position.set(camRotatePt.x, camRotatePt.y, camRotatePt.z)
+		} else {
+			// do camera rotation
+			console.log("camera rot");
+			groundAngle += diffX * 0.1;
+			upperAngle += diffY * 0.05;
+			upperAngle = Math.max(-Math.PI/2, upperAngle);
+			upperAngle = Math.min(Math.PI/2	, upperAngle);
+		}
 
 
 
-	// update cam rot and pos
-	camera.position.copy(camRotatePt).add(new THREE.Vector3(distance * Math.sin(groundAngle), 1.25 * distance * Math.sin(upperAngle), distance * Math.cos(groundAngle)));
-	camera.lookAt(camRotatePt);
+		// update cam rot and pos
+		camera.position.copy(camRotatePt).add(new THREE.Vector3(distance * Math.sin(groundAngle), 1.25 * distance * Math.sin(upperAngle), distance * Math.cos(groundAngle)));
+		camera.lookAt(camRotatePt);
 
-	diffX = 0;
-	diffY = 0;
+		diffX = 0;
+		diffY = 0;
 
-	// only change lookAtSphere if boolean has changed
-	if (prevRotateChange !== getIsRotateSphereVisible()) {
-		lookAtSphere.visible = getIsRotateSphereVisible();
-		prevRotateChange = getIsRotateSphereVisible();
+		// only change lookAtSphere if boolean has changed
+		if (prevRotateChange !== getIsRotateSphereVisible()) {
+			lookAtSphere.visible = getIsRotateSphereVisible();
+			prevRotateChange = getIsRotateSphereVisible();
+		}
 	}
 	renderer.render( scene, camera );
 

@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/geometry")
 @RequiredArgsConstructor
 public class GeometryController {
-
-
+    
     private final GeometryService geometryService;
 
 

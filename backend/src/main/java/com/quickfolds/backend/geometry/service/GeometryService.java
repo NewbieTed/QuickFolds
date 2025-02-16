@@ -18,6 +18,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 @Service
@@ -29,6 +33,9 @@ public class GeometryService {
     private final EdgeMapper edgeMapper;
     private final AnnotateLineMapper annotateLineMapper;
     private final AnnotatePointMapper annotatePointMapper;
+
+
+    private static final Logger logger = LoggerFactory.getLogger(GeometryService.class);
 
 
     public ResponseEntity<BaseResponse<Boolean>> fold(FoldRequest request) {
@@ -50,13 +57,17 @@ public class GeometryService {
 
         // TODO: Case overwrite
 
-
+        logger.info("Starting annotation for origamiId={}, stepIdInOrigami={}", origamiId, stepIdInOrigami);
         try {
             for (FaceAnnotateRequest face : faces) {
                 int faceIdInOrigami = face.getIdInOrigami();
                 Annotation annotations = face.getAnnotations();
 
+                logger.info("Processing face with idInOrigami={} for origamiId={}", faceIdInOrigami, origamiId);
+
                 long faceId = faceMapper.getIdByFaceIdInOrigami(origamiId, faceIdInOrigami);
+
+                logger.debug("Retrieved faceId={} for origamiId={}, idInOrigami={}", faceId, origamiId, faceIdInOrigami);
 
                 String stepType = StepType.ANNOTATE;
                 Long stepTypeId = stepMapper.getStepTypeByName(stepType);
@@ -66,15 +77,25 @@ public class GeometryService {
                             "Unknown step name: " + stepType + ", verify if DB is correct");
                 }
 
+                logger.debug("Retrieved stepTypeId={} for stepType={}", stepTypeId, stepType);
+
                 Step newStep = new Step();
                 newStep.setOrigamiId(origamiId);
                 newStep.setIdInOrigami(stepIdInOrigami);
+                newStep.setStepTypeId(stepTypeId);
 
                 Long stepId = stepMapper.addByObj(newStep);
 
+                logger.info("Created new step with stepId={} for origamiId={}", stepId, origamiId);
+
+
                 List<Integer> deletedLinesIdInFace = annotations.getDeletedLines();
+                logger.debug("Deleted lines for faceId={} are: {}", faceId, deletedLinesIdInFace);
+
+
                 int numUpdatedRows = annotateLineMapper.deleteMultipleByIdInFace(faceId,
                         deletedLinesIdInFace, stepId);
+                logger.debug("Deleted {} rows for annotated lines in faceId={}", numUpdatedRows, faceId);
                 if (numUpdatedRows > deletedLinesIdInFace.size()) {
                     return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
                             "Extra rows are updated after deleting annotated lines, verify if DB is correct");
@@ -98,9 +119,13 @@ public class GeometryService {
                 }
 
 
+
                 // TODO: Check if lines are present
+
                 annotatePointMapper.deleteMultipleByIdInFace(faceId,
                         face.getAnnotations().getDeletedPoints(), stepId);
+                logger.debug("Deleted points for faceId={}", faceId);
+
 
                 List<PointAnnotationRequest> pointAnnotationRequests = face.getAnnotations().getPoints();
 
@@ -127,6 +152,7 @@ public class GeometryService {
                     point.setUpdatedBy(null);
 
                     annotatePointMapper.addByObj(point);
+                    logger.debug("Added point for faceId={}", faceId);
                 }
 
                 // TODO: Check if points are present
@@ -150,6 +176,7 @@ public class GeometryService {
                     line.setUpdatedBy(null);
 
                     annotateLineMapper.addByObj(line);
+                    logger.debug("Added line for faceId={}", faceId);
                 }
             }
         } catch (PersistenceException e) {

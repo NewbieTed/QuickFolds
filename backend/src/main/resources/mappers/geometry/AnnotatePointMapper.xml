@@ -50,6 +50,7 @@
             deleted_step_id = #{deletedStepId}
         </set>
         WHERE face_id = #{faceId}
+        AND deleted_step_id IS null
         AND id_in_face IN (
         <foreach collection="idsInFace" item="idInFace" separator=",">
             #{idInFace}

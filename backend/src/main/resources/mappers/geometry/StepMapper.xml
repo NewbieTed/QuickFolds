@@ -16,7 +16,7 @@
         <result property="updatedAt" column="updated_at" />
     </resultMap>
 
-    <select id="getStepTypeByName" resultType="int">
+    <select id="getStepTypeByName">
         SELECT id
         FROM step_type
         WHERE step_type_name = #{stepTypeName}
@@ -36,7 +36,7 @@
         ) VALUES (
         #{step.origamiId},
         #{step.stepTypeId},
-        #{step.idInOrigami},
+        #{step.idInOrigami}
         <if test="step.createdBy != null">, #{step.createdBy}</if>
         <if test="step.updatedBy != null">, #{step.updatedBy}</if>
         <if test="step.createdAt != null">, #{step.createdAt}</if>
