@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/origami")
 @RequiredArgsConstructor
@@ -26,9 +28,9 @@ public class OrigamiController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<BaseResponse<Boolean>> getAll(@Valid @RequestBody FoldRequest request) {
+    public ResponseEntity<BaseResponse<List<Long>>> getAll() {
 
-        return BaseResponse.success();
+        return origamiService.list();
     }
 
 
