@@ -13,6 +13,7 @@ export class Face3D {
     /**
      * ID - matches the ID of the corresponding Face3D. Unique identifier
      * vertices - the vertices defining this face, in some adjacency order
+     * N - the number of vertices
      * annotatedPoints - annotated points id'd at integers > the # of vertices
      * annotatedLines - annotated lines between points
      * paperThickness - how thick the paper is
@@ -27,6 +28,7 @@ export class Face3D {
      */
     public readonly ID: bigint;
     public readonly vertices: pt.Point3D[];
+    public readonly N: bigint;
     private annotatedPoints: Map<bigint, pt.AnnotatedPoint>;
     private annotatedLines: Map<bigint, pt.AnnotatedLine>;
     private mesh: THREE.Object3D;
@@ -45,13 +47,14 @@ export class Face3D {
 
         this.ID = getNextFaceID();
         this.vertices = vertices;
+        this.N = BigInt(vertices.length);
         this.nextPointID = BigInt(vertices.length);
         this.nextLineID = 0n;
         this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint>();
         this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
         this.paperThickness = paperThickness;
         this.offset = offset;
-        this.principalNormal = principalNormal;
+        this.principalNormal = pt.normalize(principalNormal);
         
         // In origami, all faces are actually convex polygons, provided that
         // the paper was initially a convex polygon. Therefore their centroid
@@ -61,7 +64,7 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            principalNormal, paperThickness * offset * 0.5
+            this.principalNormal, paperThickness * offset * 0.5
         );
         // The centroid of the slab.
         const centroid: pt.Point3D = pt.add(
@@ -69,19 +72,16 @@ export class Face3D {
         );
         // Vector for offsetting half the thickness of the paper
         const centerOffset: pt.Point3D = pt.scalarMult(
-            principalNormal, paperThickness * 0.5
+            this.principalNormal, paperThickness * 0.5
         );
         const centroidTop: pt.Point3D = pt.add(centroid, centerOffset);
         const centroidBot: pt.Point3D = pt.subtract(centroid, centerOffset);
-
-        // Number of vertices in this Face3D.
-        const N: bigint = BigInt(this.vertices.length);
 
         // Create mesh points from all the vertices.
         const points: number[] = [];
         points.push(centroidTop.x, centroidTop.y, centroidTop.z); // 0
         points.push(centroidBot.x, centroidBot.y, centroidBot.z); // 1
-        for (let i = 0n; i < N; i++) {
+        for (let i = 0n; i < this.N; i++) {
     
             // Find the projection of the vertex onto the slab's center plane.
             const center: pt.Point3D = pt.add(
@@ -102,8 +102,8 @@ export class Face3D {
 
             const topIndex = Number(2n*i + 2n);
             const botIndex = Number(2n*i + 3n);
-            const nextTopIndex = Number(2n*((i + 1n) % N) + 2n);
-            const nextBotIndex = Number(2n*((i + 1n) % N) + 3n);
+            const nextTopIndex = Number(2n*((i + 1n) % this.N) + 2n);
+            const nextBotIndex = Number(2n*((i + 1n) % this.N) + 3n);
 
             // Triangle on top.
             triangles.push(topIndex, nextTopIndex, 0);
@@ -168,7 +168,6 @@ export class Face3D {
      * @throws Error if the given ID does not correspond to any point.
      */
     public getPoint(pointID: bigint): pt.Point3D {
-
         if (pointID < 0) {
             throw new Error(`This face has no Point3D with id ${pointID}.`);
         } else if (pointID < BigInt(this.vertices.length)) {
@@ -210,7 +209,48 @@ export class Face3D {
         throw new Error(`This face has no annotated line with id ${lineID}.`);
     }
 
-    
+    /**
+     * Projects the given Point3D onto the plane that the face's underlying
+     * polygon is contained within.
+     * @param point The point to project onto the face plane.
+     * @returns The projection of the given point onto the face plane.
+     */
+    public projectToFace(point: pt.Point3D): pt.Point3D {
+        const displacement: number = pt.dotProduct(
+            this.principalNormal, pt.subtract(point, this.vertices[0])
+        );
+        const result: pt.Point3D = pt.subtract(
+            point, pt.scalarMult(this.principalNormal, displacement)
+        );
+        return result;
+    }
+
+        /**
+     * Projects the given Point3D onto the edge of the given ID.
+     * @param point The point to project onto the edge.
+     * @param edgeID The ID of the edge to project onto. 
+     * @returns The projection of the given point onto the edge.
+     * @throws Error if the given ID is not a valid edge ID.
+     */
+    public projectToEdge(point: pt.Point3D, edgeID: bigint): pt.Point3D {
+        if (edgeID < 0 || edgeID >= BigInt(this.vertices.length)) {
+            throw new Error(`The ID ${edgeID} is not a valid edge.`);
+        }
+
+        const edgeStart: pt.Point3D = this.getPoint(edgeID);
+        const direction: pt.Point3D = pt.normalize(pt.subtract(
+            this.getPoint((edgeID + 1n) % this.N), edgeStart
+        ));
+        const displacement: number = pt.dotProduct(
+            direction, pt.subtract(point, edgeStart)
+        );
+        const result: pt.Point3D = pt.add(
+            edgeStart, pt.scalarMult(direction, displacement)
+        );
+        return result;
+    }
+
+
     /**
      * Finds the ID of the point nearest to the given point in this face.
      * The nearest point in the face could be an annotation or a vertex.
@@ -218,10 +258,53 @@ export class Face3D {
      * @returns The ID of the point in this face nearest to the reference.
      */
     public findNearestPoint(point: pt.Point3D): bigint {
-        return 0n;
+        
+        let minID: bigint = 0n;
+        let minDist: number = pt.distance(point, this.vertices[0]);
+
+        // Check distances to vertices.
+        for (let i = 1n; i < this.N; i++) {
+            const dist = pt.distance(point, this.vertices[Number(i)]);
+            if (dist < minDist) {
+                minID = i;
+                minDist = dist;
+            }
+        }
+
+        // Check distances to annotated points.
+        for (const ID of this.annotatedPoints.keys()) {
+            const dist = pt.distance(point, this.getAnnotatedPoint(ID).point);
+            if (dist < minDist) {
+                minID = ID;
+                minDist = dist;
+            }
+        }
+
+        return minID;
     }
 
 
+    /**
+     * Finds the ID of the edge nearest to the given point in this face.
+     * @param point The reference point to find the nearest edge to.
+     * @returns The ID of the edge in this face nearest to the reference.
+     */
+    public findNearestEdge(point: pt.Point3D): bigint {
+    
+        let minID: bigint = 0n;
+        let minDist = pt.distance(point, this.projectToEdge(point, 0n));
+
+        // Check distances to edges by projection.
+        for (let i = 1n; i < this.N; i++) {
+            const dist = pt.distance(point, this.projectToEdge(point, i));
+            if (dist < minDist) {
+                minID = i;
+                minDist = dist;
+            }
+        }
+
+        return minID;
+    }
 
     public rotateFace(axis: null, angle: null) {
 
