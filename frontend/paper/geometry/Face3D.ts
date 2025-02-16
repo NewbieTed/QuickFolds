@@ -8,7 +8,6 @@ import {getNextFaceID} from "../view/SceneManager"
 import * as pt from "./Point";
 
 
-
 export class Face3D {
 
     /**
@@ -26,8 +25,8 @@ export class Face3D {
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
      */
-    private readonly ID: bigint;
-    private readonly vertices: pt.Point3D[];
+    public readonly ID: bigint;
+    public readonly vertices: pt.Point3D[];
     private annotatedPoints: Map<bigint, pt.AnnotatedPoint>;
     private annotatedLines: Map<bigint, pt.AnnotatedLine>;
     private mesh: THREE.Object3D;
@@ -145,7 +144,7 @@ export class Face3D {
         return this.mesh;
     }
 
-    public addAnnotatedPoint(point: pt.Point3D): void {
+    public addAnnotatedPoint(point: pt.Point3D, edgeID: bigint = -1n): void {
 
     }
 
@@ -161,15 +160,68 @@ export class Face3D {
 
     }
 
+    /**
+     * Gets the point in this face with the given id number.
+     * This could be a vertex or an annotated point.
+     * @param pointID The ID of the point to get.
+     * @returns The Point3D corresponding to the given point ID.
+     * @throws Error if the given ID does not correspond to any point.
+     */
+    public getPoint(pointID: bigint): pt.Point3D {
 
-
-    public containedInFace(point: pt.Point3D): boolean {
-        return false;
+        if (pointID < 0) {
+            throw new Error(`This face has no Point3D with id ${pointID}.`);
+        } else if (pointID < BigInt(this.vertices.length)) {
+            return this.vertices[Number(pointID)];
+        } else {
+            const result = this.annotatedPoints.get(pointID);
+            if (result !== undefined) {
+                return result.point as pt.Point3D;
+            }
+            throw new Error(`This face has no Point3D with id ${pointID}.`);
+        }
     }
 
+    /**
+     * Gets the annotated point in this face with the given ID.
+     * @param pointID The ID of the annotated point to get.
+     * @returns The AnnotatedPoint object corresponding to the given ID.
+     * @throws Error if there is no annotated point with the given ID.
+     */
+    public getAnnotatedPoint(pointID: bigint): pt.AnnotatedPoint {
+        const result = this.annotatedPoints.get(pointID);
+        if (result !== undefined) {
+            return result;
+        }
+        throw new Error(`This face has no annotated point with id ${pointID}.`);
+    }
+
+    /**
+     * Gets the annotated line in this face with the given ID.
+     * @param lineID The ID of the annotated point to get.
+     * @returns The AnnotatedLine object corresponding to the given ID.
+     * @throws Error if there is no annotated line with the given ID.
+     */
+    public getAnnotatedLine(lineID: bigint): pt.AnnotatedLine {
+        const result = this.annotatedLines.get(lineID);
+        if (result !== undefined) {
+            return result;
+        }
+        throw new Error(`This face has no annotated line with id ${lineID}.`);
+    }
+
+    
+    /**
+     * Finds the ID of the point nearest to the given point in this face.
+     * The nearest point in the face could be an annotation or a vertex.
+     * @param point The reference point to find the nearest point to.
+     * @returns The ID of the point in this face nearest to the reference.
+     */
     public findNearestPoint(point: pt.Point3D): bigint {
         return 0n;
     }
+
+
 
     public rotateFace(axis: null, angle: null) {
 

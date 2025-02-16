@@ -393,6 +393,35 @@ export function distance<T extends Point>(a: T, b: T): number {
 }
 
 
+/**
+ * Computes the length of a vector
+ * @param vec A Point (being used as a vector).
+ * @returns The length of the vector.
+ */
+export function length(vec: Point): number {
+
+    if (vec.dim === "2D") {
+        return Math.sqrt(vec.x**2 + vec.y**2);
+    } else {
+        return Math.sqrt(vec.x**2 + vec.y**2 + vec.z**2);
+    }
+}
+
+
+/**
+ * Normalizes a nonzero vector.
+ * @param vec A Point (being used as a vector).
+ * @returns The unit vector pointing the same direction as the given vector.
+ * @throws Error if the given vector is too close to the zero vector.
+ */
+export function normalize<T extends Point>(vec: T): T {
+    if (length(vec) < 0.01) {
+        throw new Error("Cannot normalize extremely small Point!");
+    }
+    return scalarDiv(vec, length(vec));
+}
+
+
 // TODO
 export function rotatePoint(point: Point3D, axis: null, angle: null) {
 
