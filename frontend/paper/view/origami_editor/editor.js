@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed, resetIsDeletePointButtonPressed} from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
+import {Face3D} from "../../geometry/Face3D.ts";
+import {createPoint3D} from "../../geometry/Point.ts";
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -30,6 +32,9 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
+
+// how far cam rotates away from point
+let distance = 5;
 
 const PERSPECTIVE_CAMERA = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
@@ -57,6 +62,7 @@ if (prevRotateChange) {
 	camera = PERSPECTIVE_CAMERA;
 }
 
+
 // window resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -68,6 +74,12 @@ window.addEventListener('resize', () => {
     console.log("Window resized: Updated camera & renderer");
 });
 
+
+
+// zoom settings
+const MAX_ZOOM = 20;
+const MIN_ZOOM = 2;
+const SCROLL_SPEED = 1;
 
 
 // create plane
@@ -83,6 +95,22 @@ const whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
 const lookAtSphere = new THREE.Mesh(geometrySphere, whiteMaterial);
 lookAtSphere.visible = getIsRotateSphereVisible();
 
+// Attempt to create a Face3D.
+const vertices = [
+	createPoint3D(0, 0, 1, "Vertex"),
+	createPoint3D(-1, 2.5, 1, "Vertex"),
+	createPoint3D(2, 4, 1, "Vertex"),
+	createPoint3D(4, 2, 1, "Vertex"),
+	createPoint3D(3, 0, 1, "Vertex")
+]
+const principalNormal = createPoint3D(0, 0, 1);
+const myFace = new Face3D(vertices, 1, 2, principalNormal);
+scene.add(myFace.getMesh());
+// Add a point light to be able to see it
+const pointLight = new THREE.PointLight(0xffffff, 1000, 1000, 1000);
+pointLight.position.set(0, 0, 10);
+scene.add(pointLight);
+scene.add(new THREE.PointLightHelper(pointLight, 2, 0xffff00));
 
 // raycast test pt
 const raycastSphere = new THREE.SphereGeometry(0.05);
@@ -98,6 +126,16 @@ scene.add(raySphere);
 plane.rotateX(90);
 camera.position.z = 5;
 
+
+// Add event listener for mouse wheel scroll
+window.addEventListener('wheel', changeZoomDistance);
+
+function changeZoomDistance(event) {
+	distance += SCROLL_SPEED * 0.005 * event.deltaY;
+
+	distance = Math.min(MAX_ZOOM, distance);
+	distance = Math.max(MIN_ZOOM, distance);
+}
 
 // returns the camera in the editor to the ORIGIN of the editor space
 function returnCameraToOrigin() {
@@ -119,6 +157,7 @@ function returnCameraToOrigin() {
 //   scene.add(face);
 //   return face;
 // });
+
 
 
 // swaps between ortho and persective camera
@@ -239,8 +278,6 @@ document.onmousemove = (event) => {
 let groundAngle = 0; // radian on the xz plane to store direction
 let upperAngle = 0;  // radian on the yz plane to store direction
 
-// how far cam rotates away from point
-let distance = 5;
 
 // runs every animation frame
 // similar to SetInterval, but less computationally expensive for Three.js

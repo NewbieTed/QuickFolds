@@ -8,3 +8,31 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+mybatis:
+  mapper-locations: classpath:mappers/**/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  secret: ${JWT_SECRET:secret}
+
+logging:
+  level:
+    root: DEBUG # Root log
+    com.quickfolds.backend: DEBUG # Backend log
+    org.apache.coyote.http11.Http11InputBuffer: DEBUG # Incoming HTTP requests
+    org.springframework.security: DEBUG # Security log
+    org.springframework.jdbc.datasource.init: DEBUG # SQL init log
+    org.springframework.jdbc.core: DEBUG # SQL log
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.web.servlet.handler: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.test.web.servlet: DEBUG
+    org.mybatis: DEBUG
+    org.apache.ibatis: DEBUG
