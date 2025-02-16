@@ -129,20 +129,12 @@ function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
 }
 
 export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
-  let idMap : Map<bigint, pt.AnnotatedPoint> = face3d.annotatedPoints; // fine, add map access
-  let counter : bigint = 0n;
+  // let idMap : Map<bigint, pt.AnnotatedPoint> = face3d.vertices; // fine, add map access
   let points : Point3D[] = [];
-  let pointsId : bigint[] = [];
-  for (let [pointId, annoPoint] of idMap) {
-    if (counter >= 3n) {
-      break;
-    }
-    if (isPoint3D(annoPoint.point)) {
-      points.push(annoPoint.point);
-      pointsId.push(pointId);
-    }
-
-    counter++;
+  //let pointsId : bigint[] = [];
+  for (let i = 0; i < 3; i++) {
+    points.push(face3d.vertices[i]);
+    // pointsId.push(pointId);
   }
 
   const basis1 : Point3D = createPoint3D(
@@ -170,9 +162,9 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
 
   // because our problem is isometric, use the same coordinates for our
   // new basis vectors rotated on the 2d plane
-  const point0in2D : Point2D = face2d.annotatedPoints.get(pointsId[0]);
-  const point1in2D : Point2D = face2d.annotatedPoints.get(pointsId[1]);
-  const point2in2D : Point2D = face2d.annotatedPoints.get(pointsId[2]);
+  const point0in2D : Point2D = face2d.vertices[0];
+  const point1in2D : Point2D = face2d.vertices[1];
+  const point2in2D : Point2D = face2d.vertices[2];
 
   const basis1in2d : Point2D = createPoint2D(
     point1in2D.x - point0in2D.x,

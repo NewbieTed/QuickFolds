@@ -6,7 +6,7 @@
 import * as pt from "./Point";
 
 
-class Face2D {
+export class Face2D {
 
     /**
      * ID - matches the ID of the corresponding Face3D. Unique identifier
@@ -14,14 +14,14 @@ class Face2D {
      * annotatedPoints - annotated points id'd at #s after Point
      */
     // private readonly ID: bigint;
-    // private readonly vertices: Point2D[];
+    private readonly vertices: pt.Point2D[];
     // private annotatedPoints: Map<bigint, AnnotatedPoint>;
     // private annotatedLines: Map<bigint, AnnotatedLine>;
     // private pointToLine: Map<bigint, Set<bigint>>;
 
 
-    public constructor() {
-
+    public constructor(v: pt.Point2D[]) {
+        this.vertices = v;
     }
 
 

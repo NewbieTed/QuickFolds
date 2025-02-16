@@ -6,8 +6,10 @@
 import * as assert from 'assert';
 // import { METHODS TO TEST HERE } from 'LOCALFILE';
 import {solveBasisSystem, processTransationFrom3dTo2d} from "../../paper/controller/Controller";
-import { createPoint3D } from '../../paper/geometry/Point';
+import { createPoint2D, createPoint3D } from '../../paper/geometry/Point';
 import { Face3D } from '../../paper/geometry/Face3D';
+import { Face2D } from '../../paper/geometry/Face2D';
+import { create } from 'domain';
 
 const MAX_DIFF = 0.01;
 
@@ -199,17 +201,63 @@ describe('Math heavy tests', () => {
   });
 
 
-   it('translate3dTo2d xz plane', () => {
+   it('translate3dTo2d xy/xz plane', () => {
+    // create a simple plane on xy plane, ie there should be no change (just ingnore z)
     let result = processTransationFrom3dTo2d(
-      new createPoint3D(0, 1, 0),
+      createPoint3D(0, 0.5, 0),
       new Face3D([
-        new createPoint3D(0, 0, 0),
-        new createPoint3D(0, 1, 0),
-        new createPoint3D(1, 1, 0),
-        new createPoint3D(1, 0, 0),
-      ],
-    0.5, 0,
-  new createPoint3D(0, 0, 1), null));
+          createPoint3D(0, 0, 0),
+          createPoint3D(0, 1, 0),
+          createPoint3D(1, 1, 0),
+          createPoint3D(1, 0, 0),
+        ],
+          0.5, 0,
+          createPoint3D(0, 0, 1)
+        ),
+        new Face2D([
+          createPoint2D(0, 0),
+          createPoint2D(0, 1),
+          createPoint2D(1, 1),
+          createPoint2D(1, 0)
+        ])
+      );
+
+      if (result == null) {
+        assert.notEqual(result, null);
+      } else {
+        assert.ok(closeToTest(result.x, 0, MAX_DIFF));
+        assert.ok(closeToTest(result.y, 0, MAX_DIFF));
+      }
+
+
+      // try xz now
+      result = processTransationFrom3dTo2d(
+      createPoint3D(0, 0, 0.5),
+      new Face3D([
+          createPoint3D(0, 0, 0),
+          createPoint3D(0, 0, 1),
+          createPoint3D(1, 0, 1),
+          createPoint3D(1, 0, 0),
+        ],
+          0.5, 0,
+          createPoint3D(0, 1, 0)
+        ),
+        new Face2D([
+          createPoint2D(0, 0),
+          createPoint2D(0, 1),
+          createPoint2D(1, 1),
+          createPoint2D(1, 0)
+        ])
+      );
+
+      if (result == null) {
+        assert.notEqual(result, null);
+      } else {
+        assert.ok(closeToTest(result.x, 0, MAX_DIFF));
+        assert.ok(closeToTest(result.y, 0.5, MAX_DIFF));
+      }
    });
 
+
 });
+
