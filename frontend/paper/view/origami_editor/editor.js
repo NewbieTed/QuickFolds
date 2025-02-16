@@ -11,6 +11,8 @@ document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
 document.addEventListener('mousedown', onMouseDown);
 
+let faces = []; // field to store all face objects
+
 let prevRotateChange = true; // used for reducing rendering work
 
 let prevMouseXPos = null;
@@ -73,6 +75,7 @@ const geometryPlane = new THREE.PlaneGeometry(5, 5);
 const materialGreen = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 const plane = new THREE.Mesh(geometryPlane, materialGreen);
 plane.material.side = THREE.DoubleSide;
+faces.push(plane);
 
 // create cam look at pt
 const geometrySphere = new THREE.SphereGeometry(0.05);
@@ -103,19 +106,19 @@ function returnCameraToOrigin() {
 	renderer.render( scene, camera );
 }
 
-// temporary mesh objects defined for raycasting
-const tempGeometry = new THREE.PlaneGeometry(1, 1);
-const tempMaterials = [
-  new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide }),
-  new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide })
-];
+// // temporary mesh objects defined for raycasting
+// const tempGeometry = new THREE.PlaneGeometry(1, 1);
+// const tempMaterials = [
+//   new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide }),
+//   new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide })
+// ];
 
-const faces = tempMaterials.map((material, index) => {
-  const face = new THREE.Mesh(tempGeometry, material);
-  face.position.set(index * 1.5 - 1.5, 0.5, 0);  // Adjust positions
-  scene.add(face);
-  return face;
-});
+// const faces = tempMaterials.map((material, index) => {
+//   const face = new THREE.Mesh(tempGeometry, material);
+//   face.position.set(index * 1.5 - 1.5, 0.5, 0);  // Adjust positions
+//   scene.add(face);
+//   return face;
+// });
 
 
 // swaps between ortho and persective camera
@@ -185,7 +188,7 @@ function onMouseDown(event) {
 				raySphere.position.set(point.x, point.y, point.z);
 			console.log(`Clicked coordinates: x=${point.x.toFixed(2)}, y=${point.y.toFixed(2)}, z=${point.z.toFixed(2)}`);
 
-			intersect.object.material.color.set(0xffff00);
+
 			resetIsPickPointButtonPressed(); // Reset after picking
 		}
 	} else if (getIsDeletePointButtonPressed()) {
@@ -194,7 +197,8 @@ function onMouseDown(event) {
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
 
         raycaster.setFromCamera(mouse, camera);
-        
+        return; // ignore code for now
+
         // get the list of annotation points
         const annotationPoints = getAllAnnotationPoints();
 
@@ -211,7 +215,7 @@ function onMouseDown(event) {
 
         resetIsDeletePointButtonPressed(); // Reset the delete button state
     }
-	
+
 }
 
 // dom function that runs when the mouse move
