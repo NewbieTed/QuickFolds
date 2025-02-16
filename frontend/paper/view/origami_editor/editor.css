@@ -1,3 +1,8 @@
+#ui-container {
+  display: flex;
+}
+
+
 .bg {
   background-color: black;
 }
@@ -5,17 +10,20 @@
 .display {
   width: 33%;
   height: 40%;
-  background-color: gray;
+  background-color: rgba(77, 77, 77, 0.5);
   position: fixed;
   top: -0.1;
   right: 0;
-  border: 3px solid #73AD21;
+  font-family: 'Arial', sans-serif;
   padding-left: 2%;
   padding-top: 1%;
-  border-radius: 5%;
 }
 
 .display p {
   color: white;
+}
 
+.action-button {
+  width: 80%;
+  height: 5vh;
 }
