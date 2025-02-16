@@ -17,8 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrigamiController {
 
-    private OrigamiService origamiService;
-    private OrigamiMapper origamiMapper;
+    private final OrigamiService origamiService;
 
 
     @PostMapping("/new")

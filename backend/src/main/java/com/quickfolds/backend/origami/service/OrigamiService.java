@@ -13,7 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrigamiService {
 
-    private OrigamiMapper origamiMapper;
+    private final OrigamiMapper origamiMapper;
 
     public ResponseEntity<BaseResponse<List<Long>>> list() {
 
