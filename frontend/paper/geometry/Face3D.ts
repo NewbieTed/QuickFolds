@@ -109,11 +109,11 @@ export class Face3D {
             // Triangle on top.
             triangles.push(topIndex, nextTopIndex, 0);
             // Triangle on bottom.
-            triangles.push(botIndex, nextBotIndex, 1);
+            triangles.push(1, nextBotIndex, botIndex);
             // First side triangle.
-            triangles.push(topIndex, nextTopIndex, nextBotIndex);
+            triangles.push(topIndex, nextBotIndex, nextTopIndex);
             // Second side triangle.
-            triangles.push(botIndex, nextBotIndex, topIndex);
+            triangles.push(topIndex, botIndex, nextBotIndex);
         }
         
         // Create the geometry with the points and triangles.
@@ -128,10 +128,15 @@ export class Face3D {
         faceGeometry.computeVertexNormals();
 
         // Create the mesh.
-        const faceMaterial = new THREE.MeshBasicMaterial({
-            color: 0xdea7eb,
+        const faceMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xc036e0,
             side: THREE.DoubleSide,
-            // roughness: 0.5
+            roughness: 0.8,
+            metalness: 0,
+            clearcoat: 0.1,
+            reflectivity: 0.1,
+            opacity: 1,
+            flatShading: true
         });
         this.mesh = new THREE.Mesh(faceGeometry, faceMaterial);
     }
