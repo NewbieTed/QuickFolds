@@ -30,6 +30,9 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 
+// how far cam rotates away from point
+let distance = 5;
+
 const PERSPECTIVE_CAMERA = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
 const frustumSize = 10; // Size of the orthographic view
@@ -52,7 +55,10 @@ if (prevRotateChange) {
 	camera = PERSPECTIVE_CAMERA;
 }
 
-
+// zoom settings
+const MAX_ZOOM = 20;
+const MIN_ZOOM = 2;
+const SCROLL_SPEED = 1;
 
 // create plane
 const geometryPlane = new THREE.PlaneGeometry(5, 5);
@@ -90,12 +96,23 @@ plane.rotateX(90);
 camera.position.z = 5;
 
 
+// Add event listener for mouse wheel scroll
+window.addEventListener('wheel', changeZoomDistance);
+
+function changeZoomDistance(event) {
+	distance += SCROLL_SPEED * 0.005 * event.deltaY;
+
+	distance = Math.min(MAX_ZOOM, distance);
+	distance = Math.max(MIN_ZOOM, distance);
+}
+
 // returns the camera in the editor to the ORIGIN of the editor space
 function returnCameraToOrigin() {
 	camRotatePt = new THREE.Vector3(0, 0, 0);
 	lookAtSphere.position.copy(camRotatePt);
 	renderer.render( scene, camera );
 }
+
 
 
 // swaps between ortho and persective camera
@@ -152,8 +169,6 @@ document.onmousemove = (event) => {
 let groundAngle = 0; // radian on the xz plane to store direction
 let upperAngle = 0;  // radian on the yz plane to store direction
 
-// how far cam rotates away from point
-let distance = 5;
 
 // runs every animation frame
 // similar to SetInterval, but less computationally expensive for Three.js
