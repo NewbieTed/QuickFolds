@@ -1,0 +1,36 @@
+#logo {
+  width: 7%;
+}
+
+#search {
+  width: 60%;
+}
+
+#new-ori {
+  width: 10%;
+}
+
+.header {
+  background-color: #7124ff;
+  display: flex;
+  padding-left: 2%;
+  padding-right: 2%;
+  padding-top: 1%;
+  padding-bottom: 1%;
+  justify-content: space-between;
+}
+
+.main-board {
+  display: flex;
+  padding: 5%;
+}
+
+.card {
+  background-color: rgb(66, 168, 107);
+  width: 40vb;
+  height: 60vb;
+}
+
+body {
+  background-color: rgb(199, 199, 199);
+}
