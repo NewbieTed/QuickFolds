@@ -5,6 +5,17 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotatePointMapper">
 
+    <select id="getMultipleId" resultType="java.lang.Long">
+        SELECT id FROM annotated_point
+        WHERE face_id = #{faceId}
+        AND id_in_face IN (
+        <foreach collection="idsInFace" item="idInFace" separator=",">
+            #{idInFace}
+        </foreach>
+        )
+    </select>
+
+
     <select id="getIdbyIdInFace">
         SELECT id FROM annotated_point
         WHERE
