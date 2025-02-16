@@ -5,8 +5,17 @@
  * animation methods to display the 3D-rendered paper in motion.
  */
 
+import { Face3D } from "../geometry/Face3D";
+
 let stepID = 0n;
 const origamiID = 0n;
+
+let nextFaceId : bigint = -1n;
+const idsToFaces : Map<bigint, Face3D> = new Map<bigint, Face3D>();
+
+export function getFace3dFromId(faceId : bigint) {
+    return idsToFaces.get(faceId);
+}
 
 /**
  * Gets the current step id we are on. does not update the step counter, just peeks
@@ -31,7 +40,11 @@ export function incrementStepID() {
 }
 
 
-//TODO: counter
+/**
+ * Gets the id of the next available face, also updates the counter
+ * @returns the id of the new face
+ */
 export function getNextFaceID(): bigint {
-    return 0n;
+    nextFaceId += 1n;
+    return nextFaceId - 1n;
 }

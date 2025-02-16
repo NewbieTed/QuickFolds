@@ -4,7 +4,7 @@
  */
 
 import * as THREE from 'three';
-import {getNextFaceID} from "../view/SceneManager" 
+import {getNextFaceID} from "../view/SceneManager"
 import * as pt from "./Point";
 
 
@@ -22,7 +22,7 @@ export class Face3D {
      * mesh -  the three JS object which appears in this scene
      * nextLineID - the integer to be used as the id of the next created line
      * nextPointID - the integer to be used as the id of the next created point
-     * principalNormal - a unit vector which shows the principal normal of the 
+     * principalNormal - a unit vector which shows the principal normal of the
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
      */
@@ -53,12 +53,12 @@ export class Face3D {
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = principalNormal;
-        
+
         // In origami, all faces are actually convex polygons, provided that
         // the paper was initially a convex polygon. Therefore their centroid
         // is contained inside of the polygon. Since Three.js defines all
-        // geometry using triangles, drawing lines from the vertices to the 
-        // centroid is a natural way to create the polygon geometry we need. 
+        // geometry using triangles, drawing lines from the vertices to the
+        // centroid is a natural way to create the polygon geometry we need.
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
@@ -83,7 +83,7 @@ export class Face3D {
         points.push(centroidTop.x, centroidTop.y, centroidTop.z); // 0
         points.push(centroidBot.x, centroidBot.y, centroidBot.z); // 1
         for (let i = 0n; i < N; i++) {
-    
+
             // Find the projection of the vertex onto the slab's center plane.
             const center: pt.Point3D = pt.add(
                 vertices[Number(i)], principalOffset
@@ -115,11 +115,11 @@ export class Face3D {
             // Second side triangle.
             triangles.push(botIndex, nextBotIndex, topIndex);
         }
-        
+
         // Create the geometry with the points and triangles.
         const faceGeometry = new THREE.BufferGeometry();
         faceGeometry.setAttribute(
-            'position', 
+            'position',
             new THREE.BufferAttribute(new Float32Array(points), 3)
         );
         faceGeometry.setIndex(
@@ -144,8 +144,9 @@ export class Face3D {
 
     }
 
-    public addAnnotatedLine(startPointID: bigint, endPointID: bigint): void {
+    public addAnnotatedLine(startPointID: bigint, endPointID: bigint): bigint {
         // handles intersections too
+        return 0n;
     }
 
     public delAnnotatedPoint(pointID: bigint): void {
