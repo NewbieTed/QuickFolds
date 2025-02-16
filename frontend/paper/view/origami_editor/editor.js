@@ -8,6 +8,8 @@ import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, 
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
 import {Face3D} from "../../geometry/Face3D.ts";
 import {createPoint3D} from "../../geometry/Point.ts";
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
+
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -23,14 +25,20 @@ let prevMouseYPos = null;
 let diffX = 0;
 let diffY = 0;
 
-// the point in space the camera will rotate around
+// The point in space the camera will rotate around
 let camRotatePt = new THREE.Vector3(0, 0, 0);
 
-// creating the scene to edit in
+// Creating the scene to edit in.
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+
+// Set up environment for proper lighting.
+const environment = new RoomEnvironment(renderer)
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(environment).texture;
+environment.dispose();
 
 
 // how far cam rotates away from point
@@ -82,6 +90,10 @@ const MIN_ZOOM = 2;
 const SCROLL_SPEED = 1;
 
 
+// Create visual axes/grid.
+const grid = new THREE.GridHelper(10, 10);
+scene.add(grid);
+
 // create plane
 const geometryPlane = new THREE.PlaneGeometry(5, 5);
 const materialGreen = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
@@ -94,23 +106,28 @@ const geometrySphere = new THREE.SphereGeometry(0.05);
 const whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
 const lookAtSphere = new THREE.Mesh(geometrySphere, whiteMaterial);
 lookAtSphere.visible = getIsRotateSphereVisible();
+scene.add(lookAtSphere);
 
 // Attempt to create a Face3D.
 const vertices = [
-	createPoint3D(0, 0, 1, "Vertex"),
-	createPoint3D(-1, 2.5, 1, "Vertex"),
-	createPoint3D(2, 4, 1, "Vertex"),
-	createPoint3D(4, 2, 1, "Vertex"),
-	createPoint3D(3, 0, 1, "Vertex")
+	createPoint3D(0, 0, 0, "Vertex"),
+	createPoint3D(-1, 2.5, 0, "Vertex"),
+	createPoint3D(2, 4, 0, "Vertex"),
+	createPoint3D(4, 2, 0, "Vertex"),
+	createPoint3D(3, 0, 0, "Vertex")
 ]
 const principalNormal = createPoint3D(0, 0, 1);
-const myFace = new Face3D(vertices, 1, 2, principalNormal);
+const myFace = new Face3D(vertices, 4, 0, principalNormal);
 scene.add(myFace.getMesh());
 // Add a point light to be able to see it
-const pointLight = new THREE.PointLight(0xffffff, 1000, 1000, 1000);
-pointLight.position.set(0, 0, 10);
+const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
+pointLight.position.set(0, 10, 10);
 scene.add(pointLight);
 scene.add(new THREE.PointLightHelper(pointLight, 2, 0xffff00));
+renderer.shadowMap.enabled = true;
+pointLight.castShadow = true;
+myFace.getMesh().receiveShadow = true;
+myFace.getMesh().castShadow = true;
 
 // raycast test pt
 const raycastSphere = new THREE.SphereGeometry(0.05);
@@ -118,12 +135,13 @@ const blueMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
 const raySphere = new THREE.Mesh(raycastSphere, blueMaterial);
 raySphere.visible = true;
 
-
 // put stuff in scene
 scene.add( plane );
 scene.add(lookAtSphere);
 scene.add(raySphere);
 plane.rotateX(90);
+
+// Set camera position.
 camera.position.z = 5;
 
 
@@ -265,8 +283,8 @@ document.onmousemove = (event) => {
 		let currentYPos = event.clientY * 100 / window.innerHeight;
 
 		if (prevMouseXPos != null && prevMouseYPos != null) {
-			diffX = currentXPos - prevMouseXPos;
-			diffY = currentYPos - prevMouseYPos;
+			diffX = prevMouseXPos - currentXPos;
+			diffY = prevMouseYPos - currentYPos;
 		}
 
 		prevMouseXPos = currentXPos;

@@ -8,14 +8,16 @@ import {getNextFaceID} from "../view/SceneManager"
 import * as pt from "./Point";
 
 
-
 export class Face3D {
 
     /**
      * ID - matches the ID of the corresponding Face3D. Unique identifier
      * vertices - the vertices defining this face, in some adjacency order
+     * N - the number of vertices
      * annotatedPoints - annotated points id'd at integers > the # of vertices
      * annotatedLines - annotated lines between points
+     * pointGeometry - the Three.js objects for annotation points
+     * lineGeometry - the Three.js objects for annotation lines
      * paperThickness - how thick the paper is
      * offset - the number of half-paper-thicknesses away from the underlying
      *          plane, positive is in the direction of the principal normal
@@ -26,10 +28,13 @@ export class Face3D {
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
      */
-    private readonly ID: bigint;
-    private readonly vertices: pt.Point3D[];
-    private annotatedPoints: Map<bigint, pt.AnnotatedPoint>;
+    public readonly ID: bigint;
+    public readonly vertices: pt.Point3D[];
+    public readonly N: bigint;
+    private annotatedPoints: Map<bigint, pt.AnnotatedPoint3D>;
     private annotatedLines: Map<bigint, pt.AnnotatedLine>;
+    private pointGeometry: Map<bigint, THREE.Object3D>;
+    private lineGeometry: Map<bigint, THREE.Object3D>;
     private mesh: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
@@ -46,14 +51,22 @@ export class Face3D {
 
         this.ID = getNextFaceID();
         this.vertices = vertices;
+        this.N = BigInt(vertices.length);
         this.nextPointID = BigInt(vertices.length);
         this.nextLineID = 0n;
-        this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint>();
+        this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint3D>();
         this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
+        this.pointGeometry = new Map<bigint, THREE.Object3D>();
+        this.lineGeometry = new Map<bigint, THREE.Object3D>();
         this.paperThickness = paperThickness;
         this.offset = offset;
-        this.principalNormal = principalNormal;
+        this.principalNormal = pt.normalize(principalNormal);
         
+        this.mesh = this.createFaceGeometry();
+    }
+
+    private createFaceGeometry(): THREE.Object3D {
+
         // In origami, all faces are actually convex polygons, provided that
         // the paper was initially a convex polygon. Therefore their centroid
         // is contained inside of the polygon. Since Three.js defines all
@@ -62,7 +75,7 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            principalNormal, paperThickness * offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset * 0.5
         );
         // The centroid of the slab.
         const centroid: pt.Point3D = pt.add(
@@ -70,23 +83,20 @@ export class Face3D {
         );
         // Vector for offsetting half the thickness of the paper
         const centerOffset: pt.Point3D = pt.scalarMult(
-            principalNormal, paperThickness * 0.5
+            this.principalNormal, this.paperThickness * 0.5
         );
         const centroidTop: pt.Point3D = pt.add(centroid, centerOffset);
         const centroidBot: pt.Point3D = pt.subtract(centroid, centerOffset);
-
-        // Number of vertices in this Face3D.
-        const N: bigint = BigInt(this.vertices.length);
 
         // Create mesh points from all the vertices.
         const points: number[] = [];
         points.push(centroidTop.x, centroidTop.y, centroidTop.z); // 0
         points.push(centroidBot.x, centroidBot.y, centroidBot.z); // 1
-        for (let i = 0n; i < N; i++) {
+        for (let i = 0n; i < this.N; i++) {
     
             // Find the projection of the vertex onto the slab's center plane.
             const center: pt.Point3D = pt.add(
-                vertices[Number(i)], principalOffset
+                this.vertices[Number(i)], principalOffset
             );
 
             // Compute the top and bottom points.
@@ -99,21 +109,21 @@ export class Face3D {
 
         // Now create the faces of the slab by referring to point indices.
         const triangles: number[] = [];
-        for (let i = 0n; i < vertices.length; i++) {
+        for (let i = 0n; i < this.N; i++) {
 
             const topIndex = Number(2n*i + 2n);
             const botIndex = Number(2n*i + 3n);
-            const nextTopIndex = Number(2n*((i + 1n) % N) + 2n);
-            const nextBotIndex = Number(2n*((i + 1n) % N) + 3n);
+            const nextTopIndex = Number(2n*((i + 1n) % this.N) + 2n);
+            const nextBotIndex = Number(2n*((i + 1n) % this.N) + 3n);
 
             // Triangle on top.
             triangles.push(topIndex, nextTopIndex, 0);
             // Triangle on bottom.
-            triangles.push(botIndex, nextBotIndex, 1);
+            triangles.push(1, nextBotIndex, botIndex);
             // First side triangle.
-            triangles.push(topIndex, nextTopIndex, nextBotIndex);
+            triangles.push(topIndex, nextBotIndex, nextTopIndex);
             // Second side triangle.
-            triangles.push(botIndex, nextBotIndex, topIndex);
+            triangles.push(topIndex, botIndex, nextBotIndex);
         }
         
         // Create the geometry with the points and triangles.
@@ -128,19 +138,31 @@ export class Face3D {
         faceGeometry.computeVertexNormals();
 
         // Create the mesh.
-        const faceMaterial = new THREE.MeshBasicMaterial({
-            color: 0xdea7eb,
+        const faceMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xc036e0,
             side: THREE.DoubleSide,
-            // roughness: 0.5
+            roughness: 0.8,
+            metalness: 0,
+            clearcoat: 0.1,
+            reflectivity: 0.1,
+            opacity: 1,
+            flatShading: true
         });
-        this.mesh = new THREE.Mesh(faceGeometry, faceMaterial);
+
+        return new THREE.Mesh(faceGeometry, faceMaterial);
     }
+
+    // TODO: creators for point and line geometry
+    // getters for point and line geometry
+    // return IDS of pts/lines on add
+    // return the THREE.JS object on delete, so
+    // that it can be freed from the scene.
 
     public getMesh(): THREE.Object3D {
         return this.mesh;
     }
 
-    public addAnnotatedPoint(point: pt.Point3D): void {
+    public addAnnotatedPoint(point: pt.Point3D, edgeID: bigint = -1n): void {
 
     }
 
@@ -156,20 +178,154 @@ export class Face3D {
 
     }
 
-
-
-    public containedInFace(point: pt.Point3D): boolean {
-        return false;
+    /**
+     * Gets the point in this face with the given id number.
+     * This could be a vertex or an annotated point.
+     * @param pointID The ID of the point to get.
+     * @returns The Point3D corresponding to the given point ID.
+     * @throws Error if the given ID does not correspond to any point.
+     */
+    public getPoint(pointID: bigint): pt.Point3D {
+        if (pointID < 0) {
+            throw new Error(`This face has no Point3D with id ${pointID}.`);
+        } else if (pointID < BigInt(this.vertices.length)) {
+            return this.vertices[Number(pointID)];
+        } else {
+            const result = this.annotatedPoints.get(pointID);
+            if (result !== undefined) {
+                return result.point as pt.Point3D;
+            }
+            throw new Error(`This face has no Point3D with id ${pointID}.`);
+        }
     }
 
+    /**
+     * Gets the annotated point in this face with the given ID.
+     * @param pointID The ID of the annotated point to get.
+     * @returns The AnnotatedPoint3D object corresponding to the given ID.
+     * @throws Error if there is no annotated point with the given ID.
+     */
+    public getAnnotatedPoint(pointID: bigint): pt.AnnotatedPoint3D {
+        const result = this.annotatedPoints.get(pointID);
+        if (result !== undefined) {
+            return result;
+        }
+        throw new Error(`This face has no annotated point with id ${pointID}.`);
+    }
+
+    /**
+     * Gets the annotated line in this face with the given ID.
+     * @param lineID The ID of the annotated point to get.
+     * @returns The AnnotatedLine object corresponding to the given ID.
+     * @throws Error if there is no annotated line with the given ID.
+     */
+    public getAnnotatedLine(lineID: bigint): pt.AnnotatedLine {
+        const result = this.annotatedLines.get(lineID);
+        if (result !== undefined) {
+            return result;
+        }
+        throw new Error(`This face has no annotated line with id ${lineID}.`);
+    }
+
+    /**
+     * Projects the given Point3D onto the plane that the face's underlying
+     * polygon is contained within.
+     * @param point The point to project onto the face plane.
+     * @returns The projection of the given point onto the face plane.
+     */
+    public projectToFace(point: pt.Point3D): pt.Point3D {
+        const displacement: number = pt.dotProduct(
+            this.principalNormal, pt.subtract(point, this.vertices[0])
+        );
+        const result: pt.Point3D = pt.subtract(
+            point, pt.scalarMult(this.principalNormal, displacement)
+        );
+        return result;
+    }
+
+        /**
+     * Projects the given Point3D onto the edge of the given ID.
+     * @param point The point to project onto the edge.
+     * @param edgeID The ID of the edge to project onto. 
+     * @returns The projection of the given point onto the edge.
+     * @throws Error if the given ID is not a valid edge ID.
+     */
+    public projectToEdge(point: pt.Point3D, edgeID: bigint): pt.Point3D {
+        if (edgeID < 0 || edgeID >= BigInt(this.vertices.length)) {
+            throw new Error(`The ID ${edgeID} is not a valid edge.`);
+        }
+
+        const edgeStart: pt.Point3D = this.getPoint(edgeID);
+        const edgeEnd: pt.Point3D = this.getPoint((edgeID + 1n) % this.N);
+        const direction: pt.Point3D = pt.normalize(pt.subtract(
+            edgeEnd, edgeStart
+        ));
+        const displacement: number = pt.dotProduct(
+            direction, pt.subtract(point, edgeStart)
+        );
+        const result: pt.Point3D = pt.add(
+            edgeStart, pt.scalarMult(direction, displacement)
+        );
+        return result;
+    }
+
+
+    /**
+     * Finds the ID of the point nearest to the given point in this face.
+     * The nearest point in the face could be an annotation or a vertex.
+     * @param point The reference point to find the nearest point to.
+     * @returns The ID of the point in this face nearest to the reference.
+     */
     public findNearestPoint(point: pt.Point3D): bigint {
-        return 0n;
+        
+        let minID: bigint = 0n;
+        let minDist: number = pt.distance(point, this.vertices[0]);
+
+        // Check distances to vertices.
+        for (let i = 1n; i < this.N; i++) {
+            const dist = pt.distance(point, this.vertices[Number(i)]);
+            if (dist < minDist) {
+                minID = i;
+                minDist = dist;
+            }
+        }
+
+        // Check distances to annotated points.
+        for (const ID of this.annotatedPoints.keys()) {
+            const dist = pt.distance(point, this.getAnnotatedPoint(ID).point);
+            if (dist < minDist) {
+                minID = ID;
+                minDist = dist;
+            }
+        }
+
+        return minID;
     }
 
-    public rotateFace(axis: null, angle: null) {
 
+    /**
+     * Finds the ID of the edge nearest to the given point in this face.
+     * @param point The reference point to find the nearest edge to.
+     * @returns The ID of the edge in this face nearest to the reference.
+     */
+    public findNearestEdge(point: pt.Point3D): bigint {
+    
+        let minID: bigint = 0n;
+        let minDist = pt.distance(point, this.projectToEdge(point, 0n));
+
+        // Check distances to edges by projection.
+        for (let i = 1n; i < this.N; i++) {
+            const dist = pt.distance(point, this.projectToEdge(point, i));
+            if (dist < minDist) {
+                minID = i;
+                minDist = dist;
+            }
+        }
+
+        return minID;
     }
 
-
+    // TODO: rotate the three js geometry method, vs rotate the true face.
+    // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
 }

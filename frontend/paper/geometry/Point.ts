@@ -41,12 +41,22 @@ export type Point = Point2D | Point3D;
 
 
 /**
- * An annotated point type - consists of the point object and
+ * An annotated 3D point type - consists of the point object and
  * also the ID of the edge on which it lies, if any.
  * The value -1 is given if the annotated point lies on no edge.
  */
-export type AnnotatedPoint = {
-    point: Point,
+export type AnnotatedPoint3D = {
+    point: Point3D,
+    edgeID: bigint
+}
+
+/**
+ * An annotated 2D point type - consists of the point object and
+ * also the ID of the edge on which it lies, if any.
+ * The value -1 is given if the annotated point lies on no edge.
+ */
+export type AnnotatedPoint2D = {
+    point: Point2D,
     edgeID: bigint
 }
 
@@ -58,6 +68,7 @@ export type AnnotatedLine = {
     startPointID: bigint,
     endPointID: bigint
 }
+
 
 // ----------------------------- Functions --------------------------------- //
 
@@ -241,17 +252,20 @@ export function subtract<T extends Point>(
 
 
 /**
- * Computes the scalar product (dot product) of two 3D points.
+ * Computes the scalar product (dot product) of two points.
  * @param a The first point.
  * @param b The second point.
  * @returns The scalar product a * b (component-wise multiply and add).
  */
-export function dotProduct(a: Point3D, b: Point3D): number {
+export function dotProduct<T extends Point>(a: T, b: T): number {
 
-    let result = 0;
+    let result: number = 0;
     result += a.x * b.x;
     result += a.y * b.y;
-    result += a.z * b.z;
+    
+    if (a.dim == "3D" && b.dim == "3D") {
+        result += a.z * b.z;
+    }
 
     return result;
 }
@@ -390,6 +404,35 @@ export function distance<T extends Point>(a: T, b: T): number {
     }
 
     return Math.sqrt(squaredDist);
+}
+
+
+/**
+ * Computes the length of a vector
+ * @param vec A Point (being used as a vector).
+ * @returns The length of the vector.
+ */
+export function length(vec: Point): number {
+
+    if (vec.dim === "2D") {
+        return Math.sqrt(vec.x**2 + vec.y**2);
+    } else {
+        return Math.sqrt(vec.x**2 + vec.y**2 + vec.z**2);
+    }
+}
+
+
+/**
+ * Normalizes a nonzero vector.
+ * @param vec A Point (being used as a vector).
+ * @returns The unit vector pointing the same direction as the given vector.
+ * @throws Error if the given vector is too close to the zero vector.
+ */
+export function normalize<T extends Point>(vec: T): T {
+    if (length(vec) < 0.01) {
+        throw new Error("Cannot normalize extremely small Point!");
+    }
+    return scalarDiv(vec, length(vec));
 }
 
 
