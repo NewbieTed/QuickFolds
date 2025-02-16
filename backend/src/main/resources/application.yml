@@ -5,5 +5,3 @@ spring:
     import: "config/application-${spring.profiles.active}.yml"
   application:
     name: backend
-
-
