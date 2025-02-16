@@ -4,6 +4,7 @@
  */
 
 import { Point2D } from "../geometry/Point";
+import { getOrigamiID, getStepID } from "../view/SceneManager";
 
 
 
@@ -16,8 +17,8 @@ import { Point2D } from "../geometry/Point";
  * @returns JSON object to send to backend
  */
 export function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigint, isPointOnEdge: bigint | null) {
-  let origamiID: bigint = SceneManager.getOrigamiID();
-  let stepID: bigint = SceneManager.getStepID();
+  let origamiID: bigint = getOrigamiID();
+  let stepID: bigint = getStepID();
 
   let faces = [{
     "idInOrigami": faceId,
@@ -52,8 +53,8 @@ export function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigin
  * @returns JSON object to send to backend
  */
 export function serializeDeletePoint(faceId: bigint, pointID: bigint) {
-  let origamiID: bigint = SceneManager.getOrigamiID();
-  let stepID: bigint = SceneManager.getStepID();
+  let origamiID: bigint = getOrigamiID();
+  let stepID: bigint = getStepID();
 
   let faces = [{
     "idInOrigami": faceId,
@@ -84,8 +85,8 @@ export function serializeDeletePoint(faceId: bigint, pointID: bigint) {
  * @returns JSON object to send to backend
  */
 export function serializeAddLine(point1Id: bigint, point2Id: bigint, newAnnoLineId: bigint, faceId: bigint) {
-  let origamiID: bigint = SceneManager.getOrigamiID();
-  let stepID: bigint = SceneManager.getStepID();
+  let origamiID: bigint = getOrigamiID();
+  let stepID: bigint = getStepID();
 
   let faces = [{
     "idInOrigami": faceId,
@@ -119,8 +120,8 @@ export function serializeAddLine(point1Id: bigint, point2Id: bigint, newAnnoLine
  * @returns JSON object to send to backend
  */
 export function serializeDeleteLine(annoLineId: bigint, faceId: bigint | null) {
-  let origamiID: bigint = SceneManager.getOrigamiID();
-  let stepID: bigint = SceneManager.getStepID();
+  let origamiID: bigint = getOrigamiID();
+  let stepID: bigint = getStepID();
 
   let faces = [{
     "idInOrigami": faceId,

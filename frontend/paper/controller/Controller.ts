@@ -5,38 +5,25 @@
  * making appropriate calls to backend through the RequestHandler.
  */
 
-
-
 import * as THREE from 'three';
 import { Face3D } from "../geometry/Face3D";
 import { Face2D } from '../geometry/Face2D'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine } from "../geometry/Point";
 import {addAnnotationPointToDB, addAnnotationLineToDB, deleteAnnotationLineToDB, deleteAnnotationPointToDB} from "./RequestHandler";
-import * as pt from "../geometry/Point";
-
-
-
-/**
- * Returns a boolean as to whether the provided object is a Point3D class
-
- * @param obj - any object you want to check
- * @returns - true/false whether object can be treated as a Point3D
- */
-function isPoint3D(obj: any): obj is Point3D {
-  return (
-    obj &&
-    typeof obj.x === 'number' &&
-    typeof obj.y === 'number' &&
-    typeof obj.z === 'number'
-  );
-}
+import {getFace2dFromId} from "../model/PaperGraph"
+import { graphAddAnnotatedLine, graphAddAnnotationPoint, graphDeleteAnnotationPoint } from '../model/PaperManager';
+import { incrementStepID } from '../view/SceneManager';
 
 /**
+ * put in geometery module
  * Given two basis vectors in 3 space, and a target point,
  * returns the coordinates using the basis to get to the target point,
  * or null if there is no solution
  *
- * ux + vy = b
+ *  |x1|    |x2|   |bx|
+ * u|y1| + v|y2| = |by|
+ *  |z1|    |z2|   |bz|
+ *
  * where the function returns {u, v}
  *
  *
@@ -76,42 +63,41 @@ export function solveBasisSystem(
 }
 
 
-/**
- * PUT in GeomeryModule
- * takes a 3d point and projects it onto the face3d start position. intended for when hitting
- * a layer on the render since these planes have an offset
- * @param point - the point to be projected
- * @param face3d - the plane to be projected on
- * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
- */
-function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
-  const points: THREE.Vector3[] = [];
+// /**
+//  * takes a 3d point and projects it onto the face3d start position. intended for when hitting
+//  * a layer on the render since these planes have an offset
+//  * @param point - the point to be projected
+//  * @param face3d - the plane to be projected on
+//  * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
+//  */
+// function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
+//   const points: THREE.Vector3[] = [];
 
-  // TODO: ask hady to give me 3 vertices
-  for (let i = 0; i < 3; i++) {
-    points.push(new THREE.Vector3(face3d.vertices[0].x, face3d.vertices[0].y, face3d.vertices[0].z));
-  }
+//   // TODO: ask hady to give me 3 vertices
+//   for (let i = 0; i < 3; i++) {
+//     points.push(new THREE.Vector3(face3d.vertices[0].x, face3d.vertices[0].y, face3d.vertices[0].z));
+//   }
 
-  // idea is to create a plane as Three.js has a project point method
-  const plane = new THREE.Plane();
-  plane.setFromCoplanarPoints(points[0], points[1], points[2]);
+//   // idea is to create a plane as Three.js has a project point method
+//   const plane = new THREE.Plane();
+//   plane.setFromCoplanarPoints(points[0], points[1], points[2]);
 
-  const projectedPoint = new THREE.Vector3();
-  const originalPtThreeVerison = new THREE.Vector3(point.x, point.y, point.z);
-  plane.projectPoint(originalPtThreeVerison, projectedPoint);
+//   const projectedPoint = new THREE.Vector3();
+//   const originalPtThreeVerison = new THREE.Vector3(point.x, point.y, point.z);
+//   plane.projectPoint(originalPtThreeVerison, projectedPoint);
 
-  // create our version of 3d point
-  const translatedBackPt: Point3D = createPoint3D(projectedPoint.x,
-                                                  projectedPoint.y,
-                                                  projectedPoint.z
-                                                );
+//   // create our version of 3d point
+//   const translatedBackPt: Point3D = createPoint3D(projectedPoint.x,
+//                                                   projectedPoint.y,
+//                                                   projectedPoint.z
+//                                                 );
 
-  if (!face3d.containedInFace(translatedBackPt)) {
-    console.error("Point is not on plane when projected");
-    return null;
-  }
-  return translatedBackPt;
-}
+//   if (!face3d.containedInFace(translatedBackPt)) {
+//     console.error("Point is not on plane when projected");
+//     return null;
+//   }
+//   return translatedBackPt;
+// }
 
 /**
  * PUT in PaperModule
@@ -123,7 +109,11 @@ function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
  */
 function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
   let face3d: Face3D = getFace3dFromId(faceId);
-  let face2d: Face2D = getFace2dFromId(faceId);
+  let face2d: Face2D | undefined = getFace2dFromId(faceId);
+  if (face2d === undefined) {
+    console.error("face 2d id doesn't exists");
+    return null;
+  }
 
   return processTransationFrom3dTo2d(point, face3d, face2d);
 }
@@ -184,14 +174,6 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
   return coverted2dPoint;
 }
 
-
-
-// paper graph to get face 2d
-function getFace2dFromId(id: bigint) {
-  return Face2D();
-}
-
-
 // ScreenManager to get face 3d
 function getFace3dFromId(id: bigint) {
   return Face3D();
@@ -220,7 +202,12 @@ async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<stri
   let isPointOnEdge = null; // for now, assume no edge points;
 
   // add annotated point to face2d [ie in paper module]
-  let face2d: Face2D = getFace2dFromId(faceId);
+  let face2d: Face2D | undefined = getFace2dFromId(faceId);
+  if (face2d === undefined) {
+    console.error("face 2d id doesn't exists");
+    return "face 2d id doesn't exists";
+  }
+
   let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
 
   if (getTranslated2dPoint == null) {
@@ -235,9 +222,16 @@ async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<stri
     return "Error occured with adding point to DB";
   }
 
-  SceneManager.IncrementStepID();
 
-  return result;
+  let frontendResult : true | string = graphAddAnnotationPoint(getTranslated2dPoint, faceId);
+  if (frontendResult !== true) {
+    console.error(frontendResult);
+    return frontendResult;
+  }
+
+  incrementStepID();
+
+  return true;
 }
 
 /**
@@ -248,11 +242,11 @@ async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<stri
  * @param faceId - the face to add the point to
  * @returns either true, or a message about while the action failed
  */
-async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) {
+async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : Promise<string | true>  {
   // check to make sure point isn't being used in line
   // user can only remove a "hanging" (ie unlined) point
   if (lineUsesPoint(faceId, pointId)) {
-    return null;
+    return "Point is being used a line, delete line first";
   }
 
 
@@ -264,12 +258,19 @@ async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) {
 
   if (!result) {
     console.error("Error occured with adding point to DB");
-    return null;
+    return "Error occured with adding point to DB";
   }
 
-  SceneManager.IncrementStepID();
 
-  return result;
+  let frontendResult : true | string = graphDeleteAnnotationPoint(pointId, faceId);
+  if (frontendResult !== true) {
+    console.error(frontendResult);
+    return frontendResult;
+  }
+
+  incrementStepID();
+
+  return true;
 }
 
 
@@ -283,14 +284,14 @@ async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) {
  * @param faceId - the id of the face the line is in
  * @returns either true, or a message about while the action failed
  */
-async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) {
+async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) : Promise<string | true>   {
   // add points to frontend
 
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D = getFace3dFromId(faceId);
 
   if (point1Id == point2Id || false) {
-    return false; // todo: update will fail
+    return "Cannot click the same point"; // todo: update will fail
   }
 
   if (doesLineAlreadyExist(point1Id, point2Id, faceId)) {
@@ -305,10 +306,60 @@ async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: big
   let annotationLineId: bigint = face3d.addAnnotatedLine(minId, maxId);
 
   let result: boolean = await addAnnotationLineToDB(minId, maxId, annotationLineId, faceId);
+  if (!result) {
+    console.error("Error occured with adding point to DB");
+    return "Error occured with adding point to DB";
+  }
 
+  let frontendResult : true | string = graphAddAnnotatedLine(minId, maxId, faceId);
+  if (frontendResult !== true) {
+    console.error(frontendResult);
+    return frontendResult;
+  }
 
-  SceneManager.IncrementStepID();
+  incrementStepID();
+
+  return true;
 }
+
+
+/**
+ * Given an existing line id, and face the line is in, updates all frontend
+ * and backend systems with deleting a new annotation line
+ * @param lineId - the id of a point in the line
+ * @param faceId - the id of the face the line is in
+ * @returns either true, or a message about while the action failed
+ */
+async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<string | true> {
+  // add points to frontend
+
+  // add annotation point to face3d [ie in SceneManager]
+  let face3d: Face3D = getFace3dFromId(faceId);
+  if (!containsLine(lineId, faceId)) {
+    return "No line exists";
+  }
+
+
+  face3d.delAnnotatedLine(lineId);
+  let result: boolean = await deleteAnnotationLineToDB(lineId, faceId);
+
+  if (!result) {
+    console.error("Error occured with deleting line to DB");
+    return "Error occured with deleting line to DB";
+  }
+
+  let frontendResult : true | string = graphDeleteAnnotationPoint(lineId, faceId);
+  if (frontendResult !== true) {
+    console.error(frontendResult);
+    return frontendResult;
+  }
+
+  incrementStepID();
+
+  return true;
+}
+
+
 
 /**
  * Returns a boolean as to whether a given line exists
@@ -331,42 +382,12 @@ function doesLineAlreadyExist(point1Id : bigint, point2Id : bigint, faceId : big
 
 
 /**
- * Given an existing line id, and face the line is in, updates all frontend
- * and backend systems with deleting a new annotation line
- * @param lineId - the id of a point in the line
- * @param faceId - the id of the face the line is in
- * @returns either true, or a message about while the action failed
- */
-async function deleteAnnotationLine(lineId: bigint, faceId: bigint) {
-  // add points to frontend
-
-  // add annotation point to face3d [ie in SceneManager]
-  let face3d: Face3D = getFace3dFromId(faceId);
-  if (!containsLine(lineId, faceId)) {
-    return "No line exists";
-  }
-
-
-  face3d.delAnnotatedLine(lineId);
-  let result: boolean = await deleteAnnotationLineToDB(lineId, faceId);
-
-  if (!result) {
-    console.error("Error occured with deleting line to DB");
-    return null;
-  }
-
-  SceneManager.IncrementStepID();
-
-  return result;
-}
-
-/**
  * @param lineId - the line to check
  * @returns true/false as to whether a given line exists
  */
 function containsLine(lineId : bigint, faceId : bigint) {
   let face3d : Face3D = getFace3dFromId(faceId);
-  return face3d.annotatedLines.keys().includes(lineId);
+  return face3d.annotatedLines.has(lineId);
 }
 
 /**
