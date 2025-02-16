@@ -15,167 +15,6 @@ import { graphAddAnnotatedLine, graphAddAnnotationPoint, graphDeleteAnnotationPo
 import { getFace3dFromId, incrementStepID } from '../view/SceneManager';
 
 /**
- * put in geometery module
- * Given two basis vectors in 3 space, and a target point,
- * returns the coordinates using the basis to get to the target point,
- * or null if there is no solution
- *
- *  |x1|    |x2|   |bx|
- * u|y1| + v|y2| = |by|
- *  |z1|    |z2|   |bz|
- *
- * where the function returns {u, v}
- *
- *
- * @param x1 - basis 1 x value
- * @param y1 - basis 1 y value
- * @param z1 - basis 1 z value
- * @param x2 - basis 2 x value
- * @param y2 - basis 2 y value
- * @param z2 - basis 2 z value
- * @param bx - target x value
- * @param by - target y value
- * @param bz - target z value
- * @returns  given ux + vy = b; where u, v, b in R3. returns {u, v} or null if no sol
- */
-export function solveBasisSystem(
-  x1: number, y1: number, z1: number,
-  x2: number, y2: number, z2: number,
-  bx: number, by: number, bz: number
-): { alpha: number, beta: number } | null{
-
-  // Calculate the determinant of the coefficient matrix
-  const det = x1 * y2 - x2 * y1;
-
-  // Use Cramer's rule to calculate alpha and beta
-  const detAlpha = bx * y2 - x2 * by;  // Replace first column with bx, by
-  const detBeta = x1 * bz - bx * z1;   // Replace second column with bx, bz
-
-  const alpha = detAlpha / det;
-  const beta = detBeta / det;
-
-  // system is overdetermined, so check that z values match
-  if (Math.abs((z1 * alpha + z2 * beta) - bz) > 0.01) {
-    return null; // system undetermined
-  }
-
-  return { alpha, beta };
-}
-
-
-/**
- * takes a 3d point and projects it onto the face3d start position. intended for when hitting
- * a layer on the render since these planes have an offset
- * @param point - the point to be projected
- * @param face3d - the plane to be projected on
- * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
- */
-function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
-  const points: THREE.Vector3[] = [];
-
-  // TODO: ask hady to give me 3 vertices
-  for (let i = 0; i < 3; i++) {
-    points.push(new THREE.Vector3(face3d.vertices[0].x, face3d.vertices[0].y, face3d.vertices[0].z));
-  }
-
-  // idea is to create a plane as Three.js has a project point method
-  const plane = new THREE.Plane();
-  plane.setFromCoplanarPoints(points[0], points[1], points[2]);
-
-  const projectedPoint = new THREE.Vector3();
-  const originalPtThreeVerison = new THREE.Vector3(point.x, point.y, point.z);
-  plane.projectPoint(originalPtThreeVerison, projectedPoint);
-
-  // create our version of 3d point
-  const translatedBackPt: Point3D = createPoint3D(projectedPoint.x,
-                                                  projectedPoint.y,
-                                                  projectedPoint.z
-                                                );
-
-  if (!face3d.containedInFace(translatedBackPt)) {
-    console.error("Point is not on plane when projected");
-    return null;
-  }
-  return translatedBackPt;
-}
-
-/**
- * PUT in PaperModule
- * take a 3d point on the layered version of face3d (given with faceid),
- * return the corresponding 2d point in the paper map version
- * @param point - the 3d point to translate to 2d
- * @param faceId - the faceId the point lines on
- * @returns the corresponding point2d, or null if the 3d point isn't on the face
- */
-function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
-  let face3d: Face3D = getFace3dFromId(faceId);
-  let face2d: Face2D | undefined = getFace2dFromId(faceId);
-  if (face2d === undefined) {
-    console.error("face 2d id doesn't exists");
-    return null;
-  }
-
-  return processTransationFrom3dTo2d(point, face3d, face2d);
-}
-
-export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
-  // let idMap : Map<bigint, pt.AnnotatedPoint> = face3d.vertices; // fine, add map access
-  let points : Point3D[] = [];
-  //let pointsId : bigint[] = [];
-  for (let i = 0; i < 3; i++) {
-    points.push(face3d.vertices[i]);
-    // pointsId.push(pointId);
-  }
-
-  const basis1 : Point3D = createPoint3D(
-    points[1].x - points[0].x,
-    points[1].y - points[0].y,
-    points[1].z - points[0].z,
-  );
-
-  const basis2 : Point3D = createPoint3D(
-    points[2].x - points[0].x,
-    points[2].y - points[0].y,
-    points[2].z - points[0].z,
-  );
-
-  let basisResult = solveBasisSystem(
-  basis1.x, basis1.y, basis2.z,
-  basis2.x, basis2.y, basis2.z,
-  point.x, point.y, point.z
-  );
-
-  if (basisResult == null) {
-    return null;
-  }
-
-
-  // because our problem is isometric, use the same coordinates for our
-  // new basis vectors rotated on the 2d plane
-  const point0in2D : Point2D = face2d.vertices[0];
-  const point1in2D : Point2D = face2d.vertices[1];
-  const point2in2D : Point2D = face2d.vertices[2];
-
-  const basis1in2d : Point2D = createPoint2D(
-    point1in2D.x - point0in2D.x,
-    point1in2D.y - point0in2D.y
-  );
-
-  const basis2in2d : Point2D = createPoint2D(
-    point2in2D.x - point0in2D.x,
-    point2in2D.y - point0in2D.y
-  );
-
-  const coverted2dPoint = createPoint2D(
-    basis1in2d.x * basisResult.alpha +  basis2in2d.x * basisResult.beta,
-    basis1in2d.y * basisResult.alpha +  basis2in2d.y * basisResult.beta,
-  );
-
-  return coverted2dPoint;
-}
-
-
-/**
  * Given a provided point (ie you can provided the layered shot, no need to
  * project), and a face id, updates all frontend systems and backend systems
  * with adding a new annotation point
@@ -364,6 +203,173 @@ async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<st
 
   return true;
 }
+
+
+
+/**
+ * put in geometery module
+ * Given two basis vectors in 3 space, and a target point,
+ * returns the coordinates using the basis to get to the target point,
+ * or null if there is no solution
+ *
+ *  |x1|    |x2|   |bx|
+ * u|y1| + v|y2| = |by|
+ *  |z1|    |z2|   |bz|
+ *
+ * where the function returns {u, v}
+ *
+ *
+ * @param x1 - basis 1 x value
+ * @param y1 - basis 1 y value
+ * @param z1 - basis 1 z value
+ * @param x2 - basis 2 x value
+ * @param y2 - basis 2 y value
+ * @param z2 - basis 2 z value
+ * @param bx - target x value
+ * @param by - target y value
+ * @param bz - target z value
+ * @returns  given ux + vy = b; where u, v, b in R3. returns {u, v} or null if no sol
+ */
+export function solveBasisSystem(
+  x1: number, y1: number, z1: number,
+  x2: number, y2: number, z2: number,
+  bx: number, by: number, bz: number
+): { alpha: number, beta: number } | null{
+
+  // Calculate the determinant of the coefficient matrix
+  const det = x1 * y2 - x2 * y1;
+
+  // Use Cramer's rule to calculate alpha and beta
+  const detAlpha = bx * y2 - x2 * by;  // Replace first column with bx, by
+  const detBeta = x1 * bz - bx * z1;   // Replace second column with bx, bz
+
+  const alpha = detAlpha / det;
+  const beta = detBeta / det;
+
+  // system is overdetermined, so check that z values match
+  if (Math.abs((z1 * alpha + z2 * beta) - bz) > 0.01) {
+    return null; // system undetermined
+  }
+
+  return { alpha, beta };
+}
+
+
+/**
+ * takes a 3d point and projects it onto the face3d start position. intended for when hitting
+ * a layer on the render since these planes have an offset
+ * @param point - the point to be projected
+ * @param face3d - the plane to be projected on
+ * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
+ */
+function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
+  const points: THREE.Vector3[] = [];
+
+  // TODO: ask hady to give me 3 vertices
+  for (let i = 0; i < 3; i++) {
+    points.push(new THREE.Vector3(face3d.vertices[0].x, face3d.vertices[0].y, face3d.vertices[0].z));
+  }
+
+  // idea is to create a plane as Three.js has a project point method
+  const plane = new THREE.Plane();
+  plane.setFromCoplanarPoints(points[0], points[1], points[2]);
+
+  const projectedPoint = new THREE.Vector3();
+  const originalPtThreeVerison = new THREE.Vector3(point.x, point.y, point.z);
+  plane.projectPoint(originalPtThreeVerison, projectedPoint);
+
+  // create our version of 3d point
+  const translatedBackPt: Point3D = createPoint3D(projectedPoint.x,
+                                                  projectedPoint.y,
+                                                  projectedPoint.z
+                                                );
+
+  if (!face3d.containedInFace(translatedBackPt)) {
+    console.error("Point is not on plane when projected");
+    return null;
+  }
+  return translatedBackPt;
+}
+
+/**
+ * PUT in PaperModule
+ * take a 3d point on the layered version of face3d (given with faceid),
+ * return the corresponding 2d point in the paper map version
+ * @param point - the 3d point to translate to 2d
+ * @param faceId - the faceId the point lines on
+ * @returns the corresponding point2d, or null if the 3d point isn't on the face
+ */
+function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
+  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  if (face3d === undefined) {
+    console.error("face 3d id doesn't exists");
+    return null;
+  }
+  let face2d: Face2D | undefined = getFace2dFromId(faceId);
+  if (face2d === undefined) {
+    console.error("face 2d id doesn't exists");
+    return null;
+  }
+
+  return processTransationFrom3dTo2d(point, face3d, face2d);
+}
+
+export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
+  // let idMap : Map<bigint, pt.AnnotatedPoint> = face3d.vertices; // fine, add map access
+  let points : Point3D[] = [];
+  //let pointsId : bigint[] = [];
+  for (let i = 0; i < 3; i++) {
+    points.push(face3d.vertices[i]);
+    // pointsId.push(pointId);
+  }
+
+  const basis1 : Point3D = createPoint3D(
+    points[1].x - points[0].x,
+    points[1].y - points[0].y,
+    points[1].z - points[0].z,
+  );
+
+  const basis2 : Point3D = createPoint3D(
+    points[2].x - points[0].x,
+    points[2].y - points[0].y,
+    points[2].z - points[0].z,
+  );
+
+  let basisResult = solveBasisSystem(
+  basis1.x, basis1.y, basis2.z,
+  basis2.x, basis2.y, basis2.z,
+  point.x, point.y, point.z
+  );
+
+  if (basisResult == null) {
+    return null;
+  }
+
+
+  // because our problem is isometric, use the same coordinates for our
+  // new basis vectors rotated on the 2d plane
+  const point0in2D : Point2D = face2d.vertices[0];
+  const point1in2D : Point2D = face2d.vertices[1];
+  const point2in2D : Point2D = face2d.vertices[2];
+
+  const basis1in2d : Point2D = createPoint2D(
+    point1in2D.x - point0in2D.x,
+    point1in2D.y - point0in2D.y
+  );
+
+  const basis2in2d : Point2D = createPoint2D(
+    point2in2D.x - point0in2D.x,
+    point2in2D.y - point0in2D.y
+  );
+
+  const coverted2dPoint = createPoint2D(
+    basis1in2d.x * basisResult.alpha +  basis2in2d.x * basisResult.beta,
+    basis1in2d.y * basisResult.alpha +  basis2in2d.y * basisResult.beta,
+  );
+
+  return coverted2dPoint;
+}
+
 
 
 
