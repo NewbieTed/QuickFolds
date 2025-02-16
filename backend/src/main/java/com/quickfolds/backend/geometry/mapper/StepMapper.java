@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
 public interface StepMapper {
 
 
-    Long getStepTypeByName(@Param("stepType") String stepType);
+    Long getStepTypeByName(@Param("stepTypeName") String stepTypeName);
 
     @Options(useGeneratedKeys = true, keyProperty = "id")
     Long addByObj(@Param("step")Step step);
