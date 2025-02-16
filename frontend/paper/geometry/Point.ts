@@ -41,12 +41,22 @@ export type Point = Point2D | Point3D;
 
 
 /**
- * An annotated point type - consists of the point object and
+ * An annotated 3D point type - consists of the point object and
  * also the ID of the edge on which it lies, if any.
  * The value -1 is given if the annotated point lies on no edge.
  */
-export type AnnotatedPoint = {
-    point: Point,
+export type AnnotatedPoint3D = {
+    point: Point3D,
+    edgeID: bigint
+}
+
+/**
+ * An annotated 2D point type - consists of the point object and
+ * also the ID of the edge on which it lies, if any.
+ * The value -1 is given if the annotated point lies on no edge.
+ */
+export type AnnotatedPoint2D = {
+    point: Point2D,
     edgeID: bigint
 }
 
@@ -58,6 +68,7 @@ export type AnnotatedLine = {
     startPointID: bigint,
     endPointID: bigint
 }
+
 
 // ----------------------------- Functions --------------------------------- //
 
@@ -241,17 +252,20 @@ export function subtract<T extends Point>(
 
 
 /**
- * Computes the scalar product (dot product) of two 3D points.
+ * Computes the scalar product (dot product) of two points.
  * @param a The first point.
  * @param b The second point.
  * @returns The scalar product a * b (component-wise multiply and add).
  */
-export function dotProduct(a: Point3D, b: Point3D): number {
+export function dotProduct<T extends Point>(a: T, b: T): number {
 
-    let result = 0;
+    let result: number = 0;
     result += a.x * b.x;
     result += a.y * b.y;
-    result += a.z * b.z;
+    
+    if (a.dim == "3D" && b.dim == "3D") {
+        result += a.z * b.z;
+    }
 
     return result;
 }

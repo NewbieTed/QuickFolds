@@ -16,6 +16,8 @@ export class Face3D {
      * N - the number of vertices
      * annotatedPoints - annotated points id'd at integers > the # of vertices
      * annotatedLines - annotated lines between points
+     * pointGeometry - the Three.js objects for annotation points
+     * lineGeometry - the Three.js objects for annotation lines
      * paperThickness - how thick the paper is
      * offset - the number of half-paper-thicknesses away from the underlying
      *          plane, positive is in the direction of the principal normal
@@ -29,8 +31,10 @@ export class Face3D {
     public readonly ID: bigint;
     public readonly vertices: pt.Point3D[];
     public readonly N: bigint;
-    private annotatedPoints: Map<bigint, pt.AnnotatedPoint>;
+    private annotatedPoints: Map<bigint, pt.AnnotatedPoint3D>;
     private annotatedLines: Map<bigint, pt.AnnotatedLine>;
+    private pointGeometry: Map<bigint, THREE.Object3D>;
+    private lineGeometry: Map<bigint, THREE.Object3D>;
     private mesh: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
@@ -50,12 +54,19 @@ export class Face3D {
         this.N = BigInt(vertices.length);
         this.nextPointID = BigInt(vertices.length);
         this.nextLineID = 0n;
-        this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint>();
+        this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint3D>();
         this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
+        this.pointGeometry = new Map<bigint, THREE.Object3D>();
+        this.lineGeometry = new Map<bigint, THREE.Object3D>();
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = pt.normalize(principalNormal);
         
+        this.mesh = this.createFaceGeometry();
+    }
+
+    private createFaceGeometry(): THREE.Object3D {
+
         // In origami, all faces are actually convex polygons, provided that
         // the paper was initially a convex polygon. Therefore their centroid
         // is contained inside of the polygon. Since Three.js defines all
@@ -64,7 +75,7 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, paperThickness * offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset * 0.5
         );
         // The centroid of the slab.
         const centroid: pt.Point3D = pt.add(
@@ -72,7 +83,7 @@ export class Face3D {
         );
         // Vector for offsetting half the thickness of the paper
         const centerOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, paperThickness * 0.5
+            this.principalNormal, this.paperThickness * 0.5
         );
         const centroidTop: pt.Point3D = pt.add(centroid, centerOffset);
         const centroidBot: pt.Point3D = pt.subtract(centroid, centerOffset);
@@ -85,7 +96,7 @@ export class Face3D {
     
             // Find the projection of the vertex onto the slab's center plane.
             const center: pt.Point3D = pt.add(
-                vertices[Number(i)], principalOffset
+                this.vertices[Number(i)], principalOffset
             );
 
             // Compute the top and bottom points.
@@ -98,7 +109,7 @@ export class Face3D {
 
         // Now create the faces of the slab by referring to point indices.
         const triangles: number[] = [];
-        for (let i = 0n; i < vertices.length; i++) {
+        for (let i = 0n; i < this.N; i++) {
 
             const topIndex = Number(2n*i + 2n);
             const botIndex = Number(2n*i + 3n);
@@ -137,8 +148,15 @@ export class Face3D {
             opacity: 1,
             flatShading: true
         });
-        this.mesh = new THREE.Mesh(faceGeometry, faceMaterial);
+
+        return new THREE.Mesh(faceGeometry, faceMaterial);
     }
+
+    // TODO: creators for point and line geometry
+    // getters for point and line geometry
+    // return IDS of pts/lines on add
+    // return the THREE.JS object on delete, so
+    // that it can be freed from the scene.
 
     public getMesh(): THREE.Object3D {
         return this.mesh;
@@ -184,10 +202,10 @@ export class Face3D {
     /**
      * Gets the annotated point in this face with the given ID.
      * @param pointID The ID of the annotated point to get.
-     * @returns The AnnotatedPoint object corresponding to the given ID.
+     * @returns The AnnotatedPoint3D object corresponding to the given ID.
      * @throws Error if there is no annotated point with the given ID.
      */
-    public getAnnotatedPoint(pointID: bigint): pt.AnnotatedPoint {
+    public getAnnotatedPoint(pointID: bigint): pt.AnnotatedPoint3D {
         const result = this.annotatedPoints.get(pointID);
         if (result !== undefined) {
             return result;
@@ -238,8 +256,9 @@ export class Face3D {
         }
 
         const edgeStart: pt.Point3D = this.getPoint(edgeID);
+        const edgeEnd: pt.Point3D = this.getPoint((edgeID + 1n) % this.N);
         const direction: pt.Point3D = pt.normalize(pt.subtract(
-            this.getPoint((edgeID + 1n) % this.N), edgeStart
+            edgeEnd, edgeStart
         ));
         const displacement: number = pt.dotProduct(
             direction, pt.subtract(point, edgeStart)
@@ -306,10 +325,7 @@ export class Face3D {
         return minID;
     }
 
-    public rotateFace(axis: null, angle: null) {
-
-    }
-
-
+    // TODO: rotate the three js geometry method, vs rotate the true face.
+    // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
 }
