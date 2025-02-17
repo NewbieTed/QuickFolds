@@ -21,9 +21,8 @@ public class OrigamiController {
 
 
     @PostMapping("/new")
-    public ResponseEntity<BaseResponse<Boolean>> newOrigami(@Valid @RequestBody FoldRequest request) {
-
-        return BaseResponse.success();
+    public ResponseEntity<BaseResponse<Boolean>> newOrigami() {
+        return origamiService.newOrigami();
     }
 
     @GetMapping("/list")
