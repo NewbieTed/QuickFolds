@@ -13,7 +13,7 @@
     </select>
 
 
-    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Origami">
+    <insert id="addByObj" parameterType="com.quickfolds.backend.origami.model.Origami">
         INSERT INTO origami (
             user_id,
             is_public,
