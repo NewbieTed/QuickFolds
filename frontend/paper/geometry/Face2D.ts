@@ -4,12 +4,20 @@
  */
 
 
+import {EditorStatusType} from "../view/EditorMessage";
 import {getNextFaceID} from "../view/SceneManager" 
 import * as pt from "./Point";
 
 
+/**
+ * An AnnotationUpdate2D object describes the new points
+ * created, the new lines created, the old lines deleted, and the old
+ * points deleted when an annotation method is called. The update
+ * object also has a status indicating whether the addition of this
+ * line was sucessful by a certain status code.
+ */
 export type AnnotationUpdate2D = {
-    readonly status: bigint;
+    readonly status: EditorStatusType;
     readonly pointsAdded: Map<bigint, pt.AnnotatedPoint2D>
     readonly pointsDeleted: bigint[]
     readonly linesAdded: Map<bigint, pt.AnnotatedLine>
@@ -53,18 +61,34 @@ export class Face2D {
      * @param point The point to add (assumed to be on this face).
      * @param edgeID The ID of the edge that this point lies on.
      *               Defaults to -1, indicating the point lies on no edge.
-     * @returns The ID of the newly created annotated point.
+     * @returns The annotation update object.
      */
-    public addAnnotatedPoint(point: pt.Point2D, edgeID: bigint = -1n): bigint {
+    public addAnnotatedPoint(point: pt.Point2D, edgeID: bigint = -1n): AnnotationUpdate2D {
 
         const newPt: pt.AnnotatedPoint2D = {
             point: point,
             edgeID: edgeID
         }
 
+        const pointsAdded = new Map<bigint, pt.AnnotatedPoint2D>();
+        const pointsDeleted: bigint[] = [];
+        const linesAdded = new Map<bigint, pt.AnnotatedLine>();
+        const linesDeleted: bigint[] = [];
+
         this.annotatedPoints.set(this.nextPointID, newPt);
+        pointsAdded.set(this.nextPointID, newPt);
         this.nextPointID++;
-        return this.nextPointID - 1n;
+
+        // Construct and return the annotations update object.
+        const update: AnnotationUpdate2D = {
+            status: "NORMAL", // Success
+            pointsAdded: pointsAdded,
+            pointsDeleted: pointsDeleted,
+            linesAdded: linesAdded,
+            linesDeleted: linesDeleted
+        }
+
+        return update;
     }
 
     /**
@@ -73,11 +97,7 @@ export class Face2D {
      * accordingly, returning an update object showing the changes.
      * @param startPointID The ID of the start point of the new line.
      * @param endPointID The ID of the end point of the new line.
-     * @returns An AnnotationUpdate2D object which describes the new points
-     * created, the new lines created, the old lines deleted, and the old
-     * points deleted (this method does not delete any points). The update
-     * object also has a status indicating whether the addition of this
-     * line was sucessful by a code 0, or failure by code 1.
+     * @returns The annotation update object.
      */
     public addAnnotatedLine(
                 startPointID: bigint, 
@@ -101,7 +121,7 @@ export class Face2D {
             if (overlaps) {
                 // Make empty annotation update and return.
                 const update: AnnotationUpdate2D = {
-                    status: 1n, // Failure
+                    status: "BAD_LINE_ADD", // Failure
                     pointsAdded: new Map<bigint, pt.AnnotatedPoint2D>(),
                     pointsDeleted: [],
                     linesAdded: new Map<bigint, pt.AnnotatedLine>(),
@@ -137,10 +157,16 @@ export class Face2D {
         for (const intersection of intersections) {
 
             const lineToSplit = this.getAnnotatedLine(intersection.lineID);
-            
+
             // Add the intersection point.
-            const pointID = this.addAnnotatedPoint(intersection.point);
-            pointsAdded.set(pointID, this.getAnnotatedPoint(pointID));
+            const newPt: pt.AnnotatedPoint2D = {
+                point: intersection.point,
+                edgeID: -1n
+            }
+            this.annotatedPoints.set(this.nextPointID, newPt);
+            pointsAdded.set(this.nextPointID, newPt);
+            const pointID: bigint = this.nextPointID;
+            this.nextPointID++;
 
             // Add the line from current to intersection point.
             const line1: pt.AnnotatedLine = {
@@ -151,7 +177,7 @@ export class Face2D {
             linesAdded.set(this.nextLineID, line1);
             this.nextLineID++;
 
-            // Add the the lines that split lineToSplit into two.
+            // Add the the two lines that split lineToSplit in half.
             const line2: pt.AnnotatedLine = {
                 startPointID: pointID,
                 endPointID: lineToSplit.startPointID
@@ -159,6 +185,7 @@ export class Face2D {
             this.annotatedLines.set(this.nextLineID, line2);
             linesAdded.set(this.nextLineID, line2);
             this.nextLineID++;
+
             const line3: pt.AnnotatedLine = {
                 startPointID: pointID,
                 endPointID: lineToSplit.endPointID
@@ -168,7 +195,7 @@ export class Face2D {
             this.nextLineID++;
 
             // Delete the lineToSplit.
-            this.delAnnotatedLine(intersection.lineID);
+            this.annotatedLines.delete(intersection.lineID);
             linesDeleted.push(intersection.lineID);
 
             // Move to the next segment.
@@ -187,7 +214,7 @@ export class Face2D {
 
         // Construct and return the annotations update object.
         const update: AnnotationUpdate2D = {
-            status: 0n, // Success
+            status: "NORMAL", // Success
             pointsAdded: pointsAdded,
             pointsDeleted: pointsDeleted,
             linesAdded: linesAdded,
@@ -301,8 +328,12 @@ export class Face2D {
         );
 
         const onSegmentUV: boolean = pt.distance(u, intersection) <
+                                     pt.distance(u, v) &&
+                                     pt.distance(v, intersection) <
                                      pt.distance(u, v);
         const onSegmentST: boolean = pt.distance(s, intersection) <
+                                     pt.distance(s, t) &&
+                                     pt.distance(t, intersection) <
                                      pt.distance(s, t);
 
         return (onSegmentUV && onSegmentST) ? intersection : undefined;
@@ -329,27 +360,92 @@ export class Face2D {
     /**
      * Deletes the annotated point with the given ID from this face.
      * @param pointID The ID of the point to delete.
-     * @returns The AnnotatedPoint2D object which was deleted from the face.
+     * @returns The annotation update object.
      * @throws Error if there is no point with the given ID.
      */
-    public delAnnotatedPoint(pointID: bigint): pt.AnnotatedPoint2D {
+    public delAnnotatedPoint(pointID: bigint): AnnotationUpdate2D {
+
         const result = this.annotatedPoints.get(pointID);
         if (result !== undefined) {
-            return result;
+
+            const pointsAdded = new Map<bigint, pt.AnnotatedPoint2D>();
+            const pointsDeleted: bigint[] = [];
+            const linesAdded = new Map<bigint, pt.AnnotatedLine>();
+            const linesDeleted: bigint[] = [];
+
+            // Check if the point is an endpoint of any lines,
+            // and if so disallow the delete.
+
+            for (const lineID of this.annotatedLines.keys()) {
+                const line = this.annotatedLines.get(lineID);
+                if (line != undefined) {
+                    // This always runs, just satisfying TS compiler.
+                    if (line.startPointID === pointID || 
+                        line.endPointID === pointID) {
+                        
+                        // Construct and return the annotations update object.
+                        const update: AnnotationUpdate2D = {
+                            status: "BAD_POINT_DELETE", // Failure
+                            pointsAdded: pointsAdded,
+                            pointsDeleted: pointsDeleted,
+                            linesAdded: linesAdded,
+                            linesDeleted: linesDeleted
+                        }
+
+                        return update;
+                    }
+                    
+                }
+                
+            }
+            
+            // Safe to delete this annotated point.
+            this.annotatedPoints.delete(pointID);
+            pointsDeleted.push(pointID);
+
+            // Construct and return the annotations update object.
+            const update: AnnotationUpdate2D = {
+                status: "NORMAL", // Success
+                pointsAdded: pointsAdded,
+                pointsDeleted: pointsDeleted,
+                linesAdded: linesAdded,
+                linesDeleted: linesDeleted
+            }
+
+            return update;
         }
+
         throw new Error(`This face has no annotated point with id ${pointID}.`);
     }
 
      /**
      * Deletes the annotated line with the given ID from this face.
      * @param lineID The ID of the line to delete.
-     * @returns The AnnotatedLine object which was deleted from the face.
+     * @returns The annotation update object.
      * @throws Error if there is no line with the given ID.
      */
-    public delAnnotatedLine(lineID: bigint): pt.AnnotatedLine {
+    public delAnnotatedLine(lineID: bigint): AnnotationUpdate2D {
         const result = this.annotatedLines.get(lineID);
         if (result !== undefined) {
-            return result;
+
+            const pointsAdded = new Map<bigint, pt.AnnotatedPoint2D>();
+            const pointsDeleted: bigint[] = [];
+            const linesAdded = new Map<bigint, pt.AnnotatedLine>();
+            const linesDeleted: bigint[] = [];
+
+            this.annotatedLines.delete(lineID);
+            linesDeleted.push(lineID);
+
+            // Construct and return the annotations update object.
+            const update: AnnotationUpdate2D = {
+                status: "NORMAL", // Success
+                pointsAdded: pointsAdded,
+                pointsDeleted: pointsDeleted,
+                linesAdded: linesAdded,
+                linesDeleted: linesDeleted
+            }
+
+            return update;
         }
         throw new Error(`This face has no annotated line with id ${lineID}.`);
     }
