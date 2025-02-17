@@ -6,9 +6,20 @@
 
 export const EditorStatus = {
 
-    NORMAL: {code: 0, msg: ""},
-    BAD_LINE_ADD:  {code: 1, msg: ""},
-    BAD_POINT_DELETE: {code: 2, msg: ""}
+    NORMAL: {
+        code: 0, 
+        msg: ""
+    },
+
+    BAD_LINE_ADD_OVERLAP:  {
+        code: 1, 
+        msg: "That annotated line would too closely overlap an existing one."
+    },
+    
+    BAD_POINT_DELETE: {
+        code: 2, 
+        msg: "Deleting that point would cause an annotated line to be deleted."
+    }
 
 } as const;
 

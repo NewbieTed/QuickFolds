@@ -3,9 +3,32 @@
  * the graph data structure representing the paper.
  */
 
-import * as THREE from 'three';
+
 import {getNextFaceID} from "../view/SceneManager" 
+import * as THREE from 'three';
 import * as pt from "./Point";
+
+
+/**
+ * An AnnotationUpdate3D object describes the new points
+ * created, the new lines created, the old lines deleted, and the old
+ * points deleted when an annotation method is called.
+ */
+export type AnnotationUpdate3D = {
+    readonly pointsAdded: Map<bigint, pt.AnnotatedPoint3D>
+    readonly pointsDeleted: bigint[]
+    readonly linesAdded: Map<bigint, pt.AnnotatedLine>
+    readonly linesDeleted: bigint[]
+}
+
+/**
+ * Encodes lists of Three JS objects to be added from the scene,
+ * or removed from the scene and also deleted from memory.
+ */
+export type FaceUpdate3D = {
+    readonly objectsToAdd: THREE.Object3D[]
+    readonly objectsToDelete: THREE.Object3D[]
+}
 
 
 export class Face3D {
@@ -65,6 +88,11 @@ export class Face3D {
         this.mesh = this.createFaceGeometry();
     }
 
+
+    /**
+     * Generates the 3D polygon geometry from the initialization of vertices.
+     * @returns A Three JS object mesh which displays this Face3D.
+     */
     private createFaceGeometry(): THREE.Object3D {
 
         // In origami, all faces are actually convex polygons, provided that
@@ -152,14 +180,174 @@ export class Face3D {
         return new THREE.Mesh(faceGeometry, faceMaterial);
     }
 
-    // TODO: creators for point and line geometry
-    // getters for point and line geometry
+    /**
+     * Generates the 3D geometry to display an annotated point.
+     * @param point A Point3D assumed to be already on the true face plane.
+     * @returns A Three JS object mesh which displays the provided point.
+     */
+    private createPointGeometry(point: pt.Point3D): THREE.Object3D {
+
+        // Vector for translating the slab off of the underlying plane.
+        const principalOffset: pt.Point3D = pt.scalarMult(
+            this.principalNormal, this.paperThickness * this.offset * 0.5
+        );
+        const pos: pt.Point3D = pt.add(point, principalOffset);
+
+        // Create a glowing point.
+        const glowingMaterial = new THREE.PointsMaterial({
+            color: 0xff0000,
+            size: 5,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.8,
+        });
+        const pointGeometry = new THREE.BufferGeometry().setFromPoints(
+            [new THREE.Vector3(pos.x, pos.y, pos.z)]
+        );
+        const glowingPoint = new THREE.Points(pointGeometry, glowingMaterial);
+
+        // Render this point last (to get X-ray vision).
+        glowingPoint.renderOrder = 1;
+
+        return glowingPoint;       
+    }
+
+
+    /**
+     * Generates the 3D geometry to display an annotated line.
+     * @param start A Point3D assumed to be already in the true face.
+     * @param end A Point3D assumed to be already in the true face.
+     * @returns A Three JS object mesh which displays the provided line.
+     */
+    private createLineGeometry(
+                start: pt.Point3D, 
+                end: pt.Point3D
+                ): THREE.Object3D {
+
+        // Vector for translating the slab off of the underlying plane.
+        const principalOffset: pt.Point3D = pt.scalarMult(
+            this.principalNormal, this.paperThickness * this.offset * 0.5
+        );
+        const pos1: pt.Point3D = pt.add(start, principalOffset);
+        const pos2: pt.Point3D = pt.add(end, principalOffset);
+
+        // Create a glowing line.
+        const glowingMaterial = new THREE.LineDashedMaterial({
+            color: 0x0000ff,
+            linewidth: 3,
+            scale: 1,
+            dashSize: 1,
+            gapSize: 1,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.8,
+        });
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(
+            [
+                new THREE.Vector3(pos1.x, pos1.y, pos1.z),
+                new THREE.Vector3(pos2.x, pos2.y, pos2.z)
+            ]
+        );
+        const glowingLine = new THREE.Points(lineGeometry, glowingMaterial);
+
+        // Render this line last (to get X-ray vision).
+        glowingLine.renderOrder = 1;
+
+        return glowingLine;
+    }
+
+    // TODO
     // return IDS of pts/lines on add
     // return the THREE.JS object on delete, so
     // that it can be freed from the scene.
+    // TODO: create constructor from Face2D + 3D annotations.
 
-    public getMesh(): THREE.Object3D {
-        return this.mesh;
+    /**
+     * Collects and returns all of the meshes corresponding to this Face3D.
+     * @returns A list of all Three.js meshes corresponding to this Face3D.
+     */
+    public collectMeshes(): THREE.Object3D[] {
+
+        const meshes: THREE.Object3D[] = [this.mesh];
+        for (const pointGeo of this.pointGeometry.values()) {
+            meshes.push(pointGeo);
+        }
+        for (const lineGeo of this.lineGeometry.values()) {
+            meshes.push(lineGeo);
+        }
+
+        return meshes;
+    }
+
+    /**
+     * Update the annotations in this Face3D according to an annotations
+     * update object, which tells this Face3D which points and lines to
+     * create and delete. Automatically updates internal geometry.
+     * @param update The annotations update object.
+     * @returns A FaceUpdate3D object which contains Three.js objects that
+     * need to be deleted and added to the scene.
+     * @throws Error when referring to IDs of non-existent points/lines.
+     */
+    public updateAnnotations(update: AnnotationUpdate3D): FaceUpdate3D {
+
+        const objectsToAdd: THREE.Object3D[] = [];
+        const objectsToDelete: THREE.Object3D[] = [];
+
+        // Delete the lines that need to be deleted.
+        for (const lineID of update.linesDeleted) {
+            if (!this.annotatedLines.delete(lineID)) {
+                throw new Error(`No line with id ${lineID} exists.`);
+            }
+            const lineObject = this.lineGeometry.get(lineID);
+            if (lineObject !== undefined) {
+                objectsToDelete.push(lineObject);
+            }
+            this.lineGeometry.delete(lineID);
+        }
+
+        // Delete the points that need to be deleted.
+        for (const pointID of update.pointsDeleted) {
+            if (!this.annotatedPoints.delete(pointID)) {
+                throw new Error(`No point with id ${pointID} exists.`);
+            }
+            const pointObject = this.pointGeometry.get(pointID);
+            if (pointObject !== undefined) {
+                objectsToDelete.push(pointObject);
+            }
+            this.pointGeometry.delete(pointID);
+        }
+
+        // Add the points that need to be added.
+        for (const pointID of update.pointsAdded.keys()) {
+            const point = update.pointsAdded.get(pointID);
+            if (point !== undefined) {
+                this.annotatedPoints.set(pointID, point);
+                const pointObject = this.createPointGeometry(point.point);
+                this.pointGeometry.set(pointID, pointObject);
+                objectsToAdd.push(pointObject);
+            }
+        }
+
+        // Add the lines that need to be added.
+        for (const lineID of update.linesAdded.keys()) {
+            const line = update.linesAdded.get(lineID);
+            if (line !== undefined) {
+                const startPoint = this.getPoint(line.startPointID);
+                const endPoint = this.getPoint(line.endPointID);
+                this.annotatedLines.set(lineID, line);
+                const lineObject = this.createLineGeometry(startPoint, endPoint);
+                this.lineGeometry.set(lineID, lineObject);
+                objectsToAdd.push(lineObject);
+            }
+        }
+
+        // Construct and return the face update object.
+        const faceUpdate: FaceUpdate3D = {
+            objectsToAdd: objectsToAdd,
+            objectsToDelete: objectsToDelete
+        }
+
+        return faceUpdate;
     }
 
     public addAnnotatedPoint(point: pt.Point3D, edgeID: bigint = -1n): void {
@@ -167,7 +355,7 @@ export class Face3D {
     }
 
     public addAnnotatedLine(startPointID: bigint, endPointID: bigint): void {
-        // handles intersections too
+        
     }
 
     public delAnnotatedPoint(pointID: bigint): void {

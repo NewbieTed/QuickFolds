@@ -121,7 +121,7 @@ export class Face2D {
             if (overlaps) {
                 // Make empty annotation update and return.
                 const update: AnnotationUpdate2D = {
-                    status: "BAD_LINE_ADD", // Failure
+                    status: "BAD_LINE_ADD_OVERLAP", // Failure
                     pointsAdded: new Map<bigint, pt.AnnotatedPoint2D>(),
                     pointsDeleted: [],
                     linesAdded: new Map<bigint, pt.AnnotatedLine>(),
