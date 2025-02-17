@@ -9,7 +9,9 @@ import java.util.List;
 @Mapper
 public interface AnnotateLineMapper {
 
-    List<Long> getMultipleId(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
+    List<Long> getsIdsByIdInFace(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
+
+    List<Long> getDependentId(@Param("faceId") long faceId, @Param("pointIdsInFace") List<Integer> pointIdsInFace);
 
 
     void addByObj(@Param("annotatedLine") AnnotatedLine annotatedLine);

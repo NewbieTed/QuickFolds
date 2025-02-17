@@ -2,6 +2,7 @@ package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VertexRequest {
     @NotNull(message = "Field 'idInFace' in Vertex must not be null")
-    @Positive(message = "Field 'idInFace' in Vertex must be positive")
+    @PositiveOrZero(message = "Field 'idInFace' in Vertex must be non-negative")
     private Integer idInFace;
 
     @NotNull(message = "Field 'xPos' in Vertex must not be null")

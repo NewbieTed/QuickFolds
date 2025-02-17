@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.quickfolds.backend.origami.mapper.OrigamiMapper">
+
+
+    <select id="getPublicOrigamiIds" resultType="java.lang.Long">
+        SELECT id FROM origami
+        WHERE
+        is_public = true
+    </select>
+
+
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Origami">
+        INSERT INTO origami (
+            user_id,
+            is_public,
+            ratings
+            <if test="origami.createdBy != null">, created_by</if>
+            <if test="origami.updatedBy != null">, updated_by</if>
+            <if test="origami.createdAt != null">, created_at</if>
+            <if test="origami.updatedAt != null">, updated_at</if>
+        ) VALUES (
+            #{origami.userId},
+            #{origami.isPublic},
+            #{origami.ratings}
+            <if test="origami.createdBy != null">, #{origami.createdBy}</if>
+            <if test="origami.updatedBy != null">, #{origami.updatedBy}</if>
+            <if test="origami.createdAt != null">, #{origami.createdAt}</if>
+            <if test="origami.updatedAt != null">, #{origami.updatedAt}</if>
+        )
+    </insert>
+
+</mapper>

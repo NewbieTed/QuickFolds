@@ -5,17 +5,24 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.EdgeMapper">
 
-    <select id="getIdByIdInFace">
-        SELECT id FROM edge
-        WHERE (
-        face_1_id = #{faceId}
-        AND
-        id_in_face_1 = #{edgeIdInFace}
-        ) OR (
-        face_2_id = #{faceId}
-        AND
-        id_in_face_2 = #{edgeIdInFace}
-        )
-        LIMIT 1
+    <select id="getIdByIdInFace" resultType="Long">
+        (SELECT edge_id FROM fold_edge
+        WHERE
+            face_1_id = #{faceId} AND
+            id_in_face_1 = #{idInFace}
+        LIMIT 1)
+        UNION ALL
+        (SELECT edge_id FROM fold_edge
+        WHERE
+            face_2_id = #{faceId} AND
+            id_in_face_2 = #{idInFace}
+        LIMIT 1)
+        UNION ALL
+        (SELECT edge_id FROM side_edge
+        WHERE
+            face_id = #{faceId} AND
+            id_in_face = #{idInFace}
+        LIMIT 1)
+        LIMIT 1;
     </select>
 </mapper>
