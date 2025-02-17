@@ -4,59 +4,56 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.OffsetDateTime;
 
 /**
- * Represents a specific type of step in the origami process where a fold is performed.
- * Maps to the "fold_step" table in the database.
+ * Represents a predefined type of point that can exist on an origami face.
+ * Maps to the "point_type" table in the database.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "fold_step")
-public class FoldStep {
+@Table(name = "point_type")
+public class PointType {
 
     /**
-     * Primary key for the FoldStep table.
-     * References the associated step's ID in the "step" table.
+     * Unique identifier for the point type.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "step_id", nullable = false, updatable = false)
-    private Long stepId;
+    @Column(name = "id", nullable = false, updatable = false)
+    private Long id;
 
     /**
-     * Foreign key referencing the face used as a reference (anchored face) in the fold.
-     * Links to the "face" table.
+     * Name of the point type, such as vertex or annotated_point.
      */
-    @Column(name = "anchored_face_id", nullable = false)
-    private Long anchoredFaceId;
+    @Column(name = "point_type_name", nullable = false, unique = true)
+    private String pointTypeName;
 
     /**
-     * Identifier of the user who created this fold step record.
+     * Identifier of the user who created this point type record.
      * May be null if not explicitly set.
      */
     @Column(name = "created_by")
     private String createdBy;
 
     /**
-     * Identifier of the user who last updated this fold step record.
+     * Identifier of the user who last updated this point type record.
      * May be null if not explicitly set.
      */
     @Column(name = "updated_by")
     private String updatedBy;
 
     /**
-     * Timestamp when this fold step record was created.
+     * Timestamp when this point type record was created.
      * Automatically set at the time of creation and not updatable.
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     /**
-     * Timestamp when this fold step record was last updated.
+     * Timestamp when this point type record was last updated.
      * Updated automatically when the record is modified.
      */
     @Column(name = "updated_at")

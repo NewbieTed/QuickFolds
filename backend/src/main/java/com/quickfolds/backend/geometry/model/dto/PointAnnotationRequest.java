@@ -1,7 +1,7 @@
 package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class PointAnnotationRequest {
 
     @NotNull(message = "Field 'idInFace' in Point Annotation must not be null")
-    @Positive(message = "Field 'idInFace' in Point Annotation must be positive")
+    @PositiveOrZero(message = "Field 'idInFace' in Point Annotation must be non-negative")
     private Integer idInFace;
 
     @NotNull(message = "Field 'x' in Point Annotation must not be null")
@@ -21,6 +21,6 @@ public class PointAnnotationRequest {
     @NotNull(message = "Field 'y' in Point Annotation must not be null")
     private Double y;
 
-    @Positive(message = "Field 'onEdgeIdInFace' in Point Annotation must be positive")
-    private Integer onEdgeIdInFace; // Edge this point lies on, or null if it doesn't lie on any edge
+    @PositiveOrZero(message = "Field 'onEdgeIdInFace' in Point Annotation must be non-negative")
+    private Integer onEdgeIdInFace;
 }
