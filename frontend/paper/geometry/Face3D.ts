@@ -61,8 +61,6 @@ export class Face3D {
     private mesh: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
-    private nextLineID: bigint;
-    private nextPointID: bigint;
     private principalNormal: pt.Point3D;
 
     public constructor(
@@ -75,8 +73,6 @@ export class Face3D {
         this.ID = getNextFaceID();
         this.vertices = vertices;
         this.N = BigInt(vertices.length);
-        this.nextPointID = BigInt(vertices.length);
-        this.nextLineID = 0n;
         this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint3D>();
         this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
         this.pointGeometry = new Map<bigint, THREE.Object3D>();
@@ -195,11 +191,11 @@ export class Face3D {
 
         // Create a glowing point.
         const glowingMaterial = new THREE.PointsMaterial({
-            color: 0xff0000,
-            size: 5,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: 0.8,
+            color: 0x0000ff,
+            size: 0.1,
+            opacity: 1,
+            sizeAttenuation: true,
+            depthTest: false
         });
         const pointGeometry = new THREE.BufferGeometry().setFromPoints(
             [new THREE.Vector3(pos.x, pos.y, pos.z)]
@@ -207,7 +203,7 @@ export class Face3D {
         const glowingPoint = new THREE.Points(pointGeometry, glowingMaterial);
 
         // Render this point last (to get X-ray vision).
-        glowingPoint.renderOrder = 1;
+        glowingPoint.renderOrder = 2;
 
         return glowingPoint;       
     }
@@ -232,23 +228,18 @@ export class Face3D {
         const pos2: pt.Point3D = pt.add(end, principalOffset);
 
         // Create a glowing line.
-        const glowingMaterial = new THREE.LineDashedMaterial({
-            color: 0x0000ff,
-            linewidth: 3,
-            scale: 1,
-            dashSize: 1,
-            gapSize: 1,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: 0.8,
+        const glowingMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00aa22,
+            opacity: 1,
+            side: THREE.DoubleSide,
+            depthTest: false
         });
-        const lineGeometry = new THREE.BufferGeometry().setFromPoints(
-            [
-                new THREE.Vector3(pos1.x, pos1.y, pos1.z),
-                new THREE.Vector3(pos2.x, pos2.y, pos2.z)
-            ]
+        const lineCurve = new THREE.LineCurve3(
+            new THREE.Vector3(pos1.x, pos1.y, pos1.z),
+            new THREE.Vector3(pos2.x, pos2.y, pos2.z)
         );
-        const glowingLine = new THREE.Points(lineGeometry, glowingMaterial);
+        const lineGeometry = new THREE.TubeGeometry(lineCurve, 1, 0.01, 16);
+        const glowingLine = new THREE.Mesh(lineGeometry, glowingMaterial);
 
         // Render this line last (to get X-ray vision).
         glowingLine.renderOrder = 1;
@@ -256,10 +247,6 @@ export class Face3D {
         return glowingLine;
     }
 
-    // TODO
-    // return IDS of pts/lines on add
-    // return the THREE.JS object on delete, so
-    // that it can be freed from the scene.
     // TODO: create constructor from Face2D + 3D annotations.
 
     /**
@@ -277,6 +264,14 @@ export class Face3D {
         }
 
         return meshes;
+    }
+
+    /**
+     * Gets the main mesh corresponding to the face geometry of this Face3D.
+     * @returns The face geometry mesh for this Face3D.
+     */
+    public getFaceMesh(): THREE.Object3D {
+        return this.mesh;
     }
 
     /**
@@ -348,22 +343,6 @@ export class Face3D {
         }
 
         return faceUpdate;
-    }
-
-    public addAnnotatedPoint(point: pt.Point3D, edgeID: bigint = -1n): void {
-
-    }
-
-    public addAnnotatedLine(startPointID: bigint, endPointID: bigint): void {
-        
-    }
-
-    public delAnnotatedPoint(pointID: bigint): void {
-
-    }
-
-    public delAnnotatedLine(lineID: bigint): void {
-
     }
 
     /**
