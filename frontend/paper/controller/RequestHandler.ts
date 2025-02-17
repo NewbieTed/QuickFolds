@@ -24,17 +24,17 @@ export async function addAnnotationPointToDB(
   isPointOnEdge: bigint | null
 ) : Promise<boolean> {
   // add points locally
-  const url = 'https://your-api-endpoint.com';
-  const data = serializeAddPoint(point, faceId, pointId, isPointOnEdge);
+  const url = 'http://localhost:8080/geometry/annotate';
+  const data = serializeAddPoint(point, faceId, pointId, null);
 
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'annotate/addannotatepoint',
+        "Content-Type" : "application/json"
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     });
 
     if (!response.ok) {

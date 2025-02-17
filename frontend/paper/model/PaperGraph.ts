@@ -6,8 +6,10 @@
 import { Face2D } from "../geometry/Face2D";
 import { createPoint2D } from "../geometry/Point";
 
-const STARTING_PLANE_ID : bigint = 0n;
+const STARTING_PLANE_ID : bigint = 1n; // BACKEND CHANGE
 const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
+
+createNewGraph();
 
 /**
  * Returns a specified element from the id<->F2d mappnig. If the value that is associated
@@ -19,6 +21,7 @@ const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
  * If no element is associated with the specified id, undefined is returned.
  */
 export function getFace2dFromId(faceId : bigint) {
+  console.log(idsToFaces);
   return idsToFaces.get(faceId);
 }
 

@@ -5,14 +5,35 @@
  * animation methods to display the 3D-rendered paper in motion.
  */
 
+import * as THREE from 'three';
+import exp from "constants";
 import { Face3D } from "../geometry/Face3D";
 
-let stepID = 0n;
-const origamiID = 0n;
+let stepID = 1n;
+const origamiID = 1n; // BACKEND CHANGE
 
-let nextFaceId : bigint = -1n;
+let nextFaceId : bigint = 1n;
 const idsToFaces : Map<bigint, Face3D> = new Map<bigint, Face3D>();
+const objToOurIds : Map<THREE.Object3D<THREE.Object3DEventMap>, bigint> = new Map<THREE.Object3D<THREE.Object3DEventMap>, bigint>();
 
+export function startup(plane : Face3D, meshObject : THREE.Object3D<THREE.Object3DEventMap>) {
+    idsToFaces.clear();
+    objToOurIds.clear();
+    idsToFaces.set(1n, plane);
+    objToOurIds.set(meshObject, 1n);
+    console.log("ID OF MESH" + meshObject.id);
+}
+
+
+export function threeJSIdsToOurIds(threeJSId : THREE.Object3D<THREE.Object3DEventMap>) : bigint | undefined{
+    return objToOurIds.get(threeJSId);
+}
+
+
+/**
+ * @param faceId - id of faceobject to get
+ * @returns face3d object or undefined if no id exists
+ */
 export function getFace3dFromId(faceId : bigint) {
     return idsToFaces.get(faceId);
 }

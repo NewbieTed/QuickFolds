@@ -21,13 +21,13 @@ export function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigin
   let stepID: bigint = getStepID();
 
   let faces = [{
-    "idInOrigami": faceId,
+    "idInOrigami": Number(faceId),
     "annotations": {
       "points": [
                   {
-                    "idInFace": pointID,
-                    "x": 1.0,
-                    "y": 2.0,
+                    "idInFace": Number(pointID),
+                    "x": point.x,
+                    "y": point.y,
                     "onEdgeIdInFace": isPointOnEdge
                   }
                 ],
@@ -38,8 +38,8 @@ export function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigin
   }];
 
   let final = {
-    "origamiId": origamiID,
-    "stepIdInOrigami": stepID,
+    "origamiId": Number(origamiID),
+    "stepIdInOrigami": Number(stepID),
     "faces": faces
   }
 

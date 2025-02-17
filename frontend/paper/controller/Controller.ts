@@ -22,8 +22,9 @@ import { getFace3dFromId, incrementStepID } from '../view/SceneManager';
  * @param faceId - the face to add the point to
  * @returns either true, or a message about while the action failed
  */
-async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<string | true> {
+export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<string | true> {
   // add points to frontend
+  console.log("internal system face id: " + faceId);
 
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D | undefined = getFace3dFromId(faceId);
@@ -48,7 +49,7 @@ async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<stri
   }
 
   let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
-
+  console.log(getTranslated2dPoint);
   if (getTranslated2dPoint == null) {
     console.error("Error translating to 2d");
     return "Error translating to 2d";
@@ -84,9 +85,9 @@ async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<stri
 async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : Promise<string | true>  {
   // check to make sure point isn't being used in line
   // user can only remove a "hanging" (ie unlined) point
-  if (lineUsesPoint(faceId, pointId)) {
-    return "Point is being used a line, delete line first";
-  }
+  // if (lineUsesPoint(faceId, pointId)) {
+  //   return "Point is being used a line, delete line first";
+  // }
 
 
   // add annotation point to face3d [ie in SceneManager]
@@ -137,9 +138,9 @@ async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: big
     console.error("face 3d id doesn't exists");
     return "face 3d id doesn't exists";
   }
-  if (doesLineAlreadyExist(point1Id, point2Id, faceId)) {
-    return "Line already exists";
-  }
+
+  // returns status 1 error
+
   const minId : bigint = intMin(point1Id, point2Id);
   const maxId : bigint = intMax(point1Id, point2Id);
 
@@ -180,9 +181,7 @@ async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<st
     return "face 3d id doesn't exists";
   }
 
-  if (!containsLine(lineId, faceId)) {
-    return "No line exists";
-  }
+  // covered in this case
 
 
   face3d.delAnnotatedLine(lineId);
@@ -255,6 +254,51 @@ export function solveBasisSystem(
 }
 
 
+
+/**
+ * Solve a * v1 + b * v2 = t for scalars a, b in R^3.
+ *
+ * If a solution exists, returns [a, b].
+ * If no solution exists (i.e. t is not in the plane spanned by v1, v2),
+ * or if v1, v2 are collinear (no unique solution), returns null.
+ */
+function solveForScalars(
+  v1: [number, number, number],
+  v2: [number, number, number],
+  t: [number, number, number]
+): [number, number] {
+  // Cross product helper
+  function cross(a: [number, number, number], b: [number, number, number]): [number, number, number] {
+    return [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+    ];
+  }
+
+  // Dot product helper
+  function dot(a: [number, number, number], b: [number, number, number]): number {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  }
+
+  // Normal vector n = v1 x v2
+  const n = cross(v1, v2);
+
+  // |v1 x v2|^2
+  const denom = dot(n, n);
+
+  // a = ((t x v2) ⋅ (v1 x v2)) / |v1 x v2|^2
+  const tXv2 = cross(t, v2);
+  const a = dot(tXv2, n) / denom;
+
+  // b = -((t x v1) ⋅ (v1 x v2)) / |v1 x v2|^2
+  const tXv1 = cross(t, v1);
+  const b = -dot(tXv1, n) / denom;
+
+  return [a, b];
+}
+
+
 /**
  * takes a 3d point and projects it onto the face3d start position. intended for when hitting
  * a layer on the render since these planes have an offset
@@ -265,7 +309,6 @@ export function solveBasisSystem(
 function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
   const points: THREE.Vector3[] = [];
 
-  // TODO: ask hady to give me 3 vertices
   for (let i = 0; i < 3; i++) {
     points.push(new THREE.Vector3(face3d.vertices[0].x, face3d.vertices[0].y, face3d.vertices[0].z));
   }
@@ -284,10 +327,6 @@ function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
                                                   projectedPoint.z
                                                 );
 
-  if (!face3d.containedInFace(translatedBackPt)) {
-    console.error("Point is not on plane when projected");
-    return null;
-  }
   return translatedBackPt;
 }
 
@@ -315,7 +354,6 @@ function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
 }
 
 export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
-  // let idMap : Map<bigint, pt.AnnotatedPoint> = face3d.vertices; // fine, add map access
   let points : Point3D[] = [];
   //let pointsId : bigint[] = [];
   for (let i = 0; i < 3; i++) {
@@ -329,17 +367,22 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
     points[1].z - points[0].z,
   );
 
+  console.log(basis1);
+
   const basis2 : Point3D = createPoint3D(
     points[2].x - points[0].x,
     points[2].y - points[0].y,
     points[2].z - points[0].z,
   );
 
-  let basisResult = solveBasisSystem(
-  basis1.x, basis1.y, basis2.z,
-  basis2.x, basis2.y, basis2.z,
-  point.x, point.y, point.z
+  console.log(basis2);
+
+  let basisResult = solveForScalars(
+  [basis1.x, basis1.y, basis2.z],
+  [basis2.x, basis2.y, basis2.z],
+  [point.x, point.y, point.z]
   );
+
 
   if (basisResult == null) {
     return null;
@@ -363,8 +406,8 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
   );
 
   const coverted2dPoint = createPoint2D(
-    basis1in2d.x * basisResult.alpha +  basis2in2d.x * basisResult.beta,
-    basis1in2d.y * basisResult.alpha +  basis2in2d.y * basisResult.beta,
+    basis1in2d.x * basisResult[0] +  basis2in2d.x * basisResult[1],
+    basis1in2d.y * basisResult[0] +  basis2in2d.y * basisResult[1],
   );
 
   return coverted2dPoint;
@@ -373,64 +416,29 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
 
 
 
-/**
- * Returns a boolean as to whether a given line exists
- * @param point1Id - the id of point 1 in the line to check
- * @param point2Id  - the id of point 2 in the line to check
- * @param faceId - the face id this occurs in
- * @returns Returns a boolean as to whether a given line exists
- */
-function doesLineAlreadyExist(point1Id : bigint, point2Id : bigint, faceId : bigint) : boolean {
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
-  if (face3d === undefined) {
-    console.error("face 3d id doesn't exists");
-    return false;
-  }
+// /**
+//  * Returns a boolean as to whether a given line exists
+//  * @param point1Id - the id of point 1 in the line to check
+//  * @param point2Id  - the id of point 2 in the line to check
+//  * @param faceId - the face id this occurs in
+//  * @returns Returns a boolean as to whether a given line exists
+//  */
+// function doesLineAlreadyExist(point1Id : bigint, point2Id : bigint, faceId : bigint) : boolean {
+//   let face3d: Face3D | undefined = getFace3dFromId(faceId);
+//   if (face3d === undefined) {
+//     console.error("face 3d id doesn't exists");
+//     return false;
+//   }
 
-  const lineIdMap : Map<bigint, AnnotatedLine> = face3d.annotatedLines; // fine, add map access
-  for (let lineObj of lineIdMap.values()) {
-    if ((lineObj.startPointID == point1Id || lineObj.startPointID == point2Id) &&
-        (lineObj.endPointID == point1Id || lineObj.endPointID == point2Id)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-
-/**
- * @param lineId - the line to check
- * @returns true/false as to whether a given line exists
- */
-function containsLine(lineId : bigint, faceId : bigint) {
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
-  if (face3d === undefined) {
-    console.error("face 3d id doesn't exists");
-    return "face 3d id doesn't exists";
-  }
-
-  return face3d.annotatedLines.has(lineId);
-}
-
-/**
- * @param pointId - the id of the point to check for
- * @returns a boolean as to whether a given line uses the provided point as an endpoint
- */
-function lineUsesPoint(faceId: bigint, pointId: bigint) {
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
-  if (face3d === undefined) {
-    console.error("face 3d id doesn't exists");
-    return "face 3d id doesn't exists";
-  }
-
-  const lineIdMap : Map<bigint, AnnotatedLine> = face3d.annotatedLines; // fine, add map access
-  for (let lineObj of lineIdMap.values()) {
-    if (lineObj.startPointID == pointId || lineObj.endPointID == pointId) {
-      return true;
-    }
-  }
-  return false;
-}
+//   const lineIdMap : Map<bigint, AnnotatedLine> = face3d.annotatedLines; // fine, add map access
+//   for (let lineObj of lineIdMap.values()) {
+//     if ((lineObj.startPointID == point1Id || lineObj.startPointID == point2Id) &&
+//         (lineObj.endPointID == point1Id || lineObj.endPointID == point2Id)) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
 /**
  * @param a - the first value to check
