@@ -5,24 +5,57 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotatePointMapper">
 
+    <select id="getIdbyIdInFace">
+        SELECT id FROM annotated_point
+        WHERE
+        face_id = #{faceId}
+        AND
+        id_in_face = #{idInFace}
+        LIMIT 1
+    </select>
 
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedPoint">
         INSERT INTO annotated_point (
-        point_id,
-        on_edge_id
+        step_id,
+        face_id,
+        x_pos,
+        y_pos,
+        on_edge_id,
+        vertex_id,
+        id_in_face,
+        deleted_step_id
         <if test="annotatedPoint.createdBy != null">, created_by</if>
         <if test="annotatedPoint.updatedBy != null">, updated_by</if>
         <if test="annotatedPoint.createdAt != null">, created_at</if>
         <if test="annotatedPoint.updatedAt != null">, updated_at</if>
         ) VALUES (
-        #{annotatedPoint.pointId},
-        #{annotatedPoint.onEdgeId}
+        #{annotatedPoint.stepId},
+        #{annotatedPoint.faceId},
+        #{annotatedPoint.xPos},
+        #{annotatedPoint.yPos},
+        #{annotatedPoint.onEdgeId},
+        #{annotatedPoint.vertexId},
+        #{annotatedPoint.idInFace},
+        #{annotatedPoint.deletedStepId}
         <if test="annotatedPoint.createdBy != null">, #{annotatedPoint.createdBy}</if>
         <if test="annotatedPoint.updatedBy != null">, #{annotatedPoint.updatedBy}</if>
         <if test="annotatedPoint.createdAt != null">, #{annotatedPoint.createdAt}</if>
         <if test="annotatedPoint.updatedAt != null">, #{annotatedPoint.updatedAt}</if>
-        );
+        )
     </insert>
+
+    <update id="deleteMultipleByIdInFace">
+        UPDATE annotated_point
+        <set>
+            deleted_step_id = #{deletedStepId}
+        </set>
+        WHERE face_id = #{faceId}
+        AND id_in_face IN (
+        <foreach collection="idsInFace" item="idInFace" separator=",">
+            #{idInFace}
+        </foreach>
+        )
+    </update>
 
 
 </mapper>

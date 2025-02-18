@@ -41,22 +41,12 @@ export type Point = Point2D | Point3D;
 
 
 /**
- * An annotated 3D point type - consists of the point object and
+ * An annotated point type - consists of the point object and
  * also the ID of the edge on which it lies, if any.
  * The value -1 is given if the annotated point lies on no edge.
  */
-export type AnnotatedPoint3D = {
-    point: Point3D,
-    edgeID: bigint
-}
-
-/**
- * An annotated 2D point type - consists of the point object and
- * also the ID of the edge on which it lies, if any.
- * The value -1 is given if the annotated point lies on no edge.
- */
-export type AnnotatedPoint2D = {
-    point: Point2D,
+export type AnnotatedPoint = {
+    point: Point,
     edgeID: bigint
 }
 
@@ -69,7 +59,6 @@ export type AnnotatedLine = {
     endPointID: bigint
 }
 
-
 // ----------------------------- Functions --------------------------------- //
 
 
@@ -78,10 +67,10 @@ export type AnnotatedLine = {
  * @param x The x coordinate.
  * @param y The y coordinate.
  * @param context The context - defaults to Annotation.
- * @returns
+ * @returns 
  */
 export function createPoint2D(
-            x: number, y: number,
+            x: number, y: number, 
             context: PointContext = "Annotation"
             ): Point2D {
 
@@ -102,7 +91,7 @@ export function createPoint2D(
  * @param y The y coordinate.
  * @param z The z coordinate.
  * @param context The context - defaults to Annotation.
- * @returns
+ * @returns 
  */
 export function createPoint3D(
             x: number, y: number, z: number,
@@ -132,7 +121,7 @@ export function createPoint3D(
  * @returns A copy of the given point with its kind potentially changed.
  */
 export function copyPoint<T extends Point>(
-            source: T,
+            source: T, 
             context: PointContext = source.context
             ): T {
 
@@ -173,7 +162,7 @@ export function copyPoint<T extends Point>(
  *          a new point with the given context.
  */
 export function add<T extends Point>(
-            a: T, b: T,
+            a: T, b: T, 
             context: PointContext = "Annotation"
             ): T {
 
@@ -201,7 +190,7 @@ export function add<T extends Point>(
         return result as T;
     }
 
-    // This line of code never runs; the compiler in fact
+    // This line of code never runs; the compiler in fact 
     // catches when we pass in a and b with different dimension.
     return a;
 }
@@ -217,7 +206,7 @@ export function add<T extends Point>(
  *          a new point with the given context.
  */
 export function subtract<T extends Point>(
-            a: T, b: T,
+            a: T, b: T, 
             context: PointContext = "Annotation"
             ): T {
 
@@ -245,27 +234,24 @@ export function subtract<T extends Point>(
         return result as T;
     }
 
-    // This line of code never runs; the compiler in fact
+    // This line of code never runs; the compiler in fact 
     // catches when we pass in a and b with different dimension.
     return a;
 }
 
 
 /**
- * Computes the scalar product (dot product) of two points.
+ * Computes the scalar product (dot product) of two 3D points.
  * @param a The first point.
  * @param b The second point.
  * @returns The scalar product a * b (component-wise multiply and add).
  */
-export function dotProduct<T extends Point>(a: T, b: T): number {
+export function dotProduct(a: Point3D, b: Point3D): number {
 
-    let result: number = 0;
+    let result = 0;
     result += a.x * b.x;
     result += a.y * b.y;
-
-    if (a.dim == "3D" && b.dim == "3D") {
-        result += a.z * b.z;
-    }
+    result += a.z * b.z;
 
     return result;
 }
@@ -280,11 +266,11 @@ export function dotProduct<T extends Point>(a: T, b: T): number {
  * @returns vec * scalar, the vector scaled component-wise by the scalar.
  */
 export function scalarMult<T extends Point>(
-            vector: Point,
-            scalar: number,
+            vector: Point, 
+            scalar: number, 
             context: PointContext = "Annotation"
             ): T {
-
+    
     if (vector.dim === "2D") {
 
         const result: Point2D = {
@@ -322,8 +308,8 @@ export function scalarMult<T extends Point>(
  * @throws Error if the given scalar to divide by is 0.
  */
 export function scalarDiv<T extends Point>(
-            vector: Point,
-            scalar: number,
+            vector: Point, 
+            scalar: number, 
             context: PointContext = "Annotation"
             ): T {
 
@@ -368,7 +354,7 @@ export function scalarDiv<T extends Point>(
  *          The average of no vectors (empty array) is 0.
  */
 export function average(
-            vectors: Point3D[],
+            vectors: Point3D[], 
             context: PointContext = "Annotation"
             ) {
 
@@ -376,7 +362,7 @@ export function average(
     for (let i = 0; i < vectors.length; i++) {
         sum = add(sum, vectors[i]);
     }
-
+    
     // Edge case.
     if (vectors.length == 0) {
         return sum;
@@ -398,41 +384,12 @@ export function distance<T extends Point>(a: T, b: T): number {
     let squaredDist = 0;
     squaredDist += (a.x - b.x)**2;
     squaredDist += (a.y - b.y)**2;
-
+    
     if (a.dim == "3D" && b.dim == "3D") {
         squaredDist += (a.z - b.z)**2;
     }
 
     return Math.sqrt(squaredDist);
-}
-
-
-/**
- * Computes the length of a vector
- * @param vec A Point (being used as a vector).
- * @returns The length of the vector.
- */
-export function length(vec: Point): number {
-
-    if (vec.dim === "2D") {
-        return Math.sqrt(vec.x**2 + vec.y**2);
-    } else {
-        return Math.sqrt(vec.x**2 + vec.y**2 + vec.z**2);
-    }
-}
-
-
-/**
- * Normalizes a nonzero vector.
- * @param vec A Point (being used as a vector).
- * @returns The unit vector pointing the same direction as the given vector.
- * @throws Error if the given vector is too close to the zero vector.
- */
-export function normalize<T extends Point>(vec: T): T {
-    if (length(vec) < 0.01) {
-        throw new Error("Cannot normalize extremely small Point!");
-    }
-    return scalarDiv(vec, length(vec));
 }
 
 

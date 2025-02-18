@@ -1,6 +1,9 @@
 package com.quickfolds.backend.geometry.model.database;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,7 +26,6 @@ public class FoldStep {
      * References the associated step's ID in the "step" table.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "step_id", nullable = false, updatable = false)
     private Long stepId;
 

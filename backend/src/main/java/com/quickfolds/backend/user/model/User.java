@@ -1,5 +1,8 @@
 package com.quickfolds.backend.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.quickfolds.backend.community.model.Origami;
+import jakarta.persistence.*;
 import lombok.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

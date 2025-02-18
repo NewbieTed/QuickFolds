@@ -24,7 +24,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/getUser")
-    public ResponseEntity<BaseResponse<Object>> getUser() {
+    public BaseResponse<?> getUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return BaseResponse.success(principal);
     }
