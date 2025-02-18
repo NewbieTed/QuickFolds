@@ -27,7 +27,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -h 127.0.0.1 -U test_user -d quickfolds_test"
+          --health-cmd "pg_isready -h 127.0.0.1 -U test_user -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -48,7 +48,8 @@ jobs:
 
       - name: Build and Run Tests
         env:
-          TEST_DB_HOST: postgres
+          SPRING_PROFILES_ACTIVE: test
+          TEST_DB_HOST: localhost
           TEST_DB_PORT: 5432
           TEST_DB_NAME: quickfolds_test
           TEST_DB_USER: test_user
