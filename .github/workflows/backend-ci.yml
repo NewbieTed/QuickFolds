@@ -48,7 +48,6 @@ jobs:
 
       - name: Build and Run Tests
         env:
-          SPRING_PROFILES_ACTIVE: test
           TEST_DB_HOST: postgres
           TEST_DB_PORT: 5432
           TEST_DB_NAME: quickfolds_test
@@ -56,4 +55,4 @@ jobs:
           TEST_DB_PASSWORD: "QuickFolds@CSE403"
         run: |
           cd backend
-          ./mvnw clean test
+          ./mvnw clean test -Dspring.profiles.active=test
