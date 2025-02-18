@@ -5,7 +5,16 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.EdgeMapper">
 
-    <select id="getIdByIdInFace" resultType="Long">
+    <select id="getMostRecentId" resultType="java.lang.Long">
+        SELECT id FROM edge
+        WHERE
+            step_id = #{stepId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+
+    <select id="getIdByIdInFace" resultType="java.lang.Long">
         (SELECT edge_id FROM fold_edge
         WHERE
             face_1_id = #{faceId} AND
@@ -25,4 +34,25 @@
         LIMIT 1)
         LIMIT 1;
     </select>
+
+
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Edge">
+        INSERT INTO edge (
+        step_id,
+        edge_type_id
+        <if test="edge.deletedStepId != null">, deleted_step_id</if>
+        <if test="edge.createdBy != null">, created_by</if>
+        <if test="edge.updatedBy != null">, updated_by</if>
+        <if test="edge.createdAt != null">, created_at</if>
+        <if test="edge.updatedAt != null">, updated_at</if>
+        ) VALUES (
+        #{edge.stepId},
+        #{edge.edgeTypeId}
+        <if test="edge.deletedStepId != null">, #{edge.deletedStepId}</if>
+        <if test="edge.createdBy != null">, #{edge.createdBy}</if>
+        <if test="edge.updatedBy != null">, #{edge.updatedBy}</if>
+        <if test="edge.createdAt != null">, #{edge.createdAt}</if>
+        <if test="edge.updatedAt != null">, #{edge.updatedAt}</if>
+        )
+    </insert>
 </mapper>

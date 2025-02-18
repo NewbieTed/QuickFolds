@@ -3,13 +3,12 @@ package com.quickfolds.backend.origami.service;
 import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.geometry.constants.EdgeType;
 import com.quickfolds.backend.geometry.constants.PointType;
+import com.quickfolds.backend.geometry.constants.StepType;
 import com.quickfolds.backend.geometry.mapper.*;
-import com.quickfolds.backend.geometry.model.database.Edge;
-import com.quickfolds.backend.geometry.model.database.Face;
-import com.quickfolds.backend.geometry.model.database.OrigamiPoint;
-import com.quickfolds.backend.geometry.model.database.SideEdge;
+import com.quickfolds.backend.geometry.model.database.*;
 import com.quickfolds.backend.origami.mapper.OrigamiMapper;
-import com.quickfolds.backend.origami.model.Origami;
+import com.quickfolds.backend.origami.model.database.Origami;
+import com.quickfolds.backend.origami.model.dto.NewOrigamiRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +22,14 @@ import java.util.List;
 public class OrigamiService {
 
     private final OrigamiMapper origamiMapper;
+    private final StepTypeMapper stepTypeMapper;
+    private final StepMapper stepMapper;
     private final FaceMapper faceMapper;
     private final PointTypeMapper pointTypeMapper;
     private final OrigamiPointMapper origamiPointMapper;
     private final EdgeTypeMapper edgeTypeMapper;
     private final EdgeMapper edgeMapper;
+    private final SideEdgeMapper sideEdgeMapper;
 
     @Transactional
     public ResponseEntity<BaseResponse<List<Long>>> list() {
@@ -50,38 +52,55 @@ public class OrigamiService {
      * All coordinates and idInFace values are 0-based while the step ids are 1-based.
      */
     @Transactional
-    public ResponseEntity<BaseResponse<Boolean>> newOrigami() {
-        long creationStepId = 0L; // step ids are 0-based
+    public ResponseEntity<BaseResponse<Long>> newOrigami(NewOrigamiRequest request) {
+        Long userId = request.getUserId();
+        String origamiName = request.getOrigamiName();
+
 
         // Create a new Origami record.
         Origami origami = new Origami();
 
-        // TODO: Add user
-        origami.setUserId(0L); // Use default value or extract from security context if needed.
-        origami.setPublic(false); // Updated as requested.
+        // TODO: Verify if user is present
+
+        origami.setUserId(userId);
+        origami.setOrigamiName(origamiName == null ? "Untitled" : origamiName);
+        origami.setPublic(false);
         origami.setRatings(0.0);
         origamiMapper.addByObj(origami);
 
+        Long origamiId = origamiMapper.getMostRecentId(userId);
+
+        // Get the step type id of the step
+        String stepType = StepType.FOLD;
+        Long stepTypeId = stepTypeMapper.getStepTypeByName(stepType);
+
+        // Create a new step
+        Step step = new Step();
+        step.setOrigamiId(origamiId);
+        step.setStepTypeId(stepTypeId);
+        step.setIdInOrigami(0);
+        stepMapper.addByObj(step);
+        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, 0);
+
         // Create a default face for the new origami.
         Face face = new Face();
-        face.setOrigamiId(origami.getId());
-        face.setStepId(creationStepId);
+        face.setOrigamiId(origamiId);
+        face.setStepId(stepId);
         face.setIdInOrigami(0);  // Default face index (0-based)
         faceMapper.addByObj(face);
-        // faceMapper.insert will update face with its generated id
 
-        // Create four vertices and corresponding annotated points on the default face.
-        buildInitialVertices(face.getId()); // TODO: Use sql instead
+        Long faceId = faceMapper.getIdByFaceIdInOrigami(origamiId, 0);
 
+        // Create four vertices on the default face.
+        buildInitialVertices(stepId, faceId);
 
-        buildInitialEdges(face.getId());
+        buildInitialEdges(stepId, faceId);
 
-        // TODO: return new origami id
-        return BaseResponse.success();
+        return BaseResponse.success(origamiId);
     }
 
 
-    public void buildInitialVertices(Long faceId) {
+    public void buildInitialVertices(Long stepId, Long faceId) {
 
         String pointType = PointType.VERTEX;
         Long pointTypeId = pointTypeMapper.getPointTypeByName(pointType);
@@ -99,7 +118,7 @@ public class OrigamiService {
             }
 
             OrigamiPoint vertex = new OrigamiPoint();
-            vertex.setStepId(0L);
+            vertex.setStepId(stepId);
             vertex.setFaceId(faceId);
             vertex.setPointTypeId(pointTypeId);
             vertex.setXPos(x);
@@ -111,28 +130,34 @@ public class OrigamiService {
     }
 
 
-    public void buildInitialEdges(Long faceId) {
-
+    public void buildInitialEdges(Long stepId, Long faceId) {
         String edgeType = EdgeType.SIDE;
         Long edgeTypeId = edgeTypeMapper.getEdgeTypeByName(edgeType);
-
 
         for (int i = 0; i < 4; i++) {
             // Add basic edge entry
             Edge edge = new Edge();
 
-            edge.setStepId(0L);
+            edge.setStepId(stepId);
             edge.setEdgeTypeId(edgeTypeId);
 
             edgeMapper.addByObj(edge);
 
-            // TODO: Get edge id
+            Long edgeId = edgeMapper.getMostRecentId(stepId);
 
             // Add side edge entry
             SideEdge sideEdge = new SideEdge();
 
-            sideEdge.setVertex1Id((long) i);
-            sideEdge.setVertex1Id((long) i + 1);
+            Long vertex1Id = origamiPointMapper.getIdByIdInFace(faceId, i);
+            Long vertex2Id = origamiPointMapper.getIdByIdInFace(faceId, (i + 1) % 4);
+
+            sideEdge.setEdgeId(edgeId);
+            sideEdge.setVertex1Id(vertex1Id);
+            sideEdge.setVertex2Id(vertex2Id);
+            sideEdge.setFaceId(faceId);
+            sideEdge.setIdInFace(i);
+
+            sideEdgeMapper.addByObj(sideEdge);
         }
     }
 }

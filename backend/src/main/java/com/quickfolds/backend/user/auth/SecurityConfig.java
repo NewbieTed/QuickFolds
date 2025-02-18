@@ -24,7 +24,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/user/signup", "user/login", "/origami/list", "/geometry/annotate").permitAll()
+                        .requestMatchers("/user/signup", "user/login", "/origami/list", "/geometry/annotate", "/origami/new").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

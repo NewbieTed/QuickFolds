@@ -11,5 +11,5 @@ public interface FaceMapper {
                                 @Param("faceIdInOrigami") int faceIdInOrigami);
 
 
-    void addByObj(Face face);
+    void addByObj(@Param("face") Face face);
 }
