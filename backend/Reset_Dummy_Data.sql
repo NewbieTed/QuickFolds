@@ -491,6 +491,7 @@ INSERT INTO users (username, password, created_by, updated_by, created_at, updat
 --
 INSERT INTO step_type (step_type_name, created_by)
 VALUES
+  ('create', 'admin'),
   ('fold', 'admin'),
   ('annotate', 'admin'),
   ('rotate', 'admin');
