@@ -39,6 +39,21 @@ public class SideEdge {
     private Long vertex2Id;
 
     /**
+     * Foreign key referencing the face connected by the side edge.
+     * Links to a specific face in the "face" table.
+     */
+    @Column(name = "face_id")
+    private Long faceId;
+
+    /**
+     * Edge number within the face.
+     * Used to differentiate multiple edges in the same face.
+     */
+    @Column(name = "id_in_face", nullable = false)
+    private Integer idInFace;
+
+
+    /**
      * Identifier of the user who created this side edge record.
      * May be null if not explicitly set.
      */

@@ -47,7 +47,7 @@ public class FoldEdge {
 
     /**
      * Edge number within the first face.
-     * Used to differentiate multiple fold edges in the same face.
+     * Used to differentiate multiple edges in the same face.
      */
     @Column(name = "id_in_face_1", nullable = false)
     private Integer idInFace1;

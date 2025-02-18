@@ -22,5 +22,4 @@ public interface OrigamiPointMapper {
                                  @Param("idsInFace") List<Integer> idsInFace,
                                  @Param("deletedStepId") long deletedStepId);
 
-
 }

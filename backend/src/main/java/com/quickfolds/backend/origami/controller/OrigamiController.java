@@ -3,6 +3,7 @@ package com.quickfolds.backend.origami.controller;
 import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.geometry.model.dto.FoldRequest;
 import com.quickfolds.backend.origami.mapper.OrigamiMapper;
+import com.quickfolds.backend.origami.model.dto.NewOrigamiRequest;
 import com.quickfolds.backend.origami.service.OrigamiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,9 @@ public class OrigamiController {
 
 
     @PostMapping("/new")
-    public ResponseEntity<BaseResponse<Boolean>> newOrigami() {
-        return origamiService.newOrigami();
+    public ResponseEntity<BaseResponse<Long>> newOrigami(@Valid @RequestBody NewOrigamiRequest request) {
+
+        return origamiService.newOrigami(request);
     }
 
     @GetMapping("/list")

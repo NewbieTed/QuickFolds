@@ -1,4 +1,4 @@
-package com.quickfolds.backend.origami.model;
+package com.quickfolds.backend.origami.model.database;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

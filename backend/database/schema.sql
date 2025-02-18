@@ -28,7 +28,7 @@ COMMENT ON COLUMN users.updated_at IS 'Timestamp when this user record was last 
 CREATE TABLE origami (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id),
-    origami_name TEXT NOT NULL,
+    origami_name TEXT NOT NULL DEFAULT 'Untitled',
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
     ratings DOUBLE PRECISION NOT NULL DEFAULT 0.0 CHECK (ratings >= 0.0 AND ratings <= 5.0),
 
@@ -309,8 +309,8 @@ COMMENT ON COLUMN annotated_line.updated_at IS 'Timestamp when this line record 
 -- Create Edge Table
 CREATE TABLE fold_edge (
     edge_id BIGINT PRIMARY KEY REFERENCES edge(id) ON DELETE CASCADE,
-    face_1_id BIGINT REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    face_2_id BIGINT REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    face_1_id BIGINT NOT NULL REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    face_2_id BIGINT NOT NULL REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
     angle DOUBLE PRECISION NOT NULL,
     id_in_face_1 INTEGER NOT NULL,
     id_in_face_2 INTEGER NOT NULL,
@@ -339,9 +339,9 @@ COMMENT ON COLUMN fold_edge.updated_at IS 'Timestamp when this edge record was l
 -- Create Edge Table
 CREATE TABLE side_edge (
     edge_id BIGINT PRIMARY KEY REFERENCES edge(id) ON DELETE CASCADE,
-    vertex_1_id BIGINT REFERENCES origami_point(id) ON DELETE CASCADE,
-    vertex_2_id BIGINT REFERENCES origami_point(id) ON DELETE CASCADE,
-    face_id BIGINT REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    vertex_1_id BIGINT NOT NULL REFERENCES origami_point(id) ON DELETE CASCADE,
+    vertex_2_id BIGINT NOT NULL REFERENCES origami_point(id) ON DELETE CASCADE,
+    face_id BIGINT NOT NULL REFERENCES face(id) ON DELETE CASCADE ON UPDATE CASCADE,
     id_in_face INTEGER NOT NULL,
 
     created_by TEXT DEFAULT NULL,

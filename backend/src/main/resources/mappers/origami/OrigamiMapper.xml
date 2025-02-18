@@ -6,6 +6,15 @@
 <mapper namespace="com.quickfolds.backend.origami.mapper.OrigamiMapper">
 
 
+    <select id="getMostRecentId" resultType="java.lang.Long">
+        SELECT id FROM origami
+        WHERE
+        user_id = #{userId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+
     <select id="getPublicOrigamiIds" resultType="java.lang.Long">
         SELECT id FROM origami
         WHERE
@@ -13,9 +22,10 @@
     </select>
 
 
-    <insert id="addByObj" parameterType="com.quickfolds.backend.origami.model.Origami">
+    <insert id="addByObj" parameterType="com.quickfolds.backend.origami.model.database.Origami">
         INSERT INTO origami (
             user_id,
+            origami_name,
             is_public,
             ratings
             <if test="origami.createdBy != null">, created_by</if>
@@ -24,6 +34,7 @@
             <if test="origami.updatedAt != null">, updated_at</if>
         ) VALUES (
             #{origami.userId},
+            #{origami.origamiName},
             #{origami.isPublic},
             #{origami.ratings}
             <if test="origami.createdBy != null">, #{origami.createdBy}</if>
