@@ -50,13 +50,13 @@ public class OrigamiPoint {
      * X-coordinate of the point.
      */
     @Column(name = "x_pos", nullable = false)
-    private double xPos;
+    private Double xPos;
 
     /**
      * Y-coordinate of the point.
      */
     @Column(name = "y_pos", nullable = false)
-    private double yPos;
+    private Double yPos;
 
     /**
      * Identifies this point within the face.

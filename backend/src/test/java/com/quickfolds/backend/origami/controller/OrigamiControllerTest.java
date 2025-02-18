@@ -41,7 +41,7 @@ public class OrigamiControllerTest {
 
         List<Long> id = new ArrayList<>();
         Mockito.when(origamiService.list())
-                .thenReturn(BaseResponse.success(id));
+                .thenReturn(BaseResponse.success(null));
 
         mockMvc.perform(get("/origami/list"))
                 .andExpect(status().isOk());

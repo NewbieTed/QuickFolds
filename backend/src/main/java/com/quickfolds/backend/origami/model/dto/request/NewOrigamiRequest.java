@@ -1,4 +1,4 @@
-package com.quickfolds.backend.origami.model.dto;
+package com.quickfolds.backend.origami.model.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
