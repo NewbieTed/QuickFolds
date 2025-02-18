@@ -4,14 +4,17 @@
 
 
 import * as THREE from 'three';
-import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed, resetIsDeletePointButtonPressed} from './editorInputCapture.js';
+import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed
+	, doubleButtonPressed1st, doubleButtonPressed2nd, startSecondPress, resetDoubleButtonPressed, getAddLineButton
+	, getDeleteLineButton
+} from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
 import {Face3D} from "../../geometry/Face3D.ts";
 import {Face2D} from "../../geometry/Face2D.ts";
 import {createPoint3D, createPoint2D} from "../../geometry/Point.ts";
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
 import { threeJSIdsToOurIds, startup} from "../SceneManager.ts";
-import {addAnnotationPoint, deleteAnnotationPoint} from "../../controller/Controller.ts"
+import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine} from "../../controller/Controller.ts"
 import { getFace3dFromId } from "../SceneManager.ts"
 
 document.addEventListener('keydown', onKeyDown);
@@ -303,6 +306,10 @@ function getClosestAnnotationPointToMouse(points, raycaster) {
     return minDistance < 0.1 ? closestPoint : null;
 }
 
+
+let [closestPoint1, faceId1] = [null, null];
+let [closestPoint2, faceId2] = [null, null];
+
 // dom function that activates when a mouse button is pressed
 function onMouseDown(event) {
 	if (getIsPickPointButtonPressed()) {
@@ -335,39 +342,124 @@ function onMouseDown(event) {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
 
-        raycaster.setFromCamera(mouse, camera);
-				const intersects = raycaster.intersectObjects(faces);
-        // find the closest annotation point to the mouse click
-				const intersect = intersects[0];
-				const object3dHit = intersect.object;
-				const point = intersect.point;
-				raySphere.position.set(point.x, point.y, point.z);
-
-				let faceId	 = threeJSIdsToOurIds(object3dHit.id);
-
-
-				let face3d = getFace3dFromId(faceId);
-				if (face3d === undefined) {
-					console.error("face 3d id doesn't exists");
-					return "face 3d id doesn't exists";
-				}
-
-        const closestPoint = face3d.findNearestPoint(createPoint3D(point.x, point.y, point.z));
+        const [closestPoint, faceId] = getClosestPointViaRaycast();
 				console.log("RESUL OF CLOSES POINT ID: " + closestPoint);
         if (closestPoint) {
             // remove the closest annotation point
-
-
             deleteAnnotationPoint(closestPoint, faceId);
-            console.log(`Deleted annotation point at: x=${closestPoint.x}, y=${closestPoint.y}, z=${closestPoint.z}`);
         } else {
             console.log('No annotation point found near the click.');
         }
 
         resetIsDeletePointButtonPressed(); // Reset the delete button state
-    }
+    } else if(doubleButtonPressed1st() && getAddLineButton()) {
+
+
+			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+			mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+
+			if (!doubleButtonPressed2nd()) {
+				// first point select
+				[closestPoint1, faceId1] = getClosestPointViaRaycast();
+				startSecondPress();
+			} else {
+				[closestPoint2, faceId2] = getClosestPointViaRaycast();
+
+				// check both points are on the same plane, and no	 the same point
+				if (faceId1 !== faceId2 || closestPoint1 === closestPoint2) {
+					resetDoubleButtonPressed(); // Reset the delete button state
+					closestPoint1 = null;
+					faceId1 = null;
+					closestPoint2 = null;
+					faceId2 = null;
+					return;
+				}
+
+				if (closestPoint1 && closestPoint2) {
+						// create line
+						console.log("points ids: ", closestPoint1, closestPoint2);
+						addAnnotationLine(closestPoint1, closestPoint2, faceId1);
+						console.log(`Ran`);
+				} else {
+						console.log('No annotation point found near the clicks.');
+				}
+
+				closestPoint1 = null;
+				faceId1 = null;
+				closestPoint2 = null;
+				faceId2 = null;
+				resetDoubleButtonPressed(); // Reset the delete button state
+			}
+		} else if(doubleButtonPressed1st() && getDeleteLineButton()) {
+
+
+			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+			mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+
+			if (!doubleButtonPressed2nd()) {
+				// first point select
+				[closestPoint1, faceId1] = getClosestPointViaRaycast();
+				startSecondPress();
+			} else {
+				[closestPoint2, faceId2] = getClosestPointViaRaycast();
+
+				// check both points are on the same plane, and no	 the same point
+				if (faceId1 !== faceId2 || closestPoint1 === closestPoint2) {
+					resetDoubleButtonPressed(); // Reset the delete button state
+					closestPoint1 = null;
+					faceId1 = null;
+					closestPoint2 = null;
+					faceId2 = null;
+					return;
+				}
+
+				if (closestPoint1 && closestPoint2) {
+						// create line
+						console.log("points ids: ", closestPoint1, closestPoint2);
+						addAnnotationLine(closestPoint1, closestPoint2, faceId1);
+						console.log(`Ran`);
+				} else {
+						console.log('No annotation point found near the clicks.');
+				}
+
+				closestPoint1 = null;
+				faceId1 = null;
+				closestPoint2 = null;
+				faceId2 = null;
+				resetDoubleButtonPressed(); // Reset the delete button state
+			}
+		}
+
 
 }
+
+/**
+ *
+ * @returns the id of the closest point after shooting a raycast from mouse at camera
+ */
+function getClosestPointViaRaycast() {
+	raycaster.setFromCamera(mouse, camera);
+	const intersects = raycaster.intersectObjects(faces);
+	// find the closest annotation point to the mouse click
+	const intersect = intersects[0];
+	console.log("intersections", intersect);
+	const object3dHit = intersect.object;
+	const point = intersect.point;
+	raySphere.position.set(point.x, point.y, point.z);
+
+	let faceId	 = threeJSIdsToOurIds(object3dHit.id);
+
+
+	let face3d = getFace3dFromId(faceId);
+	if (face3d === undefined) {
+		console.error("face 3d id doesn't exists");
+		return "face 3d id doesn't exists";
+	}
+
+	const closestPoint = face3d.findNearestPoint(createPoint3D(point.x, point.y, point.z));
+	return [closestPoint, faceId];
+}
+
 
 // dom function that runs when the mouse move
 document.onmousemove = (event) => {

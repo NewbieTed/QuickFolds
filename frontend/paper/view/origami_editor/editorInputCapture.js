@@ -23,6 +23,56 @@ document.getElementById('delete-point-button').addEventListener('click', () => {
   isDeletePointButtonPressed = true;
 });
 
+
+let doubleButtonPressedVar = false;
+let secondPressVar = false;
+
+document.getElementById('add-line-button').addEventListener('click', () => {
+  doubleButtonPressedVar = true;
+  secondPressVar = false;
+  addLineState = true;
+});
+
+document.getElementById('del-line-button').addEventListener('click', () => {
+  doubleButtonPressedVar = true;
+  secondPressVar = false;
+  deleteLineState = true;
+});
+
+let addLineState = false;
+let deleteLineState = false;
+
+export function getAddLineButton() {
+  return addLineState
+}
+
+export function getDeleteLineButton() {
+  return deleteLineState;
+}
+
+// getter method to see if the "add annotation line" button is pressed
+export function doubleButtonPressed1st() {
+  return doubleButtonPressedVar;
+}
+
+export function doubleButtonPressed2nd() {
+  return secondPressVar;
+}
+
+export function startSecondPress() {
+  secondPressVar = true;
+}
+
+export function resetDoubleButtonPressed() {
+  doubleButtonPressedVar = false;
+  secondPressVar = false;
+  deleteLineState = false;
+  addLineState = false;
+}
+
+
+
+
 // getter method to see if the sphere the camera looks at is visible
 function getIsRotateSphereVisible() {
   return isRotateSphereVisible;
@@ -48,6 +98,7 @@ function getIsDeletePointButtonPressed() {
   return isDeletePointButtonPressed;
 }
 
+
 // reset after picking a point
 function resetIsPickPointButtonPressed() {
   isPickPointButtonPressed = false;
@@ -57,6 +108,8 @@ function resetIsPickPointButtonPressed() {
 function resetIsDeletePointButtonPressed() {
   isDeletePointButtonPressed = false;
 }
+
+
 
 // dom function that activates when a mouse button is pressed
 function onMouseDown(event) {

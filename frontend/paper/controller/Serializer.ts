@@ -30,8 +30,8 @@ export function serializeResultChange(statusUpdate: AnnotationUpdate2D, faceId: 
 
   type LineData = {
     idInFace: number;
-    pointIdInOrigami1: number;
-    pointIdInOrigami2: number;
+    point1IdInOrigami: number;
+    point2IdInOrigami: number;
   };
   // for now, use pointdata type
   const addedLinesList: LineData[] = [];
@@ -39,8 +39,8 @@ export function serializeResultChange(statusUpdate: AnnotationUpdate2D, faceId: 
     addedLinesList.push(
       {
         "idInFace": Number(lineId),
-        "pointIdInOrigami1": Number(lineObj.startPointID),
-        "pointIdInOrigami2": Number(lineObj.startPointID)
+        "point1IdInOrigami": Number(lineObj.startPointID),
+        "point2IdInOrigami": Number(lineObj.endPointID)
       }
     );
 	}

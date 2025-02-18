@@ -92,14 +92,6 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
  * @returns either true, or a message about while the action failed
  */
 export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : Promise<string | true>  {
-  // check to make sure point isn't being used in line
-  // user can only remove a "hanging" (ie unlined) point
-  // if (lineUsesPoint(faceId, pointId)) {
-  //   return "Point is being used a line, delete line first";
-  // }
-
-
-  // get faces
   let face3d: Face3D | undefined = getFace3dFromId(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
@@ -110,6 +102,13 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
   if (face2D == undefined) {
     return "Face id does not exists";
   }
+
+
+  // check to make sure that we don't delete a vertex
+  if (pointId < face3d.vertices.length) {
+    return "Deleting a vertex";
+  }
+
 
   // frontend changes
   let updateState2dResults: AnnotationUpdate2D = face2D.delAnnotatedPoint(pointId);
@@ -138,7 +137,7 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
  * @param faceId - the id of the face the line is in
  * @returns either true, or a message about while the action failed
  */
-async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) : Promise<string | true>   {
+export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) : Promise<string | true>   {
   // add annotation point to face3d [ie in SceneManager]
   if (point1Id == point2Id) {
     return "Cannot click the same point"; // todo: update will fail
@@ -154,6 +153,11 @@ async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: big
   let face2D : Face2D | undefined = getFace2dFromId(faceId);
   if (face2D == undefined) {
     return "Face id does not exists";
+  }
+
+  // check that we don't add an annotation line to the edge of the plane
+  if (point1Id < face3d.vertices.length && point2Id < face3d.vertices.length) {
+    return "Deleting a vertex";
   }
 
   // frontend changes
