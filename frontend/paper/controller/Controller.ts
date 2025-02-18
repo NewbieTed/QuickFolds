@@ -61,6 +61,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
 
   // create manual new update change, since we already know the 3d point
   let pointId: bigint = getaddPointFromResultMap(addPointResult);
+  console.log("created point id", pointId);
   const renderUpdateResult = face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
   updateFace(renderUpdateResult);
 

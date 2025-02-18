@@ -10,11 +10,12 @@ import * as THREE from 'three';
 import {createPoint3D} from '../geometry/Point';
 import {Face3D, FaceUpdate3D} from "../geometry/Face3D";
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment'
+import { createNewGraph } from '../model/PaperGraph';
 
 let stepID = 1n;
 const origamiID = 1n;
 
-let nextFaceId: bigint = 1n;
+let nextFaceId: bigint = 0n;
 const scene = new THREE.Scene();
 const idsToFace3D = new Map<bigint, Face3D>();
 const idsToFaceObj = new Map<bigint, THREE.Object3D>();
@@ -60,7 +61,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     idsToFace3D.set(plane.ID, plane);
     idsToFaceObj.set(plane.ID, plane.getFaceMesh());
     threeIDtoFaceID.set(plane.getFaceMesh().id, plane.ID);
-
+    createNewGraph(0n);
 }
 
 /**
@@ -150,23 +151,29 @@ export function incrementStepID() {
 export function updateFace(update: FaceUpdate3D) {
 
     // Add / remove the needed objects from the scene.
-    scene.add(...update.objectsToAdd);
-    scene.remove(...update.objectsToDelete);
-
-    // Do proper disposal of the deleted objects.
-    for (const obj of update.objectsToDelete) {
-
-        obj.geometry.dispose();
-        if (Array.isArray(obj.material)) {
-            for (const mat of obj.material) {
-                mat.dispose();
-            }
-        } else {
-            obj.material.dispose();
-        }
-
+    for (let i = 0; i < update.objectsToAdd.length; i++) {
+        console.log("hady add:", update.objectsToAdd[i]);
+        scene.add(update.objectsToAdd[i]);
     }
 
+    for (let i = 0; i < update.objectsToDelete.length; i++) {
+        console.log("hady remove:", update.objectsToDelete[i]);
+        scene.remove(update.objectsToDelete[i]);
+    }
+
+
+    // Do proper disposal of the deleted objects.
+    // for (const obj of update.objectsToDelete) {
+    //     obj.geometry.dispose();
+    //     if (Array.isArray(obj.material)) {
+    //         for (const mat of obj.material) {
+    //             mat.dispose();
+    //         }
+    //     } else {
+    //         obj.material.dispose();
+    //     }
+
+    // }
 }
 
 /**

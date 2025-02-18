@@ -31,12 +31,15 @@ export function getFace2dFromId(faceId : bigint) {
  */
 export function createNewGraph(startingPlaneId: bigint) {
   idsToFaces.clear();
+
+
+
   idsToFaces.set(startingPlaneId, new Face2D(
     [
-      createPoint2D(0, 0),
-      createPoint2D(1, 0),
-      createPoint2D(1, 1),
-      createPoint2D(0, 1),
+      createPoint2D(-3, -3),
+      createPoint2D(-3, 3),
+      createPoint2D(3,  3),
+      createPoint2D(3, -3),
     ]
   )); // big face
 

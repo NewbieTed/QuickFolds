@@ -27,7 +27,7 @@ export type AnnotationUpdate3D = {
  */
 export type FaceUpdate3D = {
     readonly objectsToAdd: THREE.Object3D[]
-    readonly objectsToDelete: THREE.Mesh[]
+    readonly objectsToDelete: THREE.Object3D[]
 }
 
 
@@ -286,7 +286,7 @@ export class Face3D {
     public updateAnnotations(update: AnnotationUpdate3D): FaceUpdate3D {
 
         const objectsToAdd: THREE.Object3D[] = [];
-        const objectsToDelete: THREE.Mesh[] = [];
+        const objectsToDelete: THREE.Object3D[] = [];
 
         // Delete the lines that need to be deleted.
         for (const lineID of update.linesDeleted) {
@@ -310,7 +310,9 @@ export class Face3D {
                 if (!Array.isArray(pointObject.material)) {
                     pointObject.material.dispose();
                 }
+                objectsToDelete.push(pointObject);
             }
+
             this.pointGeometry.delete(pointID);
         }
 
