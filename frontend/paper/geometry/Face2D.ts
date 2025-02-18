@@ -5,7 +5,7 @@
 
 
 import {EditorStatusType} from "../view/EditorMessage";
-import {getNextFaceID} from "../view/SceneManager" 
+import {getNextFaceID} from "../view/SceneManager"
 import * as pt from "./Point";
 
 
@@ -100,13 +100,13 @@ export class Face2D {
      * @returns The annotation update object.
      */
     public addAnnotatedLine(
-                startPointID: bigint, 
+                startPointID: bigint,
                 endPointID: bigint
                 ): AnnotationUpdate2D {
 
         const intersections = [];
         const newLine: pt.AnnotatedLine = {
-            startPointID: startPointID, 
+            startPointID: startPointID,
             endPointID: endPointID
         };
         const startPoint: pt.Point2D = this.getPoint(startPointID);
@@ -233,7 +233,7 @@ export class Face2D {
      * non-shared endpoint and the shared endpoint.
      */
     private checkOverlap(
-                line1: pt.AnnotatedLine, 
+                line1: pt.AnnotatedLine,
                 line2: pt.AnnotatedLine
                 ): boolean {
 
@@ -248,7 +248,7 @@ export class Face2D {
             nonShared2 = this.getPoint(line2.endPointID);
 
         } else if (line1.startPointID === line2.endPointID) {
-            
+
             shared = this.getPoint(line1.startPointID);
             nonShared1 = this.getPoint(line1.endPointID);
             nonShared2 = this.getPoint(line2.startPointID);
@@ -291,10 +291,10 @@ export class Face2D {
      * Point2D corresponding to the intersection of the two lines.
      */
     private getIntersection(
-                line1: pt.AnnotatedLine, 
+                line1: pt.AnnotatedLine,
                 line2: pt.AnnotatedLine
                 ): pt.Point2D | undefined {
-        
+
         if (this.shareEndpoint(line1, line2)) {
             return undefined;
         }
@@ -310,11 +310,11 @@ export class Face2D {
         // If the dot product is too close to 1 or -1, they're parallel.
         // This is the absolute cosine of the angle between the vectors.
         const cosAngle: number = Math.abs(pt.dotProduct(dir1, dir2));
-        
+
         if (Math.abs(cosAngle - 1) < 0.0001) {
             // Surely don't intersect (the intersection point of the abstract
             // lines could be somewhere far away outside the polygons).
-            return undefined; 
+            return undefined;
         }
 
         // Calculate the intersection of the abstract lines,
@@ -346,7 +346,7 @@ export class Face2D {
      * @returns True if the lines share an endpoint, false otherwise.
      */
     private shareEndpoint(
-                line1: pt.AnnotatedLine, 
+                line1: pt.AnnotatedLine,
                 line2: pt.AnnotatedLine
                 ): boolean {
 
@@ -380,9 +380,9 @@ export class Face2D {
                 const line = this.annotatedLines.get(lineID);
                 if (line != undefined) {
                     // This always runs, just satisfying TS compiler.
-                    if (line.startPointID === pointID || 
+                    if (line.startPointID === pointID ||
                         line.endPointID === pointID) {
-                        
+
                         // Construct and return the annotations update object.
                         const update: AnnotationUpdate2D = {
                             status: "BAD_POINT_DELETE", // Failure
@@ -394,11 +394,11 @@ export class Face2D {
 
                         return update;
                     }
-                    
+
                 }
-                
+
             }
-            
+
             // Safe to delete this annotated point.
             this.annotatedPoints.delete(pointID);
             pointsDeleted.push(pointID);

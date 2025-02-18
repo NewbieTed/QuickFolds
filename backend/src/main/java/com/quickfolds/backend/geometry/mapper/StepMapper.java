@@ -8,10 +8,13 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface StepMapper {
 
-    Long getIdByIdInOrigami(@Param("origamiId") Long origamiId, @Param("idInOrigami") int idInOrigami);
 
+    Long getStepTypeByName(@Param("stepType") String stepType);
+
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     Long addByObj(@Param("step")Step step);
 
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     Long addByFields(@Param("origamiId") long origamiId,
                      @Param("stepType") long stepTypeId,
                      @Param("idInOrigami") int idInOrigami,

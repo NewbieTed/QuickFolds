@@ -46,7 +46,7 @@ public class BaseResponse<T> {
      * @return ResponseEntity wrapping a success BaseResponse
      */
     public static <T> ResponseEntity<BaseResponse<T>> success(T data) {
-        return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "success", data));
+        return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "", data));
     }
 
 
@@ -56,7 +56,7 @@ public class BaseResponse<T> {
      * @return ResponseEntity wrapping a success BaseResponse
      */
     public static <T> ResponseEntity<BaseResponse<T>> success() {
-        return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "success", null));
+        return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "", null));
     }
 
     /**

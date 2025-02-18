@@ -1,7 +1,6 @@
 package com.quickfolds.backend.config.exception;
 
 import com.quickfolds.backend.dto.BaseResponse;
-import com.quickfolds.backend.exception.DbException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -38,6 +37,20 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Handle generic exceptions for unexpected errors
+     *
+     * @param ex Exception
+     * @return BaseResponse with error details
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<BaseResponse<Boolean>> handleGenericExceptions(Exception ex) {
+        return BaseResponse.failure(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage()
+        );
+    }
+
 
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -46,34 +59,4 @@ public class GlobalExceptionHandler {
         return BaseResponse.failure(HttpStatus.NOT_FOUND.value(), "Endpoint not found");
     }
 
-
-    @ExceptionHandler(DbException.class)
-    public ResponseEntity<BaseResponse<Boolean>> handleDbException(DbException ex) {
-        return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "DB inconsistency error: " + ex.getMessage());
-    }
-
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<BaseResponse<Boolean>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return BaseResponse.failure(
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage()
-        );
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<BaseResponse<Boolean>> handleGenericException(Exception ex) {
-        return BaseResponse.failure(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected error occurred: " + ex.getMessage());
-    }
-
-
-    @ExceptionHandler(Throwable.class)
-    public ResponseEntity<BaseResponse<Boolean>> handleThrowable(Throwable ex) {
-        return BaseResponse.failure(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "A critical error occurred: " + ex.getMessage()
-        );
-    }
 }

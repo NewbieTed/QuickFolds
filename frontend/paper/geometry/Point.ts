@@ -78,10 +78,10 @@ export type AnnotatedLine = {
  * @param x The x coordinate.
  * @param y The y coordinate.
  * @param context The context - defaults to Annotation.
- * @returns 
+ * @returns
  */
 export function createPoint2D(
-            x: number, y: number, 
+            x: number, y: number,
             context: PointContext = "Annotation"
             ): Point2D {
 
@@ -102,7 +102,7 @@ export function createPoint2D(
  * @param y The y coordinate.
  * @param z The z coordinate.
  * @param context The context - defaults to Annotation.
- * @returns 
+ * @returns
  */
 export function createPoint3D(
             x: number, y: number, z: number,
@@ -132,7 +132,7 @@ export function createPoint3D(
  * @returns A copy of the given point with its kind potentially changed.
  */
 export function copyPoint<T extends Point>(
-            source: T, 
+            source: T,
             context: PointContext = source.context
             ): T {
 
@@ -173,7 +173,7 @@ export function copyPoint<T extends Point>(
  *          a new point with the given context.
  */
 export function add<T extends Point>(
-            a: T, b: T, 
+            a: T, b: T,
             context: PointContext = "Annotation"
             ): T {
 
@@ -201,7 +201,7 @@ export function add<T extends Point>(
         return result as T;
     }
 
-    // This line of code never runs; the compiler in fact 
+    // This line of code never runs; the compiler in fact
     // catches when we pass in a and b with different dimension.
     return a;
 }
@@ -217,7 +217,7 @@ export function add<T extends Point>(
  *          a new point with the given context.
  */
 export function subtract<T extends Point>(
-            a: T, b: T, 
+            a: T, b: T,
             context: PointContext = "Annotation"
             ): T {
 
@@ -245,7 +245,7 @@ export function subtract<T extends Point>(
         return result as T;
     }
 
-    // This line of code never runs; the compiler in fact 
+    // This line of code never runs; the compiler in fact
     // catches when we pass in a and b with different dimension.
     return a;
 }
@@ -262,7 +262,7 @@ export function dotProduct<T extends Point>(a: T, b: T): number {
     let result: number = 0;
     result += a.x * b.x;
     result += a.y * b.y;
-    
+
     if (a.dim == "3D" && b.dim == "3D") {
         result += a.z * b.z;
     }
@@ -280,11 +280,11 @@ export function dotProduct<T extends Point>(a: T, b: T): number {
  * @returns vec * scalar, the vector scaled component-wise by the scalar.
  */
 export function scalarMult<T extends Point>(
-            vector: Point, 
-            scalar: number, 
+            vector: Point,
+            scalar: number,
             context: PointContext = "Annotation"
             ): T {
-    
+
     if (vector.dim === "2D") {
 
         const result: Point2D = {
@@ -322,8 +322,8 @@ export function scalarMult<T extends Point>(
  * @throws Error if the given scalar to divide by is 0.
  */
 export function scalarDiv<T extends Point>(
-            vector: Point, 
-            scalar: number, 
+            vector: Point,
+            scalar: number,
             context: PointContext = "Annotation"
             ): T {
 
@@ -368,7 +368,7 @@ export function scalarDiv<T extends Point>(
  *          The average of no vectors (empty array) is 0.
  */
 export function average(
-            vectors: Point3D[], 
+            vectors: Point3D[],
             context: PointContext = "Annotation"
             ) {
 
@@ -376,7 +376,7 @@ export function average(
     for (let i = 0; i < vectors.length; i++) {
         sum = add(sum, vectors[i]);
     }
-    
+
     // Edge case.
     if (vectors.length == 0) {
         return sum;
@@ -398,7 +398,7 @@ export function distance<T extends Point>(a: T, b: T): number {
     let squaredDist = 0;
     squaredDist += (a.x - b.x)**2;
     squaredDist += (a.y - b.y)**2;
-    
+
     if (a.dim == "3D" && b.dim == "3D") {
         squaredDist += (a.z - b.z)**2;
     }

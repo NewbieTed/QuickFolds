@@ -2,7 +2,6 @@ package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,8 +19,8 @@ public class Annotation {
     private List<LineAnnotationRequest> lines;
 
     @Valid
-    private List<@PositiveOrZero(message = "All elements in deletedPoints in Annotate must be non-negative.") Integer> deletedPoints;
+    private List<@Positive(message = "All elements in deletedPoints in Annotate must be positive.") Integer> deletedPoints;
 
     @Valid
-    private List<@PositiveOrZero(message = "All elements in deletedLines in Annotate must be non-negative.") Integer> deletedLines;
+    private List<@Positive(message = "All elements in deletedLines in Annotate must be positive.") Integer> deletedLines;
 }

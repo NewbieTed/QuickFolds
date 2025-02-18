@@ -10,7 +10,8 @@ import {Face3D} from "../../geometry/Face3D.ts";
 import {Face2D} from "../../geometry/Face2D.ts";
 import {createPoint3D, createPoint2D} from "../../geometry/Point.ts";
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
-
+import { threeJSIdsToOurIds, startup} from "../SceneManager.ts";
+import {addAnnotationPoint} from "../../controller/Controller.ts"
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -136,7 +137,7 @@ function convertAnnotations(update2D) {
 	for (const pointID of update2D.pointsAdded.keys()) {
 		const anotPt = update2D.pointsAdded.get(pointID);
 		pointsAdded.set(pointID, {
-			point: createPoint3D(anotPt.point.x, 0, anotPt.point.y), 
+			point: createPoint3D(anotPt.point.x, 0, anotPt.point.y),
 			edgeID: anotPt.edgeID
 		});
 	}
@@ -196,9 +197,9 @@ for (const object of myFace3D.collectMeshes()) {
 }
 // For raycasting.
 faces.push(myFace3D.getFaceMesh());
-
 // -------------------- End of Test for Face3D and Face2D ---------------------
-
+startup(myFace3D, myFace3D.getFaceMesh().id);
+console.log("STart id" + myFace3D.getFaceMesh().id)
 
 // Add a point light to be able to see things.
 const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
@@ -315,11 +316,19 @@ function onMouseDown(event) {
 
 
 		if (intersects.length > 0) {
-			const intersect = intersects[0];
-			const point = intersect.point;
-				raySphere.position.set(point.x, point.y, point.z);
-			console.log(`Clicked coordinates: x=${point.x.toFixed(2)}, y=${point.y.toFixed(2)}, z=${point.z.toFixed(2)}`);
 
+			const intersect = intersects[0];
+			const object3dHit = intersect.object;
+			console.log("intersection id: " + object3dHit.id);
+			const point = intersect.point;
+			raySphere.position.set(point.x, point.y, point.z);
+
+			let idOfFaceHit = threeJSIdsToOurIds(object3dHit.id);
+			console.log(idOfFaceHit + "]");
+			if (idOfFaceHit === undefined) {
+				return;
+			}
+			addAnnotationPoint(point, idOfFaceHit);
 
 			resetIsPickPointButtonPressed(); // Reset after picking
 		}
