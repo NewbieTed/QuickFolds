@@ -5,7 +5,7 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.StepTypeMapper">
 
-    <select id="getStepTypeByName">
+    <select id="getIdByName">
         SELECT id
         FROM step_type
         WHERE step_type_name = #{stepTypeName}
