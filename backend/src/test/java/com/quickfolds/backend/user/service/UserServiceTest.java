@@ -70,7 +70,7 @@ public class UserServiceTest {
         user.setPassword("mypassword");
         assertTrue(userService.registerUser(user), "User registration should succeed");
 
-        // Attempt to login with correct credentials
+        // Attempt to log in with correct credentials
         String token = userService.login("loginSuccessUser", "mypassword");
         assertNotNull(token, "Login should return a token when credentials are correct");
     }
@@ -83,14 +83,14 @@ public class UserServiceTest {
         user.setPassword("mypassword");
         assertTrue(userService.registerUser(user), "User registration should succeed");
 
-        // Attempt to login with an incorrect password
+        // Attempt to log in with an incorrect password
         String token = userService.login("loginWrongUser", "wrongpassword");
         assertNull(token, "Login should fail with incorrect password");
     }
 
     @Test
     void testLoginNonExistentUser() {
-        // Attempt to login with a user that doesn't exist
+        // Attempt to log in with a user that doesn't exist
         String token = userService.login("nonExistentUser", "password");
         assertNull(token, "Login should fail for a non-existent user");
     }
