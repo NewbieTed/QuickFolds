@@ -230,6 +230,7 @@ public class GeometryService {
             line.setFaceId(faceId);
             line.setIdInFace(lineRequest.getIdInFace());
 
+            // TODO: Check if exists
             line.setPoint1Id(origamiPointMapper.getIdByIdInFace(faceId, lineRequest.getPoint1IdInOrigami()));
             line.setPoint2Id(origamiPointMapper.getIdByIdInFace(faceId, lineRequest.getPoint2IdInOrigami()));
 

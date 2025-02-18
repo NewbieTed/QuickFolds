@@ -10,7 +10,7 @@ public interface EdgeMapper {
 
     Long getMostRecentId(@Param("stepId") long stepId);
 
-    Long getIdByIdInFace(@Param("faceId") long faceId, @Param("edgeIdInFace") int edgeIdInFace);
+    Long getIdByIdInFace(@Param("faceId") long faceId, @Param("idInFace") int idInFace);
 
     Long addByObj(@Param("edge") Edge edge);
 }
