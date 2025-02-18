@@ -1,5 +1,6 @@
-cd ../../../
+cd ..
 
+pwd
 
 # runs functionality test
-npx mocha -r ts-node/register ../setup.ts ../general/*.test.ts
+npx mocha -r ts-node/register setup.ts general/**.test.ts
