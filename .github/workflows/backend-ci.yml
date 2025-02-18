@@ -46,22 +46,6 @@ jobs:
       - name: Update Maven Wrapper Permissions
         run: chmod +x backend/mvnw
 
-      - name: Install PostgreSQL Client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: Wait for PostgreSQL to be Ready
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h postgres -U test_user -d quickfolds_test; then
-              echo "Database is ready!"
-              exit 0
-            fi
-            echo "Waiting for database..."
-            sleep 2
-          done
-          echo "Database failed to start"
-          exit 1
-
       - name: Build and Run Tests
         env:
           SPRING_PROFILES_ACTIVE: test
