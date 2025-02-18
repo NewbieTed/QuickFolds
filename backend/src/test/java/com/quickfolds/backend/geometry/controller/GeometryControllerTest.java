@@ -1,39 +1,33 @@
 package com.quickfolds.backend.geometry.controller;
 
-import com.quickfolds.backend.config.exception.GlobalExceptionHandler;
-import com.quickfolds.backend.geometry.model.dto.AnnotationRequest;
-import com.quickfolds.backend.geometry.service.GeometryService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quickfolds.backend.dto.BaseResponse;
+import com.quickfolds.backend.geometry.model.dto.*;
+import com.quickfolds.backend.geometry.service.GeometryService;
 import com.quickfolds.backend.user.auth.JwtAuthenticationFilter;
-import com.quickfolds.backend.user.auth.JwtUtil;
-import com.quickfolds.backend.user.auth.TestSecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = GeometryController.class)
-@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
-@AutoConfigureMockMvc(addFilters = true)
+@AutoConfigureMockMvc(addFilters = false)
 public class GeometryControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockBean
-    private JwtUtil jwtUtil;
 
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -41,118 +35,88 @@ public class GeometryControllerTest {
     @MockBean
     private GeometryService geometryService;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+
+    public static AnnotationRequest createAnnotationRequest(Long origamiId, Integer stepIdInOrigami,
+                                                            List<PointAnnotationRequest> points,
+                                                            List<LineAnnotationRequest> lines,
+                                                            List<Integer> deletedPoints,
+                                                            List<Integer> deletedLines) {
+        Annotation annotation = new Annotation(points, lines, deletedPoints, deletedLines);
+        FaceAnnotateRequest face = new FaceAnnotateRequest(5, annotation);
+        return new AnnotationRequest(origamiId, stepIdInOrigami, Collections.singletonList(face));
+    }
 
 
     @Test
     public void handlesValidAnnotateRequest() throws Exception {
-        // Generate a mock CSRF token
-        HttpSessionCsrfTokenRepository csrfTokenRepository = new HttpSessionCsrfTokenRepository();
-        CsrfToken csrfToken = csrfTokenRepository.generateToken(null);
 
         Mockito.when(geometryService.annotate(Mockito.any(AnnotationRequest.class)))
                 .thenReturn(BaseResponse.success(true));
 
-        String requestBody = """
-            {
-                "origamiId": 1,
-                "stepIdInOrigami": 2,
-                "faces": [
-                    {
-                        "idInOrigami": 5,
-                        "annotations": {
-                            "points": [
-                                {
-                                    "idInFace": 2,
-                                    "x": 1.0,
-                                    "y": 2.0,
-                                    "onEdgeIdInFace": null
-                                }
-                            ],
-                            "lines": [
-                                {
-                                    "idInFace": 1,
-                                    "point1IdInOrigami": 3,
-                                    "point2IdInOrigami": 5
-                                }
-                            ],
-                            "deletedPoints": [2, 7, 8],
-                            "deletedLines": [1, 3, 5]
-                        }
-                    }
-                ]
-            }
-            """;
+        List<PointAnnotationRequest> points = new ArrayList<>();
+        List<LineAnnotationRequest> lines = new ArrayList<>();
+        List<Integer> deletedPoints = new ArrayList<>();
+        List<Integer> deletedLines = new ArrayList<>();
+
+        for (int i = 1; i < 4; i++) {
+            points.add(new PointAnnotationRequest(i, 1.0 * i, 1.0 * i, null));
+            lines.add(new LineAnnotationRequest(i, i, i + 1));
+            deletedPoints.add(2 * i);
+            deletedLines.add(2 * i);
+        }
+
+        // Use factory method to create the request
+        AnnotationRequest request = createAnnotationRequest(
+                1L,
+                2,
+                points,
+                lines,
+                deletedPoints,
+                deletedLines
+        );
+
+        String requestBody = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(post("/geometry/annotate")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody)
-                        .header(csrfToken.getHeaderName(), csrfToken.getToken())) // Add the CSRF token
+                        .content(requestBody))
                 .andExpect(status().isOk());
     }
 
-//    @Test
-//    public void handlesInvalidAnnotateRequest_MissingOrigamiId() throws Exception {
-//        HttpSessionCsrfTokenRepository csrfTokenRepository = new HttpSessionCsrfTokenRepository();
-//        CsrfToken csrfToken = csrfTokenRepository.generateToken(null);
-//
-//        Mockito.when(geometryService.annotate(Mockito.any(AnnotationRequest.class)))
-//                .thenReturn(BaseResponse.success(true));
-//
-//        String invalidRequest = """
-//                {
-//                      "stepIdInOrigami": 2,
-//                      "faces": [
-//                          {
-//                              "idInOrigami": 5,
-//                              "annotations": {
-//                                  "points": [
-//                                      {
-//                                          "idInFace": 2,
-//                                          "x": 1.0,
-//                                          "y": 2.0,
-//                                          "onEdgeIdInFace": null
-//                                      },
-//                                      {
-//                                          "idInFace": 3,
-//                                          "x": 0.5,
-//                                          "y": 3.0,
-//                                          "onEdgeIdInFace": 4
-//                                      }
-//                                  ],
-//                                  "lines": [
-//                                      {
-//                                          "idInFace": 1,
-//                                          "point1IdInOrigami": 3,
-//                                          "point2IdInOrigami": 5
-//                                      },
-//                                      {
-//                                          "idInFace": 2,
-//                                          "point1IdInOrigami": 1,
-//                                          "point2IdInOrigami": 4
-//                                      }
-//                                  ],
-//                                  "deletedPoints": [
-//                                      2,
-//                                      7,
-//                                      8
-//                                  ],
-//                                  "deletedLines": [
-//                                      1,
-//                                      3,
-//                                      5
-//                                  ]
-//                              }
-//                          }
-//                      ]
-//                  }
-//                """;
-//
-//        mockMvc.perform(post("/geometry/annotate")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .header(csrfToken.getHeaderName(), csrfToken.getToken())
-//                        .content(invalidRequest))
-//                .andExpect(status().isBadRequest());
-//    }
+
+    @Test
+    public void handlesInvalidAnnotateRequest_MissingOrigamiId() throws Exception {
+        List<PointAnnotationRequest> points = new ArrayList<>();
+        List<LineAnnotationRequest> lines = new ArrayList<>();
+        List<Integer> deletedPoints = new ArrayList<>();
+        List<Integer> deletedLines = new ArrayList<>();
+
+        for (int i = 1; i < 4; i++) {
+            points.add(new PointAnnotationRequest(i, 1.0 * i, 1.0 * i, null));
+            lines.add(new LineAnnotationRequest(i, i, i + 1));
+            deletedPoints.add(2 * i);
+            deletedLines.add(2 * i);
+        }
+
+        // Use factory method to create the request
+        AnnotationRequest invalidRequest = createAnnotationRequest(
+                null,
+                2,
+                points,
+                lines,
+                deletedPoints,
+                deletedLines
+        );
+
+        String requestBody = objectMapper.writeValueAsString(invalidRequest);
+
+        mockMvc.perform(post("/geometry/annotate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+    }
 
     // Uncommented tests can be used as needed
     // @Test

@@ -14,4 +14,25 @@
     </select>
 
 
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Face">
+        INSERT INTO face (
+            origami_id,
+            step_id,
+            id_in_origami
+            <if test="face.createdBy != null">, created_by</if>
+            <if test="face.updatedBy != null">, updated_by</if>
+            <if test="face.createdAt != null">, created_at</if>
+            <if test="face.updatedAt != null">, updated_at</if>
+        ) VALUES (
+            #{face.origamiId},
+            #{face.stepId},
+            #{face.idInOrigami}
+            <if test="face.createdBy != null">, #{face.createdBy}</if>
+            <if test="face.updatedBy != null">, #{face.updatedBy}</if>
+            <if test="face.createdAt != null">, #{face.createdAt}</if>
+            <if test="face.updatedAt != null">, #{face.updatedAt}</if>
+        );
+    </insert>
+
+
 </mapper>

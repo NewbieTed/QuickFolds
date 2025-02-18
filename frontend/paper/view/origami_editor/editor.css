@@ -1,3 +1,11 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevents both horizontal and vertical scrolling */
+  width: 100%;
+  height: 100%;
+}
+
 .bg {
   background-color: black;
 }
@@ -13,9 +21,9 @@
   padding-left: 2%;
   padding-top: 1%;
   border-radius: 5%;
+  overflow: hidden; /* Prevents both horizontal and vertical scrolling */
 }
 
 .display p {
   color: white;
-
 }

@@ -2,6 +2,7 @@ package com.quickfolds.backend.dto;
 
 import lombok.Data;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
 
@@ -27,24 +28,45 @@ public class BaseResponse<T> {
         this.timestamp = Instant.now(); // Automatically set timestamp
     }
 
-    // Static factory method for success responses with no return data
-    public static BaseResponse<Boolean> success() {
-        return new BaseResponse<>(true, HttpStatus.OK.value(), "", null);
+    // ---- NEW METHODS FOR ResponseEntity ---- //
+
+    /**
+     * Wrap this BaseResponse in a ResponseEntity with the status code from BaseResponse.
+     *
+     * @return ResponseEntity wrapping the BaseResponse
+     */
+    public ResponseEntity<BaseResponse<T>> toResponseEntity() {
+        return ResponseEntity.status(this.statusCode).body(this);
     }
 
-    // Static factory method for success responses with return data
-    public static <T> BaseResponse<T> success(T data) {
-        return new BaseResponse<>(true, HttpStatus.OK.value(), "", data);
+    /**
+     * Static method to create a success ResponseEntity with data.
+     *
+     * @param data The success data to include
+     * @return ResponseEntity wrapping a success BaseResponse
+     */
+    public static <T> ResponseEntity<BaseResponse<T>> success(T data) {
+        return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "success", data));
     }
 
-    // Static factory method for success responses with return message and data
-    public static <T> BaseResponse<T> success(String message, T data) {
-        return new BaseResponse<>(true,  HttpStatus.OK.value(), message, data);
+
+    /**
+     * Static method to create a success ResponseEntity with no data.
+     *
+     * @return ResponseEntity wrapping a success BaseResponse
+     */
+    public static <T> ResponseEntity<BaseResponse<T>> success() {
+        return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "success", null));
     }
 
-    // Static factory method for failure responses with status code and message
-    public static <T> BaseResponse<T> failure(int statusCode, String message) {
-        return new BaseResponse<>(false, statusCode, message, null);
+    /**
+     * Static method to create a failure ResponseEntity with a status code and message.
+     *
+     * @param statusCode HTTP status code for the failure
+     * @param message    Error message
+     * @return ResponseEntity wrapping a failure BaseResponse
+     */
+    public static <T> ResponseEntity<BaseResponse<T>> failure(int statusCode, String message) {
+        return ResponseEntity.status(statusCode).body(new BaseResponse<>(false, statusCode, message, null));
     }
 }
-

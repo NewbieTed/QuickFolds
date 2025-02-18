@@ -16,13 +16,14 @@
         <result property="updatedAt" column="updated_at" />
     </resultMap>
 
-    <select id="getStepTypeByName" resultType="int">
-        SELECT id
-        FROM step_type
-        WHERE step_type_name = #{stepTypeName}
+    <select id="getIdByIdInOrigami">
+        SELECT id FROM step
+        WHERE
+        origami_id = #{origamiId}
+        AND
+        id_in_origami = #{idInOrigami}
         LIMIT 1
     </select>
-
 
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Step">
         INSERT INTO step (
@@ -36,16 +37,16 @@
         ) VALUES (
         #{step.origamiId},
         #{step.stepTypeId},
-        #{step.idInOrigami},
+        #{step.idInOrigami}
         <if test="step.createdBy != null">, #{step.createdBy}</if>
         <if test="step.updatedBy != null">, #{step.updatedBy}</if>
         <if test="step.createdAt != null">, #{step.createdAt}</if>
         <if test="step.updatedAt != null">, #{step.updatedAt}</if>
-        )
+        );
     </insert>
 
 
-    <insert id="addByFields" useGeneratedKeys="true" keyProperty="id">
+    <insert id="addByFields">
         INSERT INTO step (
         origami_id,
         step_type_id,

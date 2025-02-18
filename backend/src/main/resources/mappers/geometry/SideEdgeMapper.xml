@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.quickfolds.backend.geometry.mapper.SideEdgeMapper">
+
+
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.SideEdge">
+        INSERT INTO side_edge (
+        edge_id,
+        vertex_1_id,
+        vertex_2_id,
+        face_id,
+        id_in_face
+        <if test="sideEdge.createdBy != null">, created_by</if>
+        <if test="sideEdge.updatedBy != null">, updated_by</if>
+        <if test="sideEdge.createdAt != null">, created_at</if>
+        <if test="sideEdge.updatedAt != null">, updated_at</if>
+        ) VALUES (
+        #{sideEdge.edgeId},
+        #{sideEdge.vertex1Id},
+        #{sideEdge.vertex2Id},
+        #{sideEdge.faceId},
+        #{sideEdge.idInFace}
+        <if test="sideEdge.createdBy != null">, #{sideEdge.createdBy}</if>
+        <if test="sideEdge.updatedBy != null">, #{sideEdge.updatedBy}</if>
+        <if test="sideEdge.createdAt != null">, #{sideEdge.createdAt}</if>
+        <if test="sideEdge.updatedAt != null">, #{sideEdge.updatedAt}</if>
+        )
+    </insert>
+</mapper>
