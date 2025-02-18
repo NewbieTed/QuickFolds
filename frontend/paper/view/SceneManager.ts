@@ -5,82 +5,201 @@
  * animation methods to display the 3D-rendered paper in motion.
  */
 
+
 import * as THREE from 'three';
-import exp from "constants";
-import { Face3D } from "../geometry/Face3D";
-import { createNewGraph } from '../model/PaperGraph';
+import {createPoint3D} from '../geometry/Point';
+import {Face3D, FaceUpdate3D} from "../geometry/Face3D";
+import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment'
 
+let stepID = 1n;
+const origamiID = 1n;
 
-let stepID : bigint = 5n;
-const stringOfOrigamiId : string | null = localStorage.getItem("currentOrigamiIdForEditor");
-
-let origamiID = 0n;
-if (stringOfOrigamiId !== null) {
-    origamiID = BigInt(stringOfOrigamiId);
-}
-
-
-
-
-let nextFaceId : bigint = 0n;
-const idsToFaces : Map<bigint, Face3D> = new Map<bigint, Face3D>();
-const objToOurIds : Map<bigint, bigint> = new Map<bigint, bigint>();
-
-export function startup(plane : Face3D, meshId : bigint) {
-    idsToFaces.clear();
-    objToOurIds.clear();
-    idsToFaces.set(0n, plane);
-    objToOurIds.set(meshId, 0n);
-    createNewGraph(0n);
-    nextFaceId++;
-    console.log("ID OF MESH" + meshId);
-    console.log(objToOurIds);
-    console.log(idsToFaces);
-    console.log("=====");
-}
-
-
-export function threeJSIdsToOurIds(threeJSId : bigint) : bigint | undefined{
-    return objToOurIds.get(threeJSId);
-}
+let nextFaceId: bigint = 1n;
+const scene = new THREE.Scene();
+const idsToFace3D = new Map<bigint, Face3D>();
+const idsToFaceObj = new Map<bigint, THREE.Object3D>();
+const threeIDtoFaceID = new Map<number, bigint>();
 
 
 /**
- * @param faceId - id of faceobject to get
- * @returns face3d object or undefined if no id exists
+ * Initialize the scene with a plane, point light, etc.
+ * @param renderer: The renderer that will render this scene.
  */
-export function getFace3dFromId(faceId : bigint) {
-    return idsToFaces.get(faceId);
+export function initialize(renderer: THREE.WebGLRenderer) {
+
+    idsToFace3D.clear();
+    idsToFaceObj.clear();
+    threeIDtoFaceID.clear();
+
+    // Set up environment for proper lighting.
+    const environment = new RoomEnvironment();
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmremGenerator.fromScene(environment).texture;
+    environment.dispose();
+
+    // Create visual axes/grid.
+    const grid = new THREE.GridHelper(10, 10);
+    scene.add(grid);
+
+    // Add a point light to be able to see things.
+    const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
+    pointLight.position.set(10, 10, 10);
+    scene.add(pointLight);
+
+    // Create a Face3D to begin manipulating.
+    const vertices3D = [
+        createPoint3D(-3, 0, -3, "Vertex"),
+        createPoint3D(-3, 0, 3, "Vertex"),
+        createPoint3D(3, 0, 3, "Vertex"),
+        createPoint3D(3, 0, -3, "Vertex"),
+    ]
+    const principalNormal = createPoint3D(0, 1, 0);
+    const plane = new Face3D(vertices3D, 0.05, 0, principalNormal);
+    scene.add(plane.getFaceMesh());
+
+    idsToFace3D.set(plane.ID, plane);
+    idsToFaceObj.set(plane.ID, plane.getFaceMesh());
+    threeIDtoFaceID.set(plane.getFaceMesh().id, plane.ID);
+
 }
 
 /**
- * Gets the current step id we are on. does not update the step counter, just peeks
- * @returns current step id
+ * Gets the current scene being rendered.
+ */
+export function getScene(): THREE.Scene {
+    return scene;
+}
+
+/**
+ * Gets a collection of meshes for all the face objects in the scene.
+ * This does not include annotation geometry - only the polygon meshes.
+ */
+export function getFaceObjects(): THREE.Object3D[] {
+    return Array.from(idsToFaceObj.values());
+}
+
+/**
+ * Gets the id of the next available face, also updates the counter.
+ * @returns The id of the new face.
+ */
+export function getNextFaceID(): bigint {
+    nextFaceId += 1n;
+    return nextFaceId - 1n;
+}
+
+/**
+ * Given a Three.js object, return the ID of the Face3D object, if it exists.
+ * @param threeJSObj The Three.js mesh corresponding to the Face3D.
+ * @returns The ID of the Face3D object if it exists, or undefined if not.
+ */
+export function getFaceID(threeJSObj: THREE.Object3D): bigint | undefined {
+    return threeIDtoFaceID.get(threeJSObj.id);
+}
+
+/**
+ * Given a Three.js object, return the Face3D object, if it exists.
+ * @param threeJSObj The Three.js mesh corresponding to the Face3D.
+ * @returns The Face3D object if it exists, or undefined if not.
+ */
+export function getFace3D(threeJSObj: THREE.Object3D): Face3D | undefined {
+    const faceID: bigint | undefined = threeIDtoFaceID.get(threeJSObj.id);
+    if (faceID === undefined) {
+        return undefined;
+    }
+    return idsToFace3D.get(faceID);
+}
+
+/**
+ * Gets a Face3D object in the current scene via its ID.
+ * @param faceID ID of the Face3D to get.
+ * @returns Face3D object or undefined if no Face3D with given ID exists.
+ */
+export function getFace3DByID(faceID: bigint) {
+    return idsToFace3D.get(faceID);
+}
+
+/**
+ * Gets the current step ID we are on. Does not update the step counter.
+ * @returns The current step ID.
  */
 export function getStepID() {
     return stepID;
 }
 
 /**
- * @returns origami id editor is working on
+ * Gets the ID of the origami currently open.
+ * @returns The ID of the current origami.
  */
 export function getOrigamiID() {
     return origamiID;
 }
 
 /**
- * Increases the current step counter
+ * Increases the step counter.
  */
 export function incrementStepID() {
     stepID++;
 }
 
+/**
+ * Updates the scene when a Face3D has changed and potentially caused new
+ * geometry to be added and deleted (e.g. annotation points and lines).
+ * @param update The update object generated by a Face3D, which indicates
+ * what meshes need to be added and/or removed from a scene.
+ */
+export function updateFace(update: FaceUpdate3D) {
+
+    // Add / remove the needed objects from the scene.
+    scene.add(...update.objectsToAdd);
+    scene.remove(...update.objectsToDelete);
+
+    // Do proper disposal of the deleted objects.
+    for (const obj of update.objectsToDelete) {
+
+        obj.geometry.dispose();
+        if (Array.isArray(obj.material)) {
+            for (const mat of obj.material) {
+                mat.dispose();
+            }
+        } else {
+            obj.material.dispose();
+        }
+
+    }
+
+}
 
 /**
- * Gets the id of the next available face, also updates the counter
- * @returns the id of the new face
+ * Adds a Face3D to the scene.
+ * @param face The Face3D to add to the scene.
  */
-export function getNextFaceID(): bigint {
-    nextFaceId += 1n;
-    return nextFaceId - 1n;
+export function addFace(face: Face3D) {
+
+    // Add the face to the scene.
+    scene.add(...face.collectObjects());
+
+    // Add it to the id maps.
+    idsToFace3D.set(face.ID, face);
+    idsToFaceObj.set(face.ID, face.getFaceMesh());
+    threeIDtoFaceID.set(face.getFaceMesh().id, face.ID);
+}
+
+/**
+ * Deletes the Face3D with the given ID from the scene.
+ * @param faceID The ID of the face to delete.
+ * @throws Error if the face with the given ID does not exist.
+ */
+export function deleteFace(faceID: bigint) {
+
+    const face: Face3D | undefined = getFace3DByID(faceID);
+    if (face === undefined) {
+        throw new Error(`No Face3D with ID ${faceID} exists.`);
+    }
+
+    // Remove the face from the scene.
+    scene.remove(...face.collectObjects());
+
+    // Clean up the face properly.
+    face.dispose();
+
 }
