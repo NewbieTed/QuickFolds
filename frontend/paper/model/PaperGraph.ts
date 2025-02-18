@@ -20,6 +20,8 @@ const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
  * If no element is associated with the specified id, undefined is returned.
  */
 export function getFace2dFromId(faceId : bigint) {
+  console.log(faceId);
+  console.log("here is map:");
   console.log(idsToFaces);
   return idsToFaces.get(faceId);
 }
@@ -37,5 +39,6 @@ export function createNewGraph(startingPlaneId: bigint) {
       createPoint2D(0, 1),
     ]
   )); // big face
+
 }
 

@@ -10,21 +10,30 @@ import exp from "constants";
 import { Face3D } from "../geometry/Face3D";
 import { createNewGraph } from '../model/PaperGraph';
 
-let stepID = 1n;
-const origamiID = 1n; // BACKEND CHANGE
 
-let nextFaceId : bigint = 1n;
+let stepID : bigint = 5n;
+const stringOfOrigamiId : string | null = localStorage.getItem("currentOrigamiIdForEditor");
+if (stringOfOrigamiId === null) {
+    throw new Error("COULDN'T GET ORIGAMI ID");
+}
+
+const origamiID  : bigint = BigInt(stringOfOrigamiId);
+
+let nextFaceId : bigint = 0n;
 const idsToFaces : Map<bigint, Face3D> = new Map<bigint, Face3D>();
 const objToOurIds : Map<bigint, bigint> = new Map<bigint, bigint>();
 
 export function startup(plane : Face3D, meshId : bigint) {
     idsToFaces.clear();
     objToOurIds.clear();
-    idsToFaces.set(nextFaceId, plane);
-    objToOurIds.set(meshId, nextFaceId);
-    createNewGraph(nextFaceId);
+    idsToFaces.set(0n, plane);
+    objToOurIds.set(meshId, 0n);
+    createNewGraph(0n);
     nextFaceId++;
     console.log("ID OF MESH" + meshId);
+    console.log(objToOurIds);
+    console.log(idsToFaces);
+    console.log("=====");
 }
 
 
