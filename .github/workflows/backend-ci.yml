@@ -22,12 +22,12 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: QuickFolds@CSE403
+          POSTGRES_PASSWORD: "QuickFolds@CSE403"
           POSTGRES_DB: quickfolds_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -h localhost -U test_user"
+          --health-cmd "pg_isready -h 127.0.0.1 -U test_user -d quickfolds_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -45,6 +45,9 @@ jobs:
 
       - name: Update Maven Wrapper Permissions
         run: chmod +x backend/mvnw
+
+      - name: Install PostgreSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Wait for PostgreSQL to be Ready
         run: |
@@ -66,7 +69,7 @@ jobs:
           TEST_DB_PORT: 5432
           TEST_DB_NAME: quickfolds_test
           TEST_DB_USER: test_user
-          TEST_DB_PASSWORD: QuickFolds@CSE403
+          TEST_DB_PASSWORD: "QuickFolds@CSE403"
         run: |
           cd backend
           ./mvnw clean test
