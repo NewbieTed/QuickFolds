@@ -3,139 +3,74 @@
  * the given request
  */
 
+import { AnnotationUpdate2D } from "../geometry/Face2D";
 import { Point2D } from "../geometry/Point";
 import { getOrigamiID, getStepID } from "../view/SceneManager";
 
+export function serializeResultChange(statusUpdate: AnnotationUpdate2D, faceId: bigint) {
+  // creating JSON for adding points
+  const addedPointsList: PointData[] = [];
+  type PointData = {
+    idInFace: number;
+    x: number;
+    y: number;
+    onEdgeIdInFace: bigint | null;
+  };
 
+  for (const [pointId, pointObj] of statusUpdate.pointsAdded) {
+    addedPointsList.push(
+      {
+        "idInFace": Number(pointId),
+        "x": pointObj.point.x,
+        "y": pointObj.point.y,
+        "onEdgeIdInFace": pointObj.edgeID === -1n ? null : pointObj.edgeID
+      }
+    );
+	}
 
-/**
- * Formats the json request to add a new point
- * @param point - the new point to add
- * @param faceId - the id the face to add the point
- * @param pointId - the id of the point that is created
- * @param isPointOnEdge - the id of the edge the point is on, or null if not true
- * @returns JSON object to send to backend
- */
-export function serializeAddPoint(point: Point2D, faceId: bigint, pointID: bigint, isPointOnEdge: bigint | null) {
-  let origamiID: bigint = getOrigamiID();
-  let stepID: bigint = getStepID();
+  type LineData = {
+    idInFace: number;
+    pointIdInOrigami1: number;
+    pointIdInOrigami2: number;
+  };
+  // for now, use pointdata type
+  const addedLinesList: LineData[] = [];
+  for (const [lineId, lineObj] of statusUpdate.linesAdded) {
+    addedLinesList.push(
+      {
+        "idInFace": Number(lineId),
+        "pointIdInOrigami1": Number(lineObj.startPointID),
+        "pointIdInOrigami2": Number(lineObj.startPointID)
+      }
+    );
+	}
 
-  let faces = [{
+  // need to cast to number
+  const copyDelPoints: number[] = []
+  for (let id of statusUpdate.pointsDeleted) [
+    copyDelPoints.push(Number(id))
+  ]
+
+  const copyDelLines: number[] = []
+  for (let id of statusUpdate.linesDeleted) [
+    copyDelLines.push(Number(id))
+  ]
+  const faces = [{
     "idInOrigami": Number(faceId),
     "annotations": {
-      "points": [
-                  {
-                    "idInFace": Number(pointID),
-                    "x": point.x,
-                    "y": point.y,
-                    "onEdgeIdInFace": isPointOnEdge
-                  }
-                ],
-      "lines": [],
-      "deletedPoints": [],
-      "deletedLines": []
+      "points": addedPointsList,
+      "lines": addedLinesList,
+      "deletedPoints": copyDelPoints,
+      "deletedLines":copyDelLines
     }
   }];
 
-  let final = {
+  const origamiID: bigint = getOrigamiID();
+  const stepID: bigint = getStepID();
+
+  const final = {
     "origamiId": Number(origamiID),
     "stepIdInOrigami": Number(stepID),
-    "faces": faces
-  }
-
-  return final;
-}
-
-/**
- * Formats the json request to delete a point
- * @param faceId - the id the face to add the point
- * @param pointId - the id of the point that is created
- * @returns JSON object to send to backend
- */
-export function serializeDeletePoint(faceId: bigint, pointID: bigint) {
-  let origamiID: bigint = getOrigamiID();
-  let stepID: bigint = getStepID();
-
-  let faces = [{
-    "idInOrigami": faceId,
-    "annotations": {
-      "points": [],
-      "lines": [],
-      "deletedPoints": [pointID],
-      "deletedLines": []
-    }
-  }];
-
-  let final = {
-    "origamiId": origamiID,
-    "stepIdInOrigami": stepID,
-    "faces": faces
-  }
-
-  return final;
-}
-
-
-/**
- * Formats the json request to add a new line
- * @param point1Id - the id of the 1st point in the line segment that is created
- * @param point2Id - the id of the 2nd point in the line segment that is created
- * @param newAnnoLineId - the id of the line annotation
- * @param faceId - the id the face to add the point
- * @returns JSON object to send to backend
- */
-export function serializeAddLine(point1Id: bigint, point2Id: bigint, newAnnoLineId: bigint, faceId: bigint) {
-  let origamiID: bigint = getOrigamiID();
-  let stepID: bigint = getStepID();
-
-  let faces = [{
-    "idInOrigami": faceId,
-    "annotations": {
-      "points": [],
-      "lines": [
-        {
-          "idInFace": newAnnoLineId,
-          "point1IdInOrigami": point1Id,
-          "point2IdInOrigami": point2Id
-        },
-      ],
-      "deletedPoints": [],
-      "deletedLines": []
-    }
-  }];
-
-  let final = {
-    "origamiId": origamiID,
-    "stepIdInOrigami": stepID,
-    "faces": faces
-  }
-
-  return final;
-}
-
-/**
- * Formats the json request to delete a line
- * @param annoLineId - the id of the line annotation
- * @param faceId - the id the face to add the point
- * @returns JSON object to send to backend
- */
-export function serializeDeleteLine(annoLineId: bigint, faceId: bigint | null) {
-  let origamiID: bigint = getOrigamiID();
-  let stepID: bigint = getStepID();
-
-  let faces = [{
-    "idInOrigami": faceId,
-    "annotations": {
-      "points": [],
-      "lines": [],
-      "deletedPoints": [],
-      "deletedLines": [annoLineId]
-    }
-  }];
-
-  let final = {
-    "origamiId": origamiID,
-    "stepIdInOrigami": stepID,
     "faces": faces
   }
 

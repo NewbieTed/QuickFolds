@@ -7,10 +7,11 @@ import * as THREE from 'three';
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed, resetIsDeletePointButtonPressed} from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
 import {Face3D} from "../../geometry/Face3D.ts";
-import {createPoint3D} from "../../geometry/Point.ts";
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment';
-import { startup, threeJSIdsToOurIds } from '../SceneManager.ts';
-import {addAnnotationPoint} from "../../controller/Controller.ts";
+import {Face2D} from "../../geometry/Face2D.ts";
+import {createPoint3D, createPoint2D} from "../../geometry/Point.ts";
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
+import { threeJSIdsToOurIds, startup} from "../SceneManager.ts";
+import {addAnnotationPoint} from "../../controller/Controller.ts"
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -95,13 +96,6 @@ const SCROLL_SPEED = 1;
 const grid = new THREE.GridHelper(10, 10);
 scene.add(grid);
 
-// // create plane
-// const geometryPlane = new THREE.PlaneGeometry(5, 5);
-// const materialGreen = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-// const plane = new THREE.Mesh(geometryPlane, materialGreen);
-// plane.material.side = THREE.DoubleSide;
-// faces.push(plane);
-
 // create cam look at pt
 const geometrySphere = new THREE.SphereGeometry(0.05);
 const whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
@@ -110,50 +104,108 @@ lookAtSphere.visible = getIsRotateSphereVisible();
 scene.add(lookAtSphere);
 
 
+// --------------------- Visual Test for Face3D and Face2D --------------------
 
-
-
-
-
-
-
-
-
-
-// Attempt to create a Face3D.
-const vertices = [
+// Create a Face3D
+const vertices3D = [
 	createPoint3D(0, 0, 0, "Vertex"),
-	createPoint3D(0, 0, 5, "Vertex"),
-	createPoint3D(5, 0, 5, "Vertex"),
-	createPoint3D(5, 0, 0, "Vertex")
+	createPoint3D(-1, 0, 2.5, "Vertex"),
+	createPoint3D(2, 0, 4, "Vertex"),
+	createPoint3D(4, 0, 2, "Vertex"),
+	createPoint3D(3, 0, 0, "Vertex")
 ]
 const principalNormal = createPoint3D(0, 1, 0);
-const plane = new Face3D(vertices, 0.1, 0, principalNormal);
-const object = plane.getMesh();
-scene.add(object);
-faces.push(object);
-startup(plane, object);
+const myFace3D = new Face3D(vertices3D, 0.1, 0, principalNormal);
+
+// Create the corresponding Face2D
+const vertices2D = [
+	createPoint2D(0, 0, "Vertex"),
+	createPoint2D(-1, 2.5, "Vertex"),
+	createPoint2D(2, 4, "Vertex"),
+	createPoint2D(4, 2, "Vertex"),
+	createPoint2D(3, 0, "Vertex")
+]
+const myFace2D = new Face2D(vertices2D);
+
+// Naive conversion between 2D and 3D annotations which will work
+// in this case. Usually we have to do some math to get this right.
+function convertAnnotations(update2D) {
+
+	const pointsAdded = new Map();
+
+	// Basically copy everything and insert 0 as the middle coordinate.
+	for (const pointID of update2D.pointsAdded.keys()) {
+		const anotPt = update2D.pointsAdded.get(pointID);
+		pointsAdded.set(pointID, {
+			point: createPoint3D(anotPt.point.x, 0, anotPt.point.y),
+			edgeID: anotPt.edgeID
+		});
+	}
+
+	const update3D = {
+		pointsAdded: pointsAdded,
+		pointsDeleted: update2D.pointsDeleted,
+		linesAdded: update2D.linesAdded,
+		linesDeleted: update2D.linesDeleted
+	}
+
+	return update3D
+}
+
+// Add some annotations to the Face2D, and automatically
+// add them to the Face3D via the update objects.
+let update = myFace2D.addAnnotatedPoint(createPoint2D(1, 1));
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedPoint(createPoint2D(1, 2));
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedPoint(createPoint2D(2.5, 1));
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedPoint(createPoint2D(2, 3));
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(0n, 5n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(5n, 3n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(5n, 1n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(2n, 4n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(6n, 3n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(7n, 8n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+
+update = myFace2D.addAnnotatedLine(7n, 8n);
+myFace3D.updateAnnotations(convertAnnotations(update));
+console.log(update.status)
+// Indicates bad line due to overlap! (line from pt 7 to pt 8 added twice.)
+// The returned update object is empty so nothing changes in the Face3D.
 
 
+// Add the Face3D to the scene.
+for (const object of myFace3D.collectMeshes()) {
+	scene.add(object);
+}
+// For raycasting.
+faces.push(myFace3D.getFaceMesh());
+// -------------------- End of Test for Face3D and Face2D ---------------------
+startup(myFace3D, myFace3D.getFaceMesh().id);
+console.log("STart id" + myFace3D.getFaceMesh().id)
 
-
-
-
-
-
-
-
-
-
-// Add a point light to be able to see it
+// Add a point light to be able to see things.
 const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
 pointLight.position.set(0, 10, 10);
 scene.add(pointLight);
 scene.add(new THREE.PointLightHelper(pointLight, 2, 0xffff00));
-renderer.shadowMap.enabled = true;
-pointLight.castShadow = true;
-plane.getMesh().receiveShadow = true;
-plane.getMesh().castShadow = true;
 
 // raycast test pt
 const raycastSphere = new THREE.SphereGeometry(0.05);
@@ -162,14 +214,12 @@ const raySphere = new THREE.Mesh(raycastSphere, blueMaterial);
 raySphere.visible = true;
 
 // put stuff in scene
-// scene.add( plane );
 scene.add(lookAtSphere);
 scene.add(raySphere);
-// plane.rotateX(90);
 
 // Set camera position.
+camera.position.y = 5;
 camera.position.z = 5;
-
 
 // Add event listener for mouse wheel scroll
 window.addEventListener('wheel', changeZoomDistance);
@@ -268,10 +318,12 @@ function onMouseDown(event) {
 		if (intersects.length > 0) {
 
 			const intersect = intersects[0];
+			const object3dHit = intersect.object;
+			console.log("intersection id: " + object3dHit.id);
 			const point = intersect.point;
 			raySphere.position.set(point.x, point.y, point.z);
 
-			let idOfFaceHit = threeJSIdsToOurIds(intersect.object);
+			let idOfFaceHit = threeJSIdsToOurIds(object3dHit.id);
 			console.log(idOfFaceHit + "]");
 			if (idOfFaceHit === undefined) {
 				return;

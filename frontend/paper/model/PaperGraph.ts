@@ -6,10 +6,9 @@
 import { Face2D } from "../geometry/Face2D";
 import { createPoint2D } from "../geometry/Point";
 
-const STARTING_PLANE_ID : bigint = 1n; // BACKEND CHANGE
+// const STARTING_PLANE_ID : bigint = 1n; // BACKEND CHANGE
 const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
 
-createNewGraph();
 
 /**
  * Returns a specified element from the id<->F2d mappnig. If the value that is associated
@@ -28,9 +27,9 @@ export function getFace2dFromId(faceId : bigint) {
 /**
  * Creates a new graph on 2d side, mainly should be used when starting editor
  */
-export function createNewGraph() {
+export function createNewGraph(startingPlaneId: bigint) {
   idsToFaces.clear();
-  idsToFaces.set(STARTING_PLANE_ID, new Face2D(
+  idsToFaces.set(startingPlaneId, new Face2D(
     [
       createPoint2D(0, 0),
       createPoint2D(1, 0),

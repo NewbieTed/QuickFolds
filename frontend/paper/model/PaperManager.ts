@@ -47,14 +47,14 @@ export function graphAddAnnotationPoint(
 export function graphDeleteAnnotationPoint(
   pointId : bigint,
   faceId: bigint,
-  ) : true | string {
+  ) : AnnotationUpdate2D {
   let face2D : Face2D | undefined = getFace2dFromId(faceId);
   if (face2D == undefined) {
     return "Face id does not exists";
   }
 
   face2D.delAnnotatedPoint(pointId);
-  return true;
+  return face2D.delAnnotatedPoint(pointId);
 }
 
 /**

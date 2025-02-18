@@ -8,24 +8,27 @@
 import * as THREE from 'three';
 import exp from "constants";
 import { Face3D } from "../geometry/Face3D";
+import { createNewGraph } from '../model/PaperGraph';
 
 let stepID = 1n;
 const origamiID = 1n; // BACKEND CHANGE
 
 let nextFaceId : bigint = 1n;
 const idsToFaces : Map<bigint, Face3D> = new Map<bigint, Face3D>();
-const objToOurIds : Map<THREE.Object3D<THREE.Object3DEventMap>, bigint> = new Map<THREE.Object3D<THREE.Object3DEventMap>, bigint>();
+const objToOurIds : Map<bigint, bigint> = new Map<bigint, bigint>();
 
-export function startup(plane : Face3D, meshObject : THREE.Object3D<THREE.Object3DEventMap>) {
+export function startup(plane : Face3D, meshId : bigint) {
     idsToFaces.clear();
     objToOurIds.clear();
-    idsToFaces.set(1n, plane);
-    objToOurIds.set(meshObject, 1n);
-    console.log("ID OF MESH" + meshObject.id);
+    idsToFaces.set(nextFaceId, plane);
+    objToOurIds.set(meshId, nextFaceId);
+    createNewGraph(nextFaceId);
+    nextFaceId++;
+    console.log("ID OF MESH" + meshId);
 }
 
 
-export function threeJSIdsToOurIds(threeJSId : THREE.Object3D<THREE.Object3DEventMap>) : bigint | undefined{
+export function threeJSIdsToOurIds(threeJSId : bigint) : bigint | undefined{
     return objToOurIds.get(threeJSId);
 }
 
