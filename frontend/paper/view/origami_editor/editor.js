@@ -9,7 +9,6 @@ import {RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE_KEY, TOGGLE_FOCAL_PT_KEY	} from "./g
 import {Face3D} from "../../geometry/Face3D.ts";
 import {Face2D} from "../../geometry/Face2D.ts";
 import {createPoint3D, createPoint2D} from "../../geometry/Point.ts";
-import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment'
 import {CameraManager} from "../CameraManager.ts"
 
 
@@ -25,7 +24,7 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 // Set up environment for proper lighting.
-const environment = new RoomEnvironment(renderer)
+const environment = new RoomEnvironment();
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 scene.environment = pmremGenerator.fromScene(environment).texture;
 environment.dispose();
@@ -141,7 +140,7 @@ console.log(update.status)
 
 
 // Add the Face3D to the scene.
-for (const object of myFace3D.collectMeshes()) {
+for (const object of myFace3D.collectObjects()) {
 	scene.add(object);
 }
 // For raycasting.
@@ -214,7 +213,7 @@ function onMouseDown(event) {
 
 			resetIsPickPointButtonPressed(); // Reset after picking
 		}
-		
+
 	} else if (getIsDeletePointButtonPressed()) {
 
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;

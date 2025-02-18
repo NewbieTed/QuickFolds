@@ -27,7 +27,7 @@ export type AnnotationUpdate3D = {
  */
 export type FaceUpdate3D = {
     readonly objectsToAdd: THREE.Object3D[]
-    readonly objectsToDelete: THREE.Object3D[]
+    readonly objectsToDelete: THREE.Mesh[]
 }
 
 
@@ -56,9 +56,9 @@ export class Face3D {
     public readonly N: bigint;
     private annotatedPoints: Map<bigint, pt.AnnotatedPoint3D>;
     private annotatedLines: Map<bigint, pt.AnnotatedLine>;
-    private pointGeometry: Map<bigint, THREE.Object3D>;
-    private lineGeometry: Map<bigint, THREE.Object3D>;
-    private mesh: THREE.Object3D;
+    private pointGeometry: Map<bigint, THREE.Points>;
+    private lineGeometry: Map<bigint, THREE.Mesh>;
+    private mesh: THREE.Mesh;
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
@@ -75,8 +75,8 @@ export class Face3D {
         this.N = BigInt(vertices.length);
         this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint3D>();
         this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
-        this.pointGeometry = new Map<bigint, THREE.Object3D>();
-        this.lineGeometry = new Map<bigint, THREE.Object3D>();
+        this.pointGeometry = new Map<bigint, THREE.Points>();
+        this.lineGeometry = new Map<bigint, THREE.Mesh>();
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = pt.normalize(principalNormal);
@@ -89,7 +89,7 @@ export class Face3D {
      * Generates the 3D polygon geometry from the initialization of vertices.
      * @returns A Three JS object mesh which displays this Face3D.
      */
-    private createFaceGeometry(): THREE.Object3D {
+    private createFaceGeometry(): THREE.Mesh {
 
         // In origami, all faces are actually convex polygons, provided that
         // the paper was initially a convex polygon. Therefore their centroid
@@ -181,7 +181,7 @@ export class Face3D {
      * @param point A Point3D assumed to be already on the true face plane.
      * @returns A Three JS object mesh which displays the provided point.
      */
-    private createPointGeometry(point: pt.Point3D): THREE.Object3D {
+    private createPointGeometry(point: pt.Point3D): THREE.Points {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
@@ -218,7 +218,7 @@ export class Face3D {
     private createLineGeometry(
                 start: pt.Point3D, 
                 end: pt.Point3D
-                ): THREE.Object3D {
+                ): THREE.Mesh {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
@@ -253,7 +253,7 @@ export class Face3D {
      * Collects and returns all of the meshes corresponding to this Face3D.
      * @returns A list of all Three.js meshes corresponding to this Face3D.
      */
-    public collectMeshes(): THREE.Object3D[] {
+    public collectObjects(): THREE.Object3D[] {
 
         const meshes: THREE.Object3D[] = [this.mesh];
         for (const pointGeo of this.pointGeometry.values()) {
@@ -286,7 +286,7 @@ export class Face3D {
     public updateAnnotations(update: AnnotationUpdate3D): FaceUpdate3D {
 
         const objectsToAdd: THREE.Object3D[] = [];
-        const objectsToDelete: THREE.Object3D[] = [];
+        const objectsToDelete: THREE.Mesh[] = [];
 
         // Delete the lines that need to be deleted.
         for (const lineID of update.linesDeleted) {
@@ -307,7 +307,9 @@ export class Face3D {
             }
             const pointObject = this.pointGeometry.get(pointID);
             if (pointObject !== undefined) {
-                objectsToDelete.push(pointObject);
+                if (!Array.isArray(pointObject.material)) {
+                    pointObject.material.dispose();
+                }
             }
             this.pointGeometry.delete(pointID);
         }
@@ -490,6 +492,35 @@ export class Face3D {
         }
 
         return minID;
+    }
+
+
+    /**
+     * Dispose of all the Three.js objects that this Face3D manages.
+     */
+    public dispose() {
+
+        // Clean up point materials.
+        for (const point of this.pointGeometry.values()) {
+            if (!Array.isArray(point.material)) {
+                point.material.dispose();
+            }
+        }
+
+        // Clean up line materials and geometry.
+        for (const line of this.lineGeometry.values()) {
+            line.geometry.dispose();
+            if (!Array.isArray(line.material)) {
+                line.material.dispose();
+            }
+        }
+
+        // Clean up face mesh material and geometry.
+        this.mesh.geometry.dispose();
+        if (!Array.isArray(this.mesh.material)) {
+            this.mesh.material.dispose();
+        }
+
     }
 
     // TODO: rotate the three js geometry method, vs rotate the true face.
