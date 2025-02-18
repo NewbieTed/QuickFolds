@@ -30,20 +30,20 @@
     </select>
 
 
-    <select id="getDependentId" resultType="java.lang.Long">
+    <select id="getDependentIds" resultType="java.lang.Long">
         SELECT id FROM annotated_line
         WHERE face_id = #{faceId}
         AND deleted_step_id IS null
         AND (
             point_1_id IN (
-                <foreach collection="pointIdsInFace" item="pointIdInFace" separator=",">
-                    #{pointIdInFace}
+                <foreach collection="pointIds" item="pointId" separator=",">
+                    #{pointId}
                 </foreach>
             )
             OR
             point_2_id IN (
-                <foreach collection="pointIdsInFace" item="pointIdInFace" separator=",">
-                    #{pointIdInFace}
+                <foreach collection="pointIds" item="pointId" separator=",">
+                    #{pointId}
                 </foreach>
             )
         )

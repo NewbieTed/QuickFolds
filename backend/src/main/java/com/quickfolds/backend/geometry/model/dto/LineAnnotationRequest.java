@@ -15,11 +15,11 @@ public class LineAnnotationRequest {
     @PositiveOrZero(message = "Field 'idInFace' in Line Annotation must be non-negative")
     private Integer idInFace;
 
-    @NotNull(message = "Field 'pointIdInOrigami1' in Line Annotation must not be null")
-    @PositiveOrZero(message = "Field 'pointIdInOrigami1' in Line Annotation must be positive")
+    @NotNull(message = "Field 'point1IdInOrigami' in Line Annotation must not be null")
+    @PositiveOrZero(message = "Field 'point1IdInOrigami' in Line Annotation must be positive")
     private Integer point1IdInOrigami;
 
-    @NotNull(message = "Field 'pointIdInOrigami2' in Line Annotation must not be null")
-    @PositiveOrZero(message = "Field 'pointIdInOrigami2' in Line Annotation must be non-negative")
+    @NotNull(message = "Field 'point2IdInOrigami' in Line Annotation must not be null")
+    @PositiveOrZero(message = "Field 'point2IdInOrigami' in Line Annotation must be non-negative")
     private Integer point2IdInOrigami;
 }
