@@ -11,8 +11,7 @@ public interface AnnotateLineMapper {
 
     List<Long> getsIdsByIdInFace(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
 
-    List<Long> getDependentId(@Param("faceId") long faceId, @Param("pointIdsInFace") List<Integer> pointIdsInFace);
-
+    List<Long> getDependentIds(@Param("faceId") long faceId, @Param("pointIds") List<Long> pointIds);
 
     void addByObj(@Param("annotatedLine") AnnotatedLine annotatedLine);
 

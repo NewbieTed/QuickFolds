@@ -99,7 +99,8 @@ public class GeometryService {
      */
     private long getFaceId(long origamiId, Integer faceIdInOrigami) {
         if (faceIdInOrigami == null) {
-            throw new IllegalArgumentException("Face id in origami not given, verify if request is valid (no face in origami id)");
+            throw new IllegalArgumentException("Face id in origami not given, " +
+                    "verify if request is valid (no face in origami id)");
         }
         return faceMapper.getIdByFaceIdInOrigami(origamiId, faceIdInOrigami);
     }
@@ -125,23 +126,28 @@ public class GeometryService {
      * @param origamiId The ID of the origami.
      * @param faceId The ID of the face.
      * @param stepId The step ID in which the deletion occurs.
-     * @param deletedPointIds List of point IDs to delete.
+     * @param deletedPointIdsInFace List of point IDs in face to delete.
      * @throws IllegalArgumentException if points are referenced by existing lines or do not exist.
      */
-    private void deleteAnnotatedPoints(long origamiId, long faceId, Long stepId, List<Integer> deletedPointIds) {
-        if (deletedPointIds == null || deletedPointIds.isEmpty()) return;
+    private void deleteAnnotatedPoints(long origamiId, long faceId, Long stepId, List<Integer> deletedPointIdsInFace) {
+        if (deletedPointIdsInFace == null || deletedPointIdsInFace.isEmpty()) return;
+
+        // Recover the actual point IDs
+        List<Long> deletedPointIds = origamiPointMapper.getIdsByIdInFace(faceId, deletedPointIdsInFace);
 
         // Check if any points have dependent lines
-        List<Long> dependentLines = annotateLineMapper.getDependentId(faceId, deletedPointIds);
+        List<Long> dependentLines = annotateLineMapper.getDependentIds(faceId, deletedPointIds);
         if (!dependentLines.isEmpty()) {
-            throw new IllegalArgumentException("Dependent lines detected for deleted points, verify if request is valid (line dependency)");
+            throw new IllegalArgumentException("Dependent lines detected for deleted points, " +
+                    "verify if request is valid (line dependency)");
         }
 
         // Perform deletion
-        int rowsUpdated = origamiPointMapper.deleteMultipleByIdInFace(faceId, deletedPointIds, stepId);
+        int rowsUpdated = origamiPointMapper.deleteMultipleByIdInFace(faceId, deletedPointIdsInFace, stepId);
 
         // Validate the deletion
-        validateDeletion(origamiId, faceId, deletedPointIds, rowsUpdated, "annotated point", origamiPointMapper.getIdsByIdInFace(faceId, deletedPointIds));
+        validateDeletion(origamiId, faceId, deletedPointIdsInFace, rowsUpdated,
+                "annotated point", origamiPointMapper.getIdsByIdInFace(faceId, deletedPointIdsInFace));
     }
 
 
@@ -150,17 +156,18 @@ public class GeometryService {
      * @param origamiId The ID of the origami.
      * @param faceId The ID of the face.
      * @param stepId The step ID in which the deletion occurs.
-     * @param deletedLineIds List of line IDs to delete.
+     * @param deletedLineIdsInFace List of line IDs in face to delete.
      * @throws IllegalArgumentException if lines do not exist.
      */
-    private void deleteAnnotatedLines(long origamiId, long faceId, Long stepId, List<Integer> deletedLineIds) {
-        if (deletedLineIds == null || deletedLineIds.isEmpty()) return;
+    private void deleteAnnotatedLines(long origamiId, long faceId, Long stepId, List<Integer> deletedLineIdsInFace) {
+        if (deletedLineIdsInFace == null || deletedLineIdsInFace.isEmpty()) return;
 
         // Perform deletion
-        int rowsUpdated = annotateLineMapper.deleteMultipleByIdInFace(faceId, deletedLineIds, stepId);
+        int rowsUpdated = annotateLineMapper.deleteMultipleByIdInFace(faceId, deletedLineIdsInFace, stepId);
 
         // Validate the deletion
-        validateDeletion(origamiId, faceId, deletedLineIds, rowsUpdated, "annotated line", annotateLineMapper.getsIdsByIdInFace(faceId, deletedLineIds));
+        validateDeletion(origamiId, faceId, deletedLineIdsInFace, rowsUpdated,
+                "annotated line", annotateLineMapper.getsIdsByIdInFace(faceId, deletedLineIdsInFace));
     }
 
 
@@ -178,7 +185,8 @@ public class GeometryService {
         // Check for duplicate points
         List<Integer> idsInFace = points.stream().map(PointAnnotationRequest::getIdInFace).toList();
         if (!origamiPointMapper.getIdsByIdInFace(faceId, idsInFace).isEmpty()) {
-            throw new IllegalArgumentException("Duplicate points detected, verify if request is valid (duplicate annotated points).");
+            throw new IllegalArgumentException("Duplicate points detected, " +
+                    "verify if request is valid (duplicate annotated points).");
         }
 
         // Insert new points
@@ -250,7 +258,8 @@ public class GeometryService {
      * @throws IllegalArgumentException if deletion request contains invalid IDs.
      * @throws DbException if an impossible state is reached.
      */
-    private void validateDeletion(long origamiId, long faceId, List<Integer> deletedIds, int numUpdatedRows, String entityType, List<Long> presentRows) {
+    private void validateDeletion(long origamiId, long faceId, List<Integer> deletedIds,
+                                  int numUpdatedRows, String entityType, List<Long> presentRows) {
         if (numUpdatedRows > deletedIds.size()) {
             String errorMessage = "Extra rows are updated after deleting " + entityType + "s, verify if DB is correct";
             logger.error(errorMessage);
@@ -263,11 +272,13 @@ public class GeometryService {
                 throw new IllegalArgumentException(errorMessage);
             } else if (presentRows.size() == numUpdatedRows) {
                 String errorMessage = "Invalid " + entityType + " id(s) found in face id " +
-                        faceId + " for origami " + origamiId + ", verify if request is valid (no such " + entityType + ")";
+                        faceId + " for origami " + origamiId + ", " +
+                        "verify if request is valid (no such " + entityType + ")";
                 logger.error(errorMessage);
                 throw new IllegalArgumentException(errorMessage);
             } else {
-                String errorMessage = "Impossible state reached, verify backend/DB is correct (delete " + entityType + ")";
+                String errorMessage = "Impossible state reached, " +
+                        "verify backend/DB is correct (delete " + entityType + ")";
                 logger.error(errorMessage);
                 throw new DbException(errorMessage);
             }
