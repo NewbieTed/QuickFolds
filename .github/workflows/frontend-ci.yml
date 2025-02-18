@@ -1,6 +1,11 @@
 name: Frontend CI Pipeline
 
 on:
+ push:
+    branches:
+      - '**'
+    paths:
+      - 'frontend/**'
   pull_request:
     branches:
       - '**'
@@ -26,27 +31,16 @@ jobs:
         run: |
           npm install
 
-      # note: we will turn this back on once all files are made
-      # - name: Run TS Linter
-      #   run: |
-      #     echo "Running linter locally on all ts files in ./frontend/"
-
-      #     npx eslint .
-
-      #     LINTER_EXIT_CODE=$?
-      #     if [ $LINTER_EXIT_CODE -ne 0 ]; then
-      #       echo "TS Linter found errors, failing the job."
-      #       exit $LINTER_EXIT_CODE
-      #     else
-      #       echo "TS Linter passed, no errors found."
-      #     fi
-
       - name: Run TS Tests
       - run: echo "Current directory: $(pwd)"
         run: |
           echo "Running Test locally on all *.test.ts files in ./unit_test/"
 
-          npx mocha -r ts-node/register unit_test/setup.ts unit_test/general/*.test.ts
+          cd frontend
+
+          cd unit_test
+
+          npx mocha -r ts-node/register setup.ts general/**.test.ts
 
           TESTING_EXIT_CODE=$?
           if [ $TESTING_EXIT_CODE -ne 0 ]; then
