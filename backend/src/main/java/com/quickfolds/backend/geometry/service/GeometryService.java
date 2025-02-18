@@ -300,7 +300,7 @@ public class GeometryService {
 
     public Long buildInitialStep(Long origamiId) {
         // Get the step type id of the step
-        String stepType = StepType.FOLD;
+        String stepType = StepType.CREATE;
         Long stepTypeId = stepTypeMapper.getIdByName(stepType);
 
         // Create a new step
