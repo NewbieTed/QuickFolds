@@ -8,10 +8,9 @@
 import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D } from "../geometry/Point";
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point } from "../geometry/Point";
 import {addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId} from "../model/PaperGraph"
-import { graphAddAnnotationPoint } from '../model/PaperManager';
 import { getFace3dFromId, incrementStepID } from '../view/SceneManager';
 
 /**
@@ -71,15 +70,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
     return "Error occured with adding point to DB";
   }
 
-
-  // let frontendResult : true | string = graphAddAnnotationPoint(getTranslated2dPoint, faceId);
-  // if (frontendResult !== true) {
-  //   console.error(frontendResult);
-  //   return frontendResult;
-  // }
-
   incrementStepID();
-
   return true;
 }
 
@@ -112,7 +103,12 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
 
   // frontend changes
   let updateState2dResults: AnnotationUpdate2D = face2D.delAnnotatedPoint(pointId);
-  face3d.updateAnnotations(convertAnnotationsForDeletes(updateState2dResults));
+  const update3dObjectResults = convertAnnotationsForDeletes(updateState2dResults, faceId);
+  if (update3dObjectResults == null) {
+    return "Error: couldn't generated 3d updated object";
+  }
+
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -162,7 +158,12 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
 
   // frontend changes
   let updateState2dResults: AnnotationUpdate2D = face2D.addAnnotatedLine(point1Id, point2Id);
-  face3d.updateAnnotations(convertAnnotationsForDeletes(updateState2dResults));
+  const update3dObjectResults = convertAnnotationsForDeletes(updateState2dResults, faceId);
+  if (update3dObjectResults == null) {
+    return "Error: couldn't generated 3d updated object";
+  }
+
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -198,7 +199,12 @@ async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<st
 
   // frontend changes
   let updateState2dResults: AnnotationUpdate2D = face2D.delAnnotatedLine(lineId);
-  face3d.updateAnnotations(convertAnnotationsForDeletes(updateState2dResults));
+  const update3dObjectResults = convertAnnotationsForDeletes(updateState2dResults, faceId);
+  if (update3dObjectResults == null) {
+    return "Error: couldn't generated 3d updated object";
+  }
+
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -214,15 +220,33 @@ async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<st
 
 
 /**
- * Does translation from 2d udpate to 3d update for
- * @param update2D
- * @returns
+ * Does translation from 2d udpate to 3d update. handles all parts of response object
+ * @param update2D - the annotation update you want to convert
+ * @param faceId - the id of the face this occurs at
+ * @returns a 3d annotation update object based on one provided
  */
-function convertAnnotationsForDeletes(update2D: AnnotationUpdate2D) : AnnotationUpdate3D {
+function convertAnnotationsForDeletes(update2D: AnnotationUpdate2D, faceId : bigint) : AnnotationUpdate3D | null {
 
-	const pointsAdded = new Map();
+	const newPointsMap = new Map<bigint, AnnotatedPoint3D>();
+  for (let [pointId, pointObj2d] of update2D.pointsAdded) {
+
+    const newPoint3d = translate2dTo3d(pointObj2d.point, faceId);
+    if (newPoint3d == null) {
+      return null;
+    }
+
+    const newAnnoPoint: AnnotatedPoint3D = {
+      point: newPoint3d,
+      edgeID: -1n, // update if on edge later
+    };
+
+    newPointsMap.set(pointId, newAnnoPoint);
+  }
+
+
+
 	const update3D = {
-		pointsAdded: pointsAdded,
+		pointsAdded: newPointsMap,
 		pointsDeleted: update2D.pointsDeleted,
 		linesAdded: update2D.linesAdded,
 		linesDeleted: update2D.linesDeleted
@@ -275,11 +299,7 @@ function getaddPointFromResultMap(addPointResult: AnnotationUpdate2D) : bigint {
 }
 
 
-
-
-
 /**
- * put in geometery module
  * Given two basis vectors in 3 space, and a target point,
  * returns the coordinates using the basis to get to the target point,
  * or null if there is no solution
@@ -404,7 +424,6 @@ function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
 }
 
 /**
- * PUT in PaperModule
  * take a 3d point on the layered version of face3d (given with faceid),
  * return the corresponding 2d point in the paper map version
  * @param point - the 3d point to translate to 2d
@@ -426,6 +445,16 @@ function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
   return processTransationFrom3dTo2d(point, face3d, face2d);
 }
 
+
+/**
+ * calculates the new point to put in face 2d based on the provided point
+ * and corresponding face 3d object
+ * @param point - the point to translate into 2d
+ * @param face3d - the face 3d object the point is
+ * @param face2d - the face 2d object the point is translated to
+ * Note the id of both faces must match
+ * @returns - the translated 2d point, or null if there is an error
+ */
 export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
   let points : Point3D[] = [];
   //let pointsId : bigint[] = [];
@@ -489,6 +518,124 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
 
 
 
+/**
+ * take a 3d point on the layered version of face3d (given with faceid),
+ * return the corresponding 2d point in the paper map version
+ * @param point - the 3d point to translate to 2d
+ * @param faceId - the faceId the point lines on
+ * @returns the corresponding point2d, or null if the 3d point isn't on the face
+ */
+function translate2dTo3d(point: Point2D, faceId: bigint) : Point3D | null {
+  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  if (face3d === undefined) {
+    console.error("face 3d id doesn't exists");
+    return null;
+  }
+  let face2d: Face2D | undefined = getFace2dFromId(faceId);
+  if (face2d === undefined) {
+    console.error("face 2d id doesn't exists");
+    return null;
+  }
+
+  return processTranslate2dTo3d(point, face3d, face2d);
+}
+
+
+/**
+ * calculates the new point to put in face 3d based on the provided point
+ * and corresponding face 2d object
+ * @param point - the point to translate into 3d
+ * @param face3d - the face 3d object the point is is translated to
+ * Note the id of both faces must match
+ * @param face2d - the face 2d object the point is translated to
+ * Note the id of both faces must match
+ * @returns - the translated 2d point, or null if there is an error
+ */
+export function processTranslate2dTo3d(point: Point2D, face3d : Face3D, face2d: Face2D) : Point3D | null {
+  let points : Point2D[] = [];
+  for (let i = 0; i < 3; i++) {
+    points.push(face2d.vertices[i]);
+  }
+
+  const basis1 : Point2D = createPoint2D(
+    points[1].x - points[0].x,
+    points[1].y - points[0].y,
+  );
+
+  console.log(basis1);
+
+  const basis2 : Point2D = createPoint2D(
+    points[2].x - points[0].x,
+    points[2].y - points[0].y,
+  );
+
+  let basisResult = solve2dSystemForScalars(
+    [basis1.x, basis1.y],
+    [basis2.x, basis2.y],
+    [point.x, point.y]
+  );
+
+
+  if (basisResult == null) {
+    return null;
+  }
+
+
+  // because our problem is isometric, use the same coordinates for our
+  // new basis vectors rotated on the 2d plane
+  const point0in3D : Point3D = face3d.vertices[0];
+  const point1in3D : Point3D = face3d.vertices[1];
+  const point2in3D : Point3D = face3d.vertices[2];
+
+  const basis1in3d : Point3D = createPoint3D(
+    point1in3D.x - point0in3D.x,
+    point1in3D.y - point0in3D.y,
+    point1in3D.z - point0in3D.z
+  );
+
+  const basis2in3d : Point3D = createPoint3D(
+    point2in3D.x - point0in3D.x,
+    point2in3D.y - point0in3D.y,
+    point2in3D.z - point0in3D.z
+  );
+
+  const coverted3dPoint = createPoint3D(
+    basis1in3d.x * basisResult[0] +  basis2in3d.x * basisResult[1],
+    basis1in3d.y * basisResult[0] +  basis2in3d.y * basisResult[1],
+    basis1in3d.z * basisResult[0] +  basis2in3d.z * basisResult[1]
+  );
+
+  return coverted3dPoint;
+}
+
+
+
+function solve2dSystemForScalars(
+  v1: [number, number],
+  v2: [number, number],
+  target: [number, number]
+): [number, number] {
+  const [x1, y1] = v1;
+  const [x2, y2] = v2;
+  const [tx, ty] = target;
+
+  // Calculate the determinant
+  const det = x1 * y2 - x2 * y1;
+
+  if (det === 0) {
+    throw new Error(
+      "The vectors v1 and v2 are linearly dependent (det = 0). " +
+      "No unique solution exists."
+    );
+  }
+
+  // Solve for alpha and beta
+  const alpha = (tx * y2 - ty * x2) / det;
+  const beta = (-tx * y1 + ty * x1) / det;
+
+  return [alpha, beta];
+}
+
 // /**
 //  * Returns a boolean as to whether a given line exists
 //  * @param point1Id - the id of point 1 in the line to check
@@ -512,27 +659,3 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
 //   }
 //   return false;
 // }
-
-/**
- * @param a - the first value to check
- * @param b - the second value to check
- * @returns BigInt(min(a, b))
- */
-function intMin(a: bigint, b: bigint) : bigint {
-  if (a < b) {
-    return a;
-  }
-  return b;
-}
-
-/**
- * @param a - the first value to check
- * @param b - the second value to check
- * @returns BigInt(max(a, b))
- */
-function intMax(a: bigint, b: bigint) : bigint {
-  if (a > b) {
-    return a;
-  }
-  return b;
-}
