@@ -11,7 +11,7 @@ import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point } from "../geometry/Point";
 import {addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId} from "../model/PaperGraph"
-import { getFace3dFromId, incrementStepID } from '../view/SceneManager';
+import { getFace3DByID, incrementStepID, updateFace } from '../view/SceneManager';
 
 /**
  * Given a provided point (ie you can provided the layered shot, no need to
@@ -26,7 +26,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
   console.log("internal system face id: " + faceId);
 
   // add annotation point to face3d [ie in SceneManager]
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
     return "face 3d id doesn't exists";
@@ -61,7 +61,9 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
 
   // create manual new update change, since we already know the 3d point
   let pointId: bigint = getaddPointFromResultMap(addPointResult);
-  face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
+  console.log("created point id", pointId);
+  const renderUpdateResult = face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
+  updateFace(renderUpdateResult);
 
   let result: boolean = await addUpdatedAnnoationToDB(addPointResult, faceId);
 
@@ -83,7 +85,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
  * @returns either true, or a message about while the action failed
  */
 export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : Promise<string | true>  {
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
     return "face 3d id doesn't exists";
@@ -108,7 +110,10 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
     return "Error: couldn't generated 3d updated object";
   }
 
-  face3d.updateAnnotations(update3dObjectResults);
+
+  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
+  updateFace(renderingUpdateObjectResult);
+
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -140,7 +145,7 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
   }
 
   // get faces
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
     return "face 3d id doesn't exists";
@@ -163,7 +168,9 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
     return "Error: couldn't generated 3d updated object";
   }
 
-  face3d.updateAnnotations(update3dObjectResults);
+  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
+  updateFace(renderingUpdateObjectResult);
+
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -184,9 +191,9 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
  * @param faceId - the id of the face the line is in
  * @returns either true, or a message about while the action failed
  */
-async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<string | true> {
+export async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<string | true> {
   // get faces
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
     return "face 3d id doesn't exists";
@@ -204,7 +211,8 @@ async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Promise<st
     return "Error: couldn't generated 3d updated object";
   }
 
-  face3d.updateAnnotations(update3dObjectResults);
+  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
+  updateFace(renderingUpdateObjectResult);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -431,7 +439,7 @@ function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
  * @returns the corresponding point2d, or null if the 3d point isn't on the face
  */
 function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
     return null;
@@ -526,7 +534,7 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
  * @returns the corresponding point2d, or null if the 3d point isn't on the face
  */
 function translate2dTo3d(point: Point2D, faceId: bigint) : Point3D | null {
-  let face3d: Face3D | undefined = getFace3dFromId(faceId);
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
     return null;
@@ -644,7 +652,7 @@ function solve2dSystemForScalars(
 //  * @returns Returns a boolean as to whether a given line exists
 //  */
 // function doesLineAlreadyExist(point1Id : bigint, point2Id : bigint, faceId : bigint) : boolean {
-//   let face3d: Face3D | undefined = getFace3dFromId(faceId);
+//   let face3d: Face3D | undefined = getFace3DByID(faceId);
 //   if (face3d === undefined) {
 //     console.error("face 3d id doesn't exists");
 //     return false;
