@@ -13,11 +13,14 @@ import { createNewGraph } from '../model/PaperGraph';
 
 let stepID : bigint = 5n;
 const stringOfOrigamiId : string | null = localStorage.getItem("currentOrigamiIdForEditor");
-if (stringOfOrigamiId === null) {
-    throw new Error("COULDN'T GET ORIGAMI ID");
+
+let origamiID = 0n;
+if (stringOfOrigamiId !== null) {
+    origamiID = BigInt(stringOfOrigamiId);
 }
 
-const origamiID  : bigint = BigInt(stringOfOrigamiId);
+
+
 
 let nextFaceId : bigint = 0n;
 const idsToFaces : Map<bigint, Face3D> = new Map<bigint, Face3D>();
