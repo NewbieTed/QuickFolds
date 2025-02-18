@@ -4,10 +4,10 @@
 
 
 import * as THREE from 'three';
-import * as input from './editorInputCapture.ts';
-import * as settings from "./globalSettings.ts";
-import * as SceneManager from "../SceneManager.ts"
-import {CameraManager} from "../CameraManager.ts"
+import * as input from './editorInputCapture';
+import * as settings from "./globalSettings";
+import * as SceneManager from "../SceneManager"
+import {CameraManager} from "../CameraManager"
 
 
 document.addEventListener('keydown', onKeyDown);
@@ -48,7 +48,7 @@ SceneManager.getScene().add(raySphere);
 
 
 // Handle key pressing.
-function onKeyDown(event) {
+function onKeyDown(event: KeyboardEvent) {
 
 	if (event.key === settings.RETURN_TO_ORIGIN_KEY) {
     	cameraManager.returnToOrigin();
@@ -61,26 +61,26 @@ function onKeyDown(event) {
 }
 
 
-function getClosestAnnotationPointToMouse(points, raycaster) {
-    let closestPoint = null;
-    let minDistance = Infinity;
+// function getClosestAnnotationPointToMouse(points, raycaster: THREE.Raycaster) {
+//     let closestPoint = null;
+//     let minDistance = Infinity;
 
-    points.forEach(point => {
-        const pointVector = new THREE.Vector3(point.x, point.y, point.z);
-        const distance = raycaster.ray.distanceToPoint(pointVector);
-        if (distance < minDistance) {
-            minDistance = distance;
-            closestPoint = point;
-        }
-    });
+//     points.forEach(point => {
+//         const pointVector = new THREE.Vector3(point.x, point.y, point.z);
+//         const distance = raycaster.ray.distanceToPoint(pointVector);
+//         if (distance < minDistance) {
+//             minDistance = distance;
+//             closestPoint = point;
+//         }
+//     });
 
-    // Define a threshold for clicking accuracy (e.g., 0.1 units in 3D space)
-    return minDistance < 0.1 ? closestPoint : null;
-}
+//     // Define a threshold for clicking accuracy (e.g., 0.1 units in 3D space)
+//     return minDistance < 0.1 ? closestPoint : null;
+// }
 
 
 // dom function that activates when a mouse button is pressed
-function onMouseDown(event) {
+function onMouseDown(event: MouseEvent) {
 	if (input.getIsPickPointButtonPressed()) {
 		mouse.x = (event.clientX / window.innerWidth) * 2 - 1.015;
 		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.02;
@@ -107,28 +107,27 @@ function onMouseDown(event) {
         raycaster.setFromCamera(mouse, cameraManager.getCamera());
         return; // ignore code for now
 
-        // get the list of annotation points
-        const annotationPoints = getAllAnnotationPoints();
+        // // get the list of annotation points
+        // const annotationPoints = getAllAnnotationPoints();
 
-        // find the closest annotation point to the mouse click
-        const closestPoint = getClosestAnnotationPointToMouse(annotationPoints, raycaster);
+        // // find the closest annotation point to the mouse click
+        // const closestPoint = getClosestAnnotationPointToMouse(annotationPoints, raycaster);
 
-        if (closestPoint) {
-            // remove the closest annotation point
-            removeAnnotationPoint(closestPoint);
-            console.log(`Deleted annotation point at: x=${closestPoint.x}, y=${closestPoint.y}, z=${closestPoint.z}`);
-        } else {
-            console.log('No annotation point found near the click.');
-        }
+        // if (closestPoint) {
+        //     // remove the closest annotation point
+        //     removeAnnotationPoint(closestPoint);
+        //     console.log(`Deleted annotation point at: x=${closestPoint.x}, y=${closestPoint.y}, z=${closestPoint.z}`);
+        // } else {
+        //     console.log('No annotation point found near the click.');
+        // }
 
-        input.resetIsDeletePointButtonPressed(); // Reset the delete button state
+        // input.resetIsDeletePointButtonPressed(); // Reset the delete button state
     }
 
 }
 
 
-// runs every animation frame
-// similar to SetInterval, but less computationally expensive for Three.js
+// The function which runs every frame.
 function animate() {
 
 	if (input.getIsPickPointButtonPressed()) {
