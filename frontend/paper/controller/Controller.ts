@@ -241,6 +241,7 @@ function convertAnnotationsForDeletes(update2D: AnnotationUpdate2D) : Annotation
  */
 function create3dAnnoationResultForNewPoint(newPointId: bigint, newPoint3d: Point3D) : AnnotationUpdate3D {
   const newPointsMap = new Map<bigint, AnnotatedPoint3D>();
+  newPointsMap.clear();
   const pointsDeleted: bigint[] = [];
   const linesAdded = new Map<bigint, AnnotatedLine>();
   const linesDeleted: bigint[] = [];
