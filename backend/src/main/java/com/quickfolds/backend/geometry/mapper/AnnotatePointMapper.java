@@ -9,12 +9,5 @@ import java.util.List;
 @Mapper
 public interface AnnotatePointMapper {
 
-
-    Long getIdbyIdInFace(@Param("faceId") long faceId, @Param("idInFace") int IdInFace);
-
     void addByObj(@Param("annotatedPoint") AnnotatedPoint annotatedPoint);
-
-    void deleteMultipleByIdInFace(@Param("faceId") long faceId,
-                                  @Param("idInFace") List<Integer> idsInFace,
-                                  @Param("deletedStepId") long deletedStepId);
 }

@@ -40,6 +40,13 @@ public class Origami {
     private Long userId;
 
     /**
+     * Name of the origami model.
+     * This is a required field and must not be null.
+     */
+    @Column(name = "origami_name", nullable = false)
+    private String origamiName;
+
+    /**
      * Indicates whether the origami is public or private.
      * Defaults to false (private).
      */
