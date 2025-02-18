@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { getIsRotateSphereVisible, getIsShiftKeyPressed, getIsLeftMousePressed, getIsPickPointButtonPressed, resetIsPickPointButtonPressed, getIsDeletePointButtonPressed
-	, doubleButtonPressed1st, doubleButtonPressed2nd, startSecondPress, resetDoubleButtonPressed, getAddLineButton
+	, doubleButtonPressed1st, doubleButtonPressed2nd, startSecondPress, resetDoubleButtonPressed, getAddLineButton, resetIsDeletePointButtonPressed
 	, getDeleteLineButton
 } from './editorInputCapture.js';
 import {UP_DIRECTION, RETURN_TO_ORIGIN_KEY, SWAP_CAM_TYPE	} from "./globalSettings.js";
