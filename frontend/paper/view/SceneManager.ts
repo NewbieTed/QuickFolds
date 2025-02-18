@@ -29,7 +29,6 @@ const objToOurIds : Map<bigint, bigint> = new Map<bigint, bigint>();
 export function startup(plane : Face3D, meshId : bigint) {
     idsToFaces.clear();
     objToOurIds.clear();
-    objToOurIds.clear();
     idsToFaces.set(0n, plane);
     objToOurIds.set(meshId, 0n);
     createNewGraph(0n);
