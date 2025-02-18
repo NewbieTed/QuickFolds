@@ -1,9 +1,15 @@
 package com.quickfolds.backend.geometry.model.database;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.OffsetDateTime;
 
 /**
@@ -19,7 +25,8 @@ import java.time.OffsetDateTime;
 public class AnnotatedLine {
 
     /**
-     * Unique identifier for the annotated line.
+     * Primary key for the AnnotatedLine table.
+     * Auto-generated value for each AnnotatedLine record.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,14 +49,14 @@ public class AnnotatedLine {
 
     /**
      * Foreign key referencing the first point of the line.
-     * Links to a specific point in the "origami_point" table.
+     * Links to a specific point in the "annotated_point" table.
      */
     @Column(name = "point_1_id", nullable = false)
     private Long point1Id;
 
     /**
      * Foreign key referencing the second point of the line.
-     * Links to a specific point in the "origami_point" table.
+     * Links to a specific point in the "annotated_point" table.
      */
     @Column(name = "point_2_id", nullable = false)
     private Long point2Id;
