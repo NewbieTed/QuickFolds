@@ -201,6 +201,7 @@ export class CameraManager {
             this.camera.position, this.focalPoint
         );
         this.focalPoint = new THREE.Vector3(0, 0, 0);
+        this.focalPointObj.position.copy(this.focalPoint);
         this.camera.position.copy(this.focalPoint).add(radius);
         
     }

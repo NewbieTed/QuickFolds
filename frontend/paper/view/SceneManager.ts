@@ -49,13 +49,14 @@ export function initialize(renderer: THREE.WebGLRenderer) {
 
     // Create a Face3D to begin manipulating.
     const vertices3D = [
-        createPoint3D(0, 0, 0, "Vertex"),
-        createPoint3D(0, 0, 1, "Vertex"),
-        createPoint3D(1, 0, 1, "Vertex"),
-        createPoint3D(1, 0, 0, "Vertex"),
+        createPoint3D(-3, 0, -3, "Vertex"),
+        createPoint3D(-3, 0, 3, "Vertex"),
+        createPoint3D(3, 0, 3, "Vertex"),
+        createPoint3D(3, 0, -3, "Vertex"),
     ]
     const principalNormal = createPoint3D(0, 1, 0);
     const plane = new Face3D(vertices3D, 0.05, 0, principalNormal);
+    scene.add(plane.getFaceMesh());
 
     idsToFace3D.set(plane.ID, plane);
     idsToFaceObj.set(plane.ID, plane.getFaceMesh());
@@ -201,5 +202,5 @@ export function deleteFace(faceID: bigint) {
 
     // Clean up the face properly.
     face.dispose();
-    
+
 }
