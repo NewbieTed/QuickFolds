@@ -4,14 +4,25 @@
     <meta charset="utf-8">
     <title>QuickFolds Community Board</title>
     <link href="comboardstyles.css" rel="stylesheet">
+    <script src="communityboard.ts" defer></script>
   </head>
   <body class="bg">
     <div class="header">
 
       <img src="Logo.png" id="logo" alt="Logo of Quick Folds">
       <input type="text" id="search" name="query" placeholder="Search for author...">
-      <button type="button" id="new-ori">New Origami</button>
+      <button type="button" onclick="openPopup()" id="new-ori">New Origami</button>
     </div>
+    <div class="popup-overlay" id="popup">
+      <div class="popup-box">
+          <h2>New Origami:</h2>
+          <input type="text" id="popupInput" class="popup-input" placeholder="Type a name...">
+          <div class="popup-buttons">
+              <button class="confirm" onclick="fetchCreatingOrigamiAndGoToEditor()">Submit</button>
+              <button class="cancel" onclick="closePopup()">Cancel</button>
+          </div>
+      </div>
+  </div>
     <div class="main-board">
       <div class="card">
         <p>Name</p>

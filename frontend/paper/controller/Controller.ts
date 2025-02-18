@@ -11,7 +11,7 @@ import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D } from "../geometry/Point";
 import {addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId} from "../model/PaperGraph"
-import { graphAddAnnotatedLine, graphAddAnnotationPoint, graphDeleteAnnotationPoint } from '../model/PaperManager';
+import { graphAddAnnotationPoint } from '../model/PaperManager';
 import { getFace3dFromId, incrementStepID } from '../view/SceneManager';
 
 /**
@@ -72,11 +72,11 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
   }
 
 
-  let frontendResult : true | string = graphAddAnnotationPoint(getTranslated2dPoint, faceId);
-  if (frontendResult !== true) {
-    console.error(frontendResult);
-    return frontendResult;
-  }
+  // let frontendResult : true | string = graphAddAnnotationPoint(getTranslated2dPoint, faceId);
+  // if (frontendResult !== true) {
+  //   console.error(frontendResult);
+  //   return frontendResult;
+  // }
 
   incrementStepID();
 
