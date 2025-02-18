@@ -5,13 +5,19 @@
 
 <mapper namespace="com.quickfolds.backend.origami.mapper.OrigamiMapper">
 
+    <resultMap id="OrigamiResponseMap" type="com.quickfolds.backend.origami.model.dto.response.OrigamiResponse">
+        <id property="origamiId" column="origami_id"/>
+        <result property="origamiName" column="origami_name"/>
+        <result property="author" column="author"/>
+        <result property="ratings" column="ratings"/>
+    </resultMap>
 
-    <select id="getMostRecentId" resultType="java.lang.Long">
-        SELECT id FROM origami
-        WHERE
-        user_id = #{userId}
-        ORDER BY id DESC
-        LIMIT 1
+
+    <select id="getPublicOrigamis" resultMap="OrigamiResponseMap">
+        SELECT o.id AS origami_id, o.origami_name, u.username AS author, o.ratings
+        FROM origami o
+        INNER JOIN users u ON o.user_id = u.id
+        WHERE o.is_public = true
     </select>
 
 
@@ -21,6 +27,14 @@
         is_public = true
     </select>
 
+
+    <select id="getMostRecentId" resultType="java.lang.Long">
+        SELECT id FROM origami
+        WHERE
+        user_id = #{userId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
 
     <insert id="addByObj" parameterType="com.quickfolds.backend.origami.model.database.Origami">
         INSERT INTO origami (

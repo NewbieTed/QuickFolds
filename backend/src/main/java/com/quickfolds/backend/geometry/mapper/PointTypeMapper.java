@@ -6,5 +6,5 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface PointTypeMapper {
 
-    Long getPointTypeByName(@Param("pointTypeName") String pointTypeName);
+    Long getIdByName(@Param("pointTypeName") String pointTypeName);
 }

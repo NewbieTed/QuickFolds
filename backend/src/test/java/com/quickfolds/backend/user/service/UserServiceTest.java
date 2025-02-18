@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles(value = "${SPRING_PROFILES_ACTIVE}")
 @Transactional      // Rollback after each test
 public class UserServiceTest {
 
@@ -40,7 +40,7 @@ public class UserServiceTest {
 
         // Retrieve the user from the database and verify
         User dbUser = userMapper.findByUsername("testRegisterSuccess");
-        assertNotNull(dbUser, "User should exist in the database");
+        assertNotNull(dbUser, "User should eIxist in the database");
         assertNotEquals("password", dbUser.getPassword(), "Password should be hashed");
         assertTrue(BCrypt.checkpw("password", dbUser.getPassword()), "Password hash should match the raw password");
     }

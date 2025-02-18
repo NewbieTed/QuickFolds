@@ -6,5 +6,5 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface StepTypeMapper {
 
-    Long getStepTypeByName(@Param("stepTypeName") String stepTypeName);
+    Long getIdByName(@Param("stepTypeName") String stepTypeName);
 }
