@@ -63,7 +63,7 @@ public class OrigamiService {
 
         origami.setUserId(userId);
         origami.setOrigamiName(origamiName == null ? "Untitled" : origamiName);
-        origami.setPublic(false);
+        origami.setPublic(true);
         origami.setRatings(0.0);
         origamiMapper.addByObj(origami);
 
