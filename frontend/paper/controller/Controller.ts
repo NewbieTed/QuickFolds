@@ -91,7 +91,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
  * @param faceId - the face to add the point to
  * @returns either true, or a message about while the action failed
  */
-async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : Promise<string | true>  {
+export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : Promise<string | true>  {
   // check to make sure point isn't being used in line
   // user can only remove a "hanging" (ie unlined) point
   // if (lineUsesPoint(faceId, pointId)) {

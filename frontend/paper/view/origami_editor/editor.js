@@ -11,7 +11,8 @@ import {Face2D} from "../../geometry/Face2D.ts";
 import {createPoint3D, createPoint2D} from "../../geometry/Point.ts";
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
 import { threeJSIdsToOurIds, startup} from "../SceneManager.ts";
-import {addAnnotationPoint} from "../../controller/Controller.ts"
+import {addAnnotationPoint, deleteAnnotationPoint} from "../../controller/Controller.ts"
+import { getFace3dFromId } from "../SceneManager.ts"
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('mouseup', onMouseUp);
@@ -109,7 +110,6 @@ scene.add(lookAtSphere);
 // Create a Face3D
 const vertices3D = [
 	createPoint3D(0, 0, 0, "Vertex"),
-	createPoint3D(-1, 0, 2.5, "Vertex"),
 	createPoint3D(2, 0, 4, "Vertex"),
 	createPoint3D(4, 0, 2, "Vertex"),
 	createPoint3D(3, 0, 0, "Vertex")
@@ -120,7 +120,6 @@ const myFace3D = new Face3D(vertices3D, 0.1, 0, principalNormal);
 // Create the corresponding Face2D
 const vertices2D = [
 	createPoint2D(0, 0, "Vertex"),
-	createPoint2D(-1, 2.5, "Vertex"),
 	createPoint2D(2, 4, "Vertex"),
 	createPoint2D(4, 2, "Vertex"),
 	createPoint2D(3, 0, "Vertex")
@@ -152,41 +151,41 @@ function convertAnnotations(update2D) {
 	return update3D
 }
 
-// Add some annotations to the Face2D, and automatically
-// add them to the Face3D via the update objects.
-let update = myFace2D.addAnnotatedPoint(createPoint2D(1, 1));
-myFace3D.updateAnnotations(convertAnnotations(update));
+// // Add some annotations to the Face2D, and automatically
+// // add them to the Face3D via the update objects.
+// let update = myFace2D.addAnnotatedPoint(createPoint2D(1, 1));
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedPoint(createPoint2D(1, 2));
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedPoint(createPoint2D(1, 2));
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedPoint(createPoint2D(2.5, 1));
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedPoint(createPoint2D(2.5, 1));
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedPoint(createPoint2D(2, 3));
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedPoint(createPoint2D(2, 3));
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(0n, 5n);
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedLine(0n, 5n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(5n, 3n);
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedLine(5n, 3n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(5n, 1n);
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedLine(5n, 1n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(2n, 4n);
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedLine(2n, 4n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(6n, 3n);
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedLine(6n, 3n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(7n, 8n);
-myFace3D.updateAnnotations(convertAnnotations(update));
+// update = myFace2D.addAnnotatedLine(7n, 8n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
 
-update = myFace2D.addAnnotatedLine(7n, 8n);
-myFace3D.updateAnnotations(convertAnnotations(update));
-console.log(update.status)
+// update = myFace2D.addAnnotatedLine(7n, 8n);
+// myFace3D.updateAnnotations(convertAnnotations(update));
+// console.log(update.status)
 // Indicates bad line due to overlap! (line from pt 7 to pt 8 added twice.)
 // The returned update object is empty so nothing changes in the Face3D.
 
@@ -319,7 +318,6 @@ function onMouseDown(event) {
 
 			const intersect = intersects[0];
 			const object3dHit = intersect.object;
-			console.log("intersection id: " + object3dHit.id);
 			const point = intersect.point;
 			raySphere.position.set(point.x, point.y, point.z);
 
@@ -338,17 +336,29 @@ function onMouseDown(event) {
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
 
         raycaster.setFromCamera(mouse, camera);
-        return; // ignore code for now
-
-        // get the list of annotation points
-        const annotationPoints = getAllAnnotationPoints();
-
+				const intersects = raycaster.intersectObjects(faces);
         // find the closest annotation point to the mouse click
-        const closestPoint = getClosestAnnotationPointToMouse(annotationPoints, raycaster);
+				const intersect = intersects[0];
+				const object3dHit = intersect.object;
+				const point = intersect.point;
+				raySphere.position.set(point.x, point.y, point.z);
 
+				let faceId	 = threeJSIdsToOurIds(object3dHit.id);
+
+
+				let face3d = getFace3dFromId(faceId);
+				if (face3d === undefined) {
+					console.error("face 3d id doesn't exists");
+					return "face 3d id doesn't exists";
+				}
+
+        const closestPoint = face3d.findNearestPoint(createPoint3D(point.x, point.y, point.z));
+				console.log("RESUL OF CLOSES POINT ID: " + closestPoint);
         if (closestPoint) {
             // remove the closest annotation point
-            removeAnnotationPoint(closestPoint);
+
+
+            deleteAnnotationPoint(closestPoint, faceId);
             console.log(`Deleted annotation point at: x=${closestPoint.x}, y=${closestPoint.y}, z=${closestPoint.z}`);
         } else {
             console.log('No annotation point found near the click.');
