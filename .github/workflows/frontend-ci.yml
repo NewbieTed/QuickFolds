@@ -42,6 +42,7 @@ jobs:
       #     fi
 
       - name: Run TS Tests
+      - run: echo "Current directory: $(pwd)"
         run: |
           echo "Running Test locally on all *.test.ts files in ./unit_test/"
 
