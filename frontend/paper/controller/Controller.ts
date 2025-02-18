@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point } from "../geometry/Point";
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d } from "../geometry/Point";
 import {addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId} from "../model/PaperGraph"
 import { getFace3DByID, incrementStepID, updateFace } from '../view/SceneManager';
@@ -308,99 +308,6 @@ function getaddPointFromResultMap(addPointResult: AnnotationUpdate2D) : bigint {
 
 
 /**
- * Given two basis vectors in 3 space, and a target point,
- * returns the coordinates using the basis to get to the target point,
- * or null if there is no solution
- *
- *  |x1|    |x2|   |bx|
- * u|y1| + v|y2| = |by|
- *  |z1|    |z2|   |bz|
- *
- * where the function returns {u, v}
- *
- *
- * @param x1 - basis 1 x value
- * @param y1 - basis 1 y value
- * @param z1 - basis 1 z value
- * @param x2 - basis 2 x value
- * @param y2 - basis 2 y value
- * @param z2 - basis 2 z value
- * @param bx - target x value
- * @param by - target y value
- * @param bz - target z value
- * @returns  given ux + vy = b; where u, v, b in R3. returns {u, v} or null if no sol
- */
-export function solveBasisSystem(
-  x1: number, y1: number, z1: number,
-  x2: number, y2: number, z2: number,
-  bx: number, by: number, bz: number
-): { alpha: number, beta: number } | null{
-
-  // Calculate the determinant of the coefficient matrix
-  const det = x1 * y2 - x2 * y1;
-
-  // Use Cramer's rule to calculate alpha and beta
-  const detAlpha = bx * y2 - x2 * by;  // Replace first column with bx, by
-  const detBeta = x1 * bz - bx * z1;   // Replace second column with bx, bz
-
-  const alpha = detAlpha / det;
-  const beta = detBeta / det;
-
-  // system is overdetermined, so check that z values match
-  if (Math.abs((z1 * alpha + z2 * beta) - bz) > 0.01) {
-    return null; // system undetermined
-  }
-
-  return { alpha, beta };
-}
-
-
-
-/**
- * Solve a * v1 + b * v2 = t for scalars a, b in R^3.
- *
- * If a solution exists, returns [a, b].
- * If no solution exists (i.e. t is not in the plane spanned by v1, v2),
- * or if v1, v2 are collinear (no unique solution), returns null.
- */
-function solveForScalars(
-  v1: [number, number, number],
-  v2: [number, number, number],
-  t: [number, number, number]
-): [number, number] {
-  // Cross product helper
-  function cross(a: [number, number, number], b: [number, number, number]): [number, number, number] {
-    return [
-      a[1] * b[2] - a[2] * b[1],
-      a[2] * b[0] - a[0] * b[2],
-      a[0] * b[1] - a[1] * b[0],
-    ];
-  }
-
-  // Dot product helper
-  function dot(a: [number, number, number], b: [number, number, number]): number {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  }
-
-  // Normal vector n = v1 x v2
-  const n = cross(v1, v2);
-
-  // |v1 x v2|^2
-  const denom = dot(n, n);
-
-  // a = ((t x v2) ⋅ (v1 x v2)) / |v1 x v2|^2
-  const tXv2 = cross(t, v2);
-  const a = dot(tXv2, n) / denom;
-
-  // b = -((t x v1) ⋅ (v1 x v2)) / |v1 x v2|^2
-  const tXv1 = cross(t, v1);
-  const b = -dot(tXv1, n) / denom;
-
-  return [a, b];
-}
-
-
-/**
  * takes a 3d point and projects it onto the face3d start position. intended for when hitting
  * a layer on the render since these planes have an offset
  * @param point - the point to be projected
@@ -451,76 +358,6 @@ function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
   }
 
   return processTransationFrom3dTo2d(point, face3d, face2d);
-}
-
-
-/**
- * calculates the new point to put in face 2d based on the provided point
- * and corresponding face 3d object
- * @param point - the point to translate into 2d
- * @param face3d - the face 3d object the point is
- * @param face2d - the face 2d object the point is translated to
- * Note the id of both faces must match
- * @returns - the translated 2d point, or null if there is an error
- */
-export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
-  let points : Point3D[] = [];
-  //let pointsId : bigint[] = [];
-  for (let i = 0; i < 3; i++) {
-    points.push(face3d.vertices[i]);
-    // pointsId.push(pointId);
-  }
-
-  const basis1 : Point3D = createPoint3D(
-    points[1].x - points[0].x,
-    points[1].y - points[0].y,
-    points[1].z - points[0].z,
-  );
-
-  console.log(basis1);
-
-  const basis2 : Point3D = createPoint3D(
-    points[2].x - points[0].x,
-    points[2].y - points[0].y,
-    points[2].z - points[0].z,
-  );
-
-  console.log(basis2);
-
-  let basisResult = solveForScalars(
-  [basis1.x, basis1.y, basis2.z],
-  [basis2.x, basis2.y, basis2.z],
-  [point.x, point.y, point.z]
-  );
-
-
-  if (basisResult == null) {
-    return null;
-  }
-
-
-  // because our problem is isometric, use the same coordinates for our
-  // new basis vectors rotated on the 2d plane
-  const point0in2D : Point2D = face2d.vertices[0];
-  const point1in2D : Point2D = face2d.vertices[1];
-  const point2in2D : Point2D = face2d.vertices[2];
-
-  const basis1in2d : Point2D = createPoint2D(
-    point1in2D.x - point0in2D.x,
-    point1in2D.y - point0in2D.y
-  );
-
-  const basis2in2d : Point2D = createPoint2D(
-    point2in2D.x - point0in2D.x,
-    point2in2D.y - point0in2D.y
-  );
-
-  const coverted2dPoint = createPoint2D(
-    basis1in2d.x * basisResult[0] +  basis2in2d.x * basisResult[1],
-    basis1in2d.y * basisResult[0] +  basis2in2d.y * basisResult[1],
-  );
-
-  return coverted2dPoint;
 }
 
 

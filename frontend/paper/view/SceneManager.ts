@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import {createPoint3D} from '../geometry/Point';
 import {Face3D, FaceUpdate3D} from "../geometry/Face3D";
-import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment'
+import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { createNewGraph } from '../model/PaperGraph';
 
 let stepID = 1n;

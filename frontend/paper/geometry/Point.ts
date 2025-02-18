@@ -2,6 +2,9 @@
  * @fileoverview Contains basic point-related types and geometric operations.
  */
 
+import { Face2D } from "./Face2D";
+import { Face3D } from "./Face3D";
+
 
 // ----------------------------- Types ------------------------------------- //
 
@@ -436,7 +439,117 @@ export function normalize<T extends Point>(vec: T): T {
 }
 
 
+
+
 // TODO
 export function rotatePoint(point: Point3D, axis: null, angle: null) {
 
 }
+
+
+  /**
+ * calculates the new point to put in face 2d based on the provided point
+ * and corresponding face 3d object
+ * @param point - the point to translate into 2d
+ * @param face3d - the face 3d object the point is
+ * @param face2d - the face 2d object the point is translated to
+ * Note the id of both faces must match
+ * @returns - the translated 2d point, or null if there is an error
+ */
+export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
+    let points : Point3D[] = [];
+    for (let i = 0; i < 3; i++) {
+      points.push(face3d.vertices[i]);
+    }
+  
+    const basis1 : Point3D = createPoint3D(
+      points[1].x - points[0].x,
+      points[1].y - points[0].y,
+      points[1].z - points[0].z,
+    );
+  
+    const basis2 : Point3D = createPoint3D(
+      points[2].x - points[0].x,
+      points[2].y - points[0].y,
+      points[2].z - points[0].z,
+    );
+  
+    let basisResult = solveForScalars(
+    [basis1.x, basis1.y, basis2.z],
+    [basis2.x, basis2.y, basis2.z],
+    [point.x, point.y, point.z]
+    );
+  
+  
+    if (basisResult == null) {
+      return null;
+    }
+  
+  
+    // because our problem is isometric, use the same coordinates for our
+    // new basis vectors rotated on the 2d plane
+    const point0in2D : Point2D = face2d.vertices[0];
+    const point1in2D : Point2D = face2d.vertices[1];
+    const point2in2D : Point2D = face2d.vertices[2];
+  
+    const basis1in2d : Point2D = createPoint2D(
+      point1in2D.x - point0in2D.x,
+      point1in2D.y - point0in2D.y
+    );
+  
+    const basis2in2d : Point2D = createPoint2D(
+      point2in2D.x - point0in2D.x,
+      point2in2D.y - point0in2D.y
+    );
+  
+    const coverted2dPoint = createPoint2D(
+      basis1in2d.x * basisResult[0] +  basis2in2d.x * basisResult[1],
+      basis1in2d.y * basisResult[0] +  basis2in2d.y * basisResult[1],
+    );
+  
+    return coverted2dPoint;
+  }
+  
+  
+  /**
+ * Solve a * v1 + b * v2 = t for scalars a, b in R^3.
+ *
+ * If a solution exists, returns [a, b].
+ * If no solution exists (i.e. t is not in the plane spanned by v1, v2),
+ * or if v1, v2 are collinear (no unique solution), returns null.
+ */
+export function solveForScalars(
+    v1: [number, number, number],
+    v2: [number, number, number],
+    t: [number, number, number]
+  ): [number, number] {
+    // Cross product helper
+    function cross(a: [number, number, number], b: [number, number, number]): [number, number, number] {
+      return [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+      ];
+    }
+  
+    // Dot product helper
+    function dot(a: [number, number, number], b: [number, number, number]): number {
+      return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    }
+  
+    // Normal vector n = v1 x v2
+    const n = cross(v1, v2);
+  
+    // |v1 x v2|^2
+    const denom = dot(n, n);
+  
+    // a = ((t x v2) ⋅ (v1 x v2)) / |v1 x v2|^2
+    const tXv2 = cross(t, v2);
+    const a = dot(tXv2, n) / denom;
+  
+    // b = -((t x v1) ⋅ (v1 x v2)) / |v1 x v2|^2
+    const tXv1 = cross(t, v1);
+    const b = -dot(tXv1, n) / denom;
+  
+    return [a, b];
+  }
