@@ -10,6 +10,9 @@ import jakarta.persistence.GenerationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.OffsetDateTime;
 
 /**
@@ -68,6 +71,7 @@ public class User {
      * Timestamp when this user record was created.
      * Automatically set at the time of creation and not updatable.
      */
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -75,6 +79,7 @@ public class User {
      * Timestamp when this user record was last updated.
      * Updated automatically when the record is modified.
      */
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
   

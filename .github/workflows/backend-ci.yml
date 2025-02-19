@@ -21,16 +21,25 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: QuickFolds@CSE403
-          POSTGRES_DB: quickfolds_test
+          POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -h localhost -U test_user"
+          --health-cmd "pg_isready -h 127.0.0.1 -U test_user -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      TEST_DB_NAME: ${{ secrets.TEST_DB_NAME }}
+      TEST_DB_USER: ${{ secrets.TEST_DB_USER }}
+      TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
     steps:
       - name: Checkout Code
@@ -47,13 +56,6 @@ jobs:
         run: chmod +x backend/mvnw
 
       - name: Build and Run Tests
-        env:
-          SPRING_PROFILES_ACTIVE: test
-          TEST_DB_HOST: postgres
-          TEST_DB_PORT: 5432
-          TEST_DB_NAME: quickfolds_test
-          TEST_DB_USER: test_user
-          TEST_DB_PASSWORD: QuickFolds@CSE403
         run: |
           cd backend
-          ./mvnw clean test
+          ./mvnw clean test -Dspring.profiles.active=test
