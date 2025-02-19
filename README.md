@@ -137,13 +137,7 @@ Ensure you have the following installed:
     brew install maven
     ```
 
-3. PostgreSQL (if using a local database, NOT RECOMMENDED)
-    ```sh
-    brew install postgresql
-    brew services start postgresql
-    ```
-
-4. Docker (if using `docker-compose` for database setup)
+3. Docker (if using `docker-compose` for database setup)
    Download and install Docker Desktop from:
    [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
@@ -202,17 +196,12 @@ Where path\to\env is replaced with your relative path to the unzipped folder env
   ```sh
   docker compose up
   ```
-- Using Local PostgreSQL, run the following in the terminal:
-  ```sh
-  psql -U postgres -c "CREATE DATABASE mydb;"
-  ```
 
 #### Build and Run the Application
 
 To build the environment, run the following in the terminal:
    ```sh
    ./mvnw clean install
-   java -jar target/backend-0.0.1-SNAPSHOT.jar
    ```
    Or to start the localhost, run the following in the terminal:
    ```sh
@@ -237,13 +226,37 @@ Run
 
 `Reset_Dummy_Data.sql`
 
-on the database to get it set up.
+
+## How to run the dummy data:
+
+The first step is to get the id of the container:
+
+Run `docker ps`
+
+look for the container id for "local"
+
+Now, take this id and put it in the following commands inside your backend:
+
+`docker cp Reset_Dummy_Data.sql <ID_OF_LOCAL_CONTAINER>:/file.sql`
+
+`docker exec -i <ID_OF_LOCAL_CONTAINER> psql -U local_user -d quickfolds_local -f /file.sql`
+
+You have now ran the sql file inside the container.
+
+If you ever want to run this agin, just run the last command again:
+
+`docker exec -i <ID_OF_LOCAL_CONTAINER> psql -U local_user -d quickfolds_local -f /file.sql`
+
+
 
 This should allow you to create an origami, and then edit it.
 
+
+
+
 Note: the internal system saves user accounts with account ids.
 
-If you cannot connect to the editor, this may be why.
+If you cannot connect to the editor, this may be why. Although, this is very rare
 
 To see what id the admin account has.
 
