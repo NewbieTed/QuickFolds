@@ -24,8 +24,6 @@ jobs:
           POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
           POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
-        volumes:
-          - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
         ports:
           - 5432:5432
         options: >-
@@ -46,6 +44,10 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Apply Database Schema
+        run: |
+          PGPASSWORD=${{ secrets.TEST_DB_PASSWORD }} psql -h localhost -U ${{ secrets.TEST_DB_USER }} -d ${{ secrets.TEST_DB_NAME }} -f backend/database/schema.sql
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
