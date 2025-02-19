@@ -6,7 +6,6 @@
 import { Face2D } from "../geometry/Face2D";
 import { createPoint2D } from "../geometry/Point";
 
-// const STARTING_PLANE_ID : bigint = 1n; // BACKEND CHANGE
 const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
 
 

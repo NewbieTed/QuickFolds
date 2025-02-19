@@ -10,6 +10,13 @@ import { AnnotationUpdate2D } from "../geometry/Face2D";
 import { Point2D } from "../geometry/Point";
 import {serializeResultChange} from "./Serializer";
 
+/**
+ * takes a status update,
+ * then updates the backend database with the system update
+ * @param statusUpdate - the status update containing the new point
+ * @param faceId - the id of the face this occurs at
+ * @returns - a boolean as to whether the request was a success
+ */
 export async function addUpdatedAnnoationToDB(
   statusUpdate: AnnotationUpdate2D,
   faceId: bigint

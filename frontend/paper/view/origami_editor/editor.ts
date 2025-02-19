@@ -64,23 +64,6 @@ function onKeyDown(event: KeyboardEvent) {
 }
 
 
-// function getClosestAnnotationPointToMouse(points, raycaster: THREE.Raycaster) {
-//     let closestPoint = null;
-//     let minDistance = Infinity;
-
-//     points.forEach(point => {
-//         const pointVector = new THREE.Vector3(point.x, point.y, point.z);
-//         const distance = raycaster.ray.distanceToPoint(pointVector);
-//         if (distance < minDistance) {
-//             minDistance = distance;
-//             closestPoint = point;
-//         }
-//     });
-
-//     // Define a threshold for clicking accuracy (e.g., 0.1 units in 3D space)
-//     return minDistance < 0.1 ? closestPoint : null;
-// }
-
 // these store the two points selection for any action that
 // has two inputs
 let [closestPoint1, faceId1]: [bigint, bigint] = [-1n, -1n];

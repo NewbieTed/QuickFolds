@@ -4,9 +4,15 @@
  */
 
 import { AnnotationUpdate2D } from "../geometry/Face2D";
-import { Point2D } from "../geometry/Point";
 import { getOrigamiID, getStepID } from "../view/SceneManager";
 
+/**
+ * takes a status update, and the id of the face this occurs,
+ * and returns the /geometry/annotate api json format
+ * @param statusUpdate - the status update to format into json
+ * @param faceId - the id of the face the status update occurs
+ * @returns the json format to send to backend
+ */
 export function serializeResultChange(statusUpdate: AnnotationUpdate2D, faceId: bigint) {
   // creating JSON for adding points
   const addedPointsList: PointData[] = [];

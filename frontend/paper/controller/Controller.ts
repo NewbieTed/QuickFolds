@@ -454,7 +454,16 @@ export function processTranslate2dTo3d(point: Point2D, face3d : Face3D, face2d: 
 }
 
 
-
+/**
+ * Given two vectors in 3d space, returns the scalars used to reach target,
+ * another vector in three space
+ *
+ * av1 + bv2 = target
+ * @param v1 - vector in 3space
+ * @param v2 - other vector in 3space
+ * @param target - target vector in 3space
+ * @returns [a, b]
+ */
 function solve2dSystemForScalars(
   v1: [number, number],
   v2: [number, number],
@@ -482,6 +491,7 @@ function solve2dSystemForScalars(
 }
 
 // /**
+//  This is an old, outdated method
 //  * Returns a boolean as to whether a given line exists
 //  * @param point1Id - the id of point 1 in the line to check
 //  * @param point2Id  - the id of point 2 in the line to check
