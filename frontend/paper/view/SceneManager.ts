@@ -58,7 +58,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
         createPoint3D(3, 0, -3, "Vertex"),
     ]
     const principalNormal = createPoint3D(0, 1, 0);
-    const plane = new Face3D(vertices3D, 1, 0, principalNormal);
+    const plane = new Face3D(vertices3D, 0.05, 0, principalNormal);
     scene.add(plane.getFaceMesh());
 
     idsToFace3D.set(plane.ID, plane);
