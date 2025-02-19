@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MyBatis XML Mapper for handling database operations related to faces in an origami model.
+
+    - Defines SQL mappings for retrieving and inserting face records.
+
+    SQL Operations:
+    - `getIdByFaceIdInOrigami`: Retrieves a face ID using its origami model and internal identifier.
+    - `addByObj`: Inserts a new face into the database.
+
+    Dependencies:
+    - `Face`: The Java entity representing a face in the origami model.
+-->
+<mapper namespace="com.quickfolds.backend.geometry.mapper.FaceMapper">
+    <!--
+        Retrieves the database ID of a face using its identifier within a specific origami model.
+
+        - Ensures that the queried face belongs to the specified origami model.
+        - Uses both `origami_id` and `id_in_origami` for precise matching.
+    -->
+    <select id="getIdByFaceIdInOrigami">
+        SELECT id FROM face
+        WHERE
+        origami_id = #{origamiId}
+        AND
+        id_in_origami = #{faceIdInOrigami}
+    </select>
+
+    <!--
+        Inserts a new face into the database.
+
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
+        - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+    -->
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Face">
+        INSERT INTO face (
+            origami_id,
+            step_id,
+            id_in_origami
+            <if test="face.createdBy != null">, created_by</if>
+            <if test="face.updatedBy != null">, updated_by</if>
+            <if test="face.createdAt != null">, created_at</if>
+            <if test="face.updatedAt != null">, updated_at</if>
+        ) VALUES (
+            #{face.origamiId},
+            #{face.stepId},
+            #{face.idInOrigami}
+            <if test="face.createdBy != null">, #{face.createdBy}</if>
+            <if test="face.updatedBy != null">, #{face.updatedBy}</if>
+            <if test="face.createdAt != null">, #{face.createdAt}</if>
+            <if test="face.updatedAt != null">, #{face.updatedAt}</if>
+        );
+    </insert>
+
+
+</mapper>

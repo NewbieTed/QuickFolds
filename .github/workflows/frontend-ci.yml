@@ -1,0 +1,46 @@
+name: Frontend CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'  # You can change to your desired Node version
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Run TS Tests
+
+        run: |
+          echo "Running Test locally on all *.test.ts files in ./unit_test/"
+
+          cd frontend
+
+          cd unit_test
+
+          npx mocha -r ts-node/register setup.ts general/**.test.ts
+
+          TESTING_EXIT_CODE=$?
+          if [ $TESTING_EXIT_CODE -ne 0 ]; then
+            echo "TS Found errors. Failing build..."
+            exit $TESTING_EXIT_CODE
+          else
+            echo "All Test pass"
+          fi

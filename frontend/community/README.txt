@@ -1,0 +1,1 @@
+Community board and user profile page implementation should go under this directory.

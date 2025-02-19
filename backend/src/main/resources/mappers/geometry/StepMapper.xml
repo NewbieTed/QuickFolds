@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MyBatis XML Mapper for handling database operations related to steps in an origami model.
+
+    - Defines SQL mappings for retrieving and inserting steps.
+
+    SQL Operations:
+    - `getIdByIdInOrigami`: Retrieves a step ID using its origami model and internal identifier.
+    - `addByObj`: Inserts a new step into the database using a `Step` object.
+    - `addByFields`: Inserts a new step using individual field values.
+
+    Dependencies:
+    - `Step`: The Java entity representing a step in the origami model.
+-->
+<mapper namespace="com.quickfolds.backend.geometry.mapper.StepMapper">
+    <!--
+        Maps database columns to the `Step` entity fields.
+
+        - Ensures MyBatis correctly maps query results to Java objects.
+    -->
+    <resultMap id="StepResultMap" type="com.quickfolds.backend.geometry.model.database.Step">
+        <id property="id" column="id" />
+        <result property="origamiId" column="origami_id" />
+        <result property="stepTypeId" column="step_type_id" />
+        <result property="idInOrigami" column="id_in_origami" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+    <!--
+        Retrieves the database ID of a step using its identifier within a specific origami model.
+
+        - Ensures that the queried step belongs to the specified origami model.
+        - Uses `LIMIT 1` to return only a single result.
+    -->
+    <select id="getIdByIdInOrigami">
+        SELECT id FROM step
+        WHERE
+        origami_id = #{origamiId}
+        AND
+        id_in_origami = #{idInOrigami}
+        LIMIT 1
+    </select>
+
+    <!--
+        Inserts a new step into the database using a `Step` object.
+
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
+        - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+    -->
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Step">
+        INSERT INTO step (
+        origami_id,
+        step_type_id,
+        id_in_origami
+        <if test="step.createdBy != null">, created_by</if>
+        <if test="step.updatedBy != null">, updated_by</if>
+        <if test="step.createdAt != null">, created_at</if>
+        <if test="step.updatedAt != null">, updated_at</if>
+        ) VALUES (
+        #{step.origamiId},
+        #{step.stepTypeId},
+        #{step.idInOrigami}
+        <if test="step.createdBy != null">, #{step.createdBy}</if>
+        <if test="step.updatedBy != null">, #{step.updatedBy}</if>
+        <if test="step.createdAt != null">, #{step.createdAt}</if>
+        <if test="step.updatedAt != null">, #{step.updatedAt}</if>
+        );
+    </insert>
+
+    <!--
+        Inserts a new step into the database using individual field values.
+
+        - Allows direct field-based insertion without requiring a `Step` object.
+        - Dynamically includes optional fields (`created_by`, `updated_by`).
+    -->
+    <insert id="addByFields">
+        INSERT INTO step (
+        origami_id,
+        step_type_id,
+        id_in_origami
+        <if test="createdBy != null">, created_by</if>
+        <if test="updatedBy != null">, updated_by</if>
+        ) VALUES (
+        #{origamiId},
+        #{stepTypeId},
+        #{idInOrigami}
+        <if test="createdBy != null">
+            , #{createdBy}
+        </if>
+        <if test="updatedBy != null">
+            , #{updatedBy}
+        </if>
+        );
+    </insert>
+
+</mapper>
