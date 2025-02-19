@@ -59,6 +59,8 @@ function onKeyDown(event: KeyboardEvent) {
     	cameraManager.swapCameraType();
   	} else if (event.key === settings.TOGGLE_FOCAL_PT_KEY) {
 		cameraManager.toggleFocalPointVisible();
+	} else if (event.key === 's') {
+		SceneManager.spinFace();
 	}
 
 }
@@ -252,6 +254,8 @@ function animate() {
 		cameraManager.unlockMovement();
 	}
 
+	SceneManager.updateAnimations();
+	
 	renderer.render(
 		SceneManager.getScene(),
 		cameraManager.getCamera()
