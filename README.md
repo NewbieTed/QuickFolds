@@ -125,11 +125,23 @@ This should run for all *.test.ts files locally under unit_test.
 ### Prerequisites
 Ensure you have the following installed:
 
-1. Java Development Kit (JDK 21+)
+1. Java Development Kit (JDK 21+), to install, run:
+    ```sh
+    brew install openjdk@21
+    echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
+    source ~/.zshrc
+   ```
 
-2. Maven (If not using the provided `mvnw` script; any `mvn` and `mvnw` comands are interchangable)
+2. Maven (If not using the provided `mvnw` script; any `mvn` and `mvnw` comands are interchangable), to install, run:
+    ```sh
+    brew install maven
+    ```
 
-3. PostgreSQL (if using a local database)
+3. PostgreSQL (if using a local database, NOT RECOMMENDED)
+    ```sh
+    brew install postgresql
+    brew services start postgresql
+    ```
 
 4. Docker (if using `docker-compose` for database setup)
    Download and install Docker Desktop from:
@@ -146,17 +158,32 @@ Unzip the file and put the resulting folder into the backend root folder Quickfo
 #### Loading environment variables:
 
 Mac:
-Copy the sample environment variables and configure them:
-   ```sh
-   cp env/.env.example env/.env
-   nano env/.env  # Edit as needed
-   ```
-Load the environment variables:
-   ```sh
-   export $(grep -v '^#' env/local.env | xargs)
-  ```
+In order to get the backend running, environment variables is required as they serve as credentials to the database. However, given that such data is sensitive, they cannot be pushed to git. Therefore, it is **required** to manually configure the environment variables.
 
-Windows: run the following script in the terminal:
+To configure the environment variables, first run the following command in the terminal under the file path `QuickFolds/backend/env` to create a env file:
+   ```sh
+   vim <your_file_name>.env  # Edit as needed
+   ```
+Then, add the following environment variables to the env file you just created by writing into the editor:
+```text
+    LOCAL_DB_HOST=<your_localhost_name>
+    LOCAL_DB_PORT=<your_port_number>
+    LOCAL_DB_NAME=<your_local_db_name>
+
+    LOCAL_DB_USER=<your_local_user_name>
+    LOCAL_DB_PASSWORD=<your_local_db_password>
+
+    JWT_SECRET=<your_jwt_secret_key>
+```
+After writing the environment files, quit vim by entering `:wq`.
+
+To load the environment variables, navigate back to `QuickFolds/backend`, and load the environment variables by running the following command in terminal:
+   ```sh
+   export $(grep -v '^#' env/<your_file_name>.env | xargs) # Edit as needed
+  ```
+If you need the environment files, please email the team members.
+
+Windows (**highly not recommended**): run the following script in the terminal:
 ```
 Get-ChildItem -Path "path\to\env" -Filter "*.env" | ForEach-Object {
     $filePath = $_.FullName
@@ -171,25 +198,27 @@ Get-ChildItem -Path "path\to\env" -Filter "*.env" | ForEach-Object {
 Where path\to\env is replaced with your relative path to the unzipped folder env that contains the .env files. This will temporarily load the environmental variables to your current terminal session. This script has to be rerun whenever a new terminal sesion is started.
 
 #### Start PostgreSQL Database
-- Using Docker:
+- Using Docker, run the following in the terminal:
   ```sh
   docker compose up
   ```
-- Using Local PostgreSQL:
+- Using Local PostgreSQL, run the following in the terminal:
   ```sh
   psql -U postgres -c "CREATE DATABASE mydb;"
   ```
 
 #### Build and Run the Application
+
+To build the environment, run the following in the terminal:
    ```sh
    ./mvnw clean install
    java -jar target/backend-0.0.1-SNAPSHOT.jar
    ```
-   Or to start the localhost:
+   Or to start the localhost, run the following in the terminal:
    ```sh
    ./mvnw spring-boot:run
    ```
-   To only run tests:
+   To only run tests, run the following in the terminal:
    ```sh
    ./mvnw test
    ```
