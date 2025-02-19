@@ -253,10 +253,9 @@ This should allow you to create an origami, and then edit it.
 
 
 
-
 Note: the internal system saves user accounts with account ids.
 
-If you cannot connect to the editor, this may be why. Although, this is very rare
+If you cannot connect to the editor, this may be why. Although, this is __very__ rare
 
 To see what id the admin account has.
 
@@ -264,8 +263,18 @@ Run:
 
 `GetAliceId.sql` to get the created admin account id, then set the `USER_ID` variable equal to this result in communityboard.ts under frontend/community.
 
-This most likely should not need.
+This most likely should not be need.
 (most standard system start with our inputted id, but it could techinally happen).
+
+`docker cp GetAliceId.sql <ID_OF_LOCAL_CONTAINER>:/id.sql`
+
+`docker exec -i <ID_OF_LOCAL_CONTAINER> psql -U local_user -d quickfolds_local -f /id.sql`
+
+You have now ran the sql file inside the container.
+
+Update the USER_ID variable in communityboard.ts under frontend/community.
+
+
 
 #### Troubleshooting
 - Port Conflicts: Ensure `8080` and `5432` are available.
