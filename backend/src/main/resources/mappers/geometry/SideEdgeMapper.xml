@@ -2,10 +2,25 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    MyBatis XML Mapper for handling database operations related to side edges in an origami model.
 
+    - Defines SQL mappings for inserting side edges.
+
+    SQL Operations:
+    - `addByObj`: Inserts a new side edge into the database.
+
+    Dependencies:
+    - `SideEdge`: The Java entity representing a side edge.
+-->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.SideEdgeMapper">
 
+    <!--
+        Inserts a new side edge into the database.
 
+        - Stores relationships between edges and faces in the origami model.
+        - Uses conditional checks to include optional metadata fields dynamically.
+    -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.SideEdge">
         INSERT INTO side_edge (
         edge_id,

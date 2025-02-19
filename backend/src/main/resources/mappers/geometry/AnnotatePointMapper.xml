@@ -2,10 +2,26 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    MyBatis XML Mapper for handling database operations related to annotated points in an origami model.
 
+    - Defines SQL mappings for inserting annotated points.
+    - Uses conditional checks to include optional fields dynamically.
+
+    SQL Operations:
+    - `addByObj`: Inserts a new annotated point into the database.
+
+    Dependencies:
+    - `AnnotatedPoint`: The Java entity representing an annotated point.
+-->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotatePointMapper">
 
+    <!--
+    Inserts a new annotated point into the database.
 
+    - Ensures flexible field insertion by conditionally including non-null fields.
+    - Stores relationships between points and edges in the origami model.
+    -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedPoint">
         INSERT INTO annotated_point (
         point_id,
