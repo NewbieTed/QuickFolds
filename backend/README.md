@@ -87,3 +87,10 @@ From your terminal, run:
 + `mvn spring-boot:run`
 
 Congrats! you build is done.
+
+# Testing
+To start the tests for the backend, run:
+
++ `mvn clean test`
+
+And the test should automatically run
