@@ -15,7 +15,8 @@ import { Animation } from './animation/Animation';
 import { FlipAnimation } from './animation/FlipAnimation';
 
 let stepID = 1n;
-const origamiID = 1n;
+const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
+
 
 let nextFaceId: bigint = 0n;
 const scene = new THREE.Scene();
