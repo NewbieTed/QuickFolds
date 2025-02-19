@@ -27,7 +27,9 @@ basic CSS), while the src folder contains module dependent code (such as JS file
 
 ## Current Setup
 
-### Add Modules
+### Frontend
+
+#### Add Modules
 
 Go to your terminal and run:
 `npm install`
@@ -42,7 +44,7 @@ We currently are using these modules:
 
 Once `npm install` finishes, you can run the editor:
 
-### Running The Editor
+#### Running The Editor
 
 1. Go to your terminal and type  `npx vite`, this creates a local host server that renders any Three.js code
 
@@ -57,7 +59,7 @@ Once `npm install` finishes, you can run the editor:
 6. The editor should appear and you should be good to go
 
 
-### Editor Settings
+#### Editor Settings
 
 Here are the current things you can do in the editor when looking around
 
@@ -68,3 +70,85 @@ Here are the current things you can do in the editor when looking around
 + Pressing 'p': hides the center point the camera rotates from
 
 + Presssing 'r': resets the rotating point back to origin
+
+## Backend
+
+### Prerequisites
+Ensure you have the following installed:
+
+1. Java Development Kit (JDK 21+)
+
+2. Maven (If not using the provided `mvnw` script; any `mvn` and `mvnw` comands are interchangable) 
+
+3. PostgreSQL (if using a local database)
+
+4. Docker (if using `docker-compose` for database setup)  
+   Download and install Docker Desktop from:  
+   [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### Setup
+
+#### Environment variables
+
+Environmental variables are contained in an env.zip file that will not be added to the remote repository due to containing sensitive information.
+
+Unzip the file and put the resulting folder into the backend root folder Quickfolds/backend. This folder should contain two other folders: a folder env that contains the .env files and a _MACOSX file for Macs.
+
+#### Loading environment variables:
+
+Mac: 
+Copy the sample environment variables and configure them:
+   ```sh
+   cp env/.env.example env/.env
+   nano env/.env  # Edit as needed
+   ```
+Load the environment variables:
+   ```sh
+   export $(grep -v '^#' env/local.env | xargs)
+  ```
+
+Windows: run the following script in the terminal:
+```
+Get-ChildItem -Path "path\to\env" -Filter "*.env" | ForEach-Object { 
+    $filePath = $_.FullName  
+    Get-Content $filePath | ForEach-Object { 
+        if ($_ -notmatch "^\s*#|^\s*$") {
+            $parts = $_ -split '=', 2
+            [System.Environment]::SetEnvironmentVariable($parts[0].Trim(), $parts[1].Trim(), "Process")
+        }
+    }
+}
+```
+Where path\to\env is replaced with your relative path to the unzipped folder env that contains the .env files. This will temporarily load the environmental variables to your current terminal session. This script has to be rerun whenever a new terminal sesion is started.
+
+#### Start PostgreSQL Database
+- Using Docker:
+  ```sh
+  docker compose up
+  ```
+- Using Local PostgreSQL:
+  ```sh
+  psql -U postgres -c "CREATE DATABASE mydb;"
+  ```
+
+#### Build and Run the Application
+   ```sh
+   ./mvnw clean install
+   java -jar target/backend-0.0.1-SNAPSHOT.jar
+   ```
+   Or to start the localhost:
+   ```sh
+   ./mvnw spring-boot:run
+   ```
+   To only run tests:
+   ```sh
+   ./mvnw test
+   ```
+
+#### Database Migrations
+Execute the schema SQL file in `<Quickfolds/backend/database>`.
+
+#### Troubleshooting
+- Port Conflicts: Ensure `8080` and `5432` are available.
+- Permissions Issues: Run `chmod +x mvnw` if needed.
+- Docker Issues: Restart Docker and retry `docker compose up`.

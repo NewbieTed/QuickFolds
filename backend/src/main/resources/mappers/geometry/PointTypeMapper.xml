@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MyBatis XML Mapper for handling database operations related to point types in an origami model.
+
+    - Defines SQL mappings for retrieving point type IDs based on their names.
+
+    SQL Operations:
+    - `getIdByName`: Retrieves the database ID of a point type by name.
+
+    Dependencies:
+    - The `point_type` table, which stores predefined point types (e.g., "vertex", "annotated_point").
+-->
+<mapper namespace="com.quickfolds.backend.geometry.mapper.PointTypeMapper">
+    <!--
+        Retrieves the database ID of a point type based on its name.
+
+        - Ensures that origami points reference valid types stored in the `point_type` table.
+        - Uses `LIMIT 1` to guarantee a single result.
+    -->
+    <select id="getIdByName">
+        SELECT id
+        FROM point_type
+        WHERE point_type_name = #{pointTypeName}
+        LIMIT 1
+    </select>
+
+</mapper>
