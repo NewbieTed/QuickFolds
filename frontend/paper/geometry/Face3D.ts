@@ -542,6 +542,37 @@ export class Face3D {
         return -1n;
     }
 
+    // Rotates this Face3D about its X axis by a certain angle.
+    public rotateX(deltaAngle: number) {
+
+        // Compute the main object's x-axis in world space:
+        const mainXAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(this.mesh.quaternion);
+
+        // Rotate the main face mesh.
+        this.mesh.position.sub(this.mesh.position);
+        this.mesh.position.applyAxisAngle(mainXAxis, deltaAngle);
+        this.mesh.position.add(this.mesh.position);
+        const q = new THREE.Quaternion().setFromAxisAngle(mainXAxis, deltaAngle);
+        this.mesh.quaternion.premultiply(q);
+
+        // Iterate over all points and lines, do the same thing.
+        for (const obj of this.pointGeometry.values()) {
+            // Rotate the point about the axis.
+            obj.position.sub(this.mesh.position);
+            obj.position.applyAxisAngle(mainXAxis, deltaAngle);
+            obj.position.add(this.mesh.position);
+            obj.quaternion.premultiply(q);
+        }
+        for (const obj of this.lineGeometry.values()) {
+            // Rotate the line about the axis.
+            obj.position.sub(this.mesh.position);
+            obj.position.applyAxisAngle(mainXAxis, deltaAngle);
+            obj.position.add(this.mesh.position);
+            obj.quaternion.premultiply(q);
+        }
+        
+    }
+    
     // TODO: rotate the three js geometry method, vs rotate the true face.
     // TODO: methods to change visibility and disable/enable raycasting thru this face.
 

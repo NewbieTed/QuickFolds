@@ -11,12 +11,15 @@ import {createPoint3D} from '../geometry/Point';
 import {Face3D, FaceUpdate3D} from "../geometry/Face3D";
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { createNewGraph } from '../model/PaperGraph';
+import { Animation } from './animation/Animation';
+import { FlipAnimation } from './animation/FlipAnimation';
 
 let stepID = 1n;
 const origamiID = 1n;
 
 let nextFaceId: bigint = 0n;
 const scene = new THREE.Scene();
+let animations: Animation[] = [];
 const idsToFace3D = new Map<bigint, Face3D>();
 const idsToFaceObj = new Map<bigint, THREE.Object3D>();
 const threeIDtoFaceID = new Map<number, bigint>();
@@ -209,4 +212,32 @@ export function deleteFace(faceID: bigint) {
     // Clean up the face properly.
     face.dispose();
 
+}
+
+// Test animation function.
+export function spinFace() {
+
+    console.log("SPINNING");
+    // Spin the only face in the scene.
+    const face: Face3D | undefined = getFace3DByID(0n);
+    if (face === undefined) {
+        return;
+    }
+    const anim = new FlipAnimation(face);
+    animations.push(anim);
+}
+
+// Test animation function.
+export function updateAnimations() {
+
+    const animRemaining: Animation[] = [];
+
+    for (const anim of animations) {
+        anim.update();
+        if (!anim.isComplete()) {
+            animRemaining.push(anim);
+        }
+    }
+
+    animations = animRemaining;
 }
