@@ -22,22 +22,57 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for `GeometryController`.
+ *
+ * - Uses `@WebMvcTest` to test only the controller layer.
+ * - Mocks `GeometryService` to isolate controller logic.
+ * - Tests various annotation request scenarios including valid and invalid cases.
+ *
+ * Dependencies:
+ * - `MockMvc` for simulating HTTP requests.
+ * - `ObjectMapper` for JSON serialization.
+ * - `Mockito` for service mocking.
+ */
 @WebMvcTest(controllers = GeometryController.class)
 @AutoConfigureMockMvc(addFilters = false)
 public class GeometryControllerTest {
-
+    /**
+     * MockMvc instance for simulating HTTP requests.
+     */
     @Autowired
     private MockMvc mockMvc;
 
+    /**
+     * Mocked JWT authentication filter.
+     *
+     * - Disabled in tests using `@AutoConfigureMockMvc(addFilters = false)`.
+     */
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Mocked `GeometryService` to isolate controller behavior.
+     */
     @MockBean
     private GeometryService geometryService;
 
+    /**
+     * ObjectMapper for converting Java objects to JSON.
+     */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-
+    /**
+     * Factory method for creating an `AnnotationRequest` with specified parameters.
+     *
+     * @param origamiId The ID of the origami model.
+     * @param stepIdInOrigami The step identifier within the origami.
+     * @param points List of point annotations.
+     * @param lines List of line annotations.
+     * @param deletedPoints List of deleted point IDs.
+     * @param deletedLines List of deleted line IDs.
+     * @return An `AnnotationRequest` object with the provided values.
+     */
     public static AnnotationRequest createAnnotationRequest(Long origamiId, Integer stepIdInOrigami,
                                                             List<PointAnnotationRequest> points,
                                                             List<LineAnnotationRequest> lines,
@@ -48,7 +83,14 @@ public class GeometryControllerTest {
         return new AnnotationRequest(origamiId, stepIdInOrigami, Collections.singletonList(face));
     }
 
-
+    /**
+     * Tests that a valid annotation request is processed successfully.
+     *
+     * - Mocks `geometryService.annotate()` to return a success response.
+     * - Creates an annotation request with sample points and lines.
+     * - Sends a `POST` request to `/geometry/annotate`.
+     * - Expects `HTTP 200 OK` response.
+     */
     @Test
     public void handlesValidAnnotateRequest() throws Exception {
 
@@ -85,7 +127,13 @@ public class GeometryControllerTest {
                 .andExpect(status().isOk());
     }
 
-
+    /**
+     * Tests that a request missing `origamiId` is rejected with a `400 Bad Request`.
+     *
+     * - Creates an annotation request with a `null` `origamiId`.
+     * - Sends a `POST` request to `/geometry/annotate`.
+     * - Expects `HTTP 400 Bad Request` response.
+     */
     @Test
     public void handlesInvalidAnnotateRequest_MissingOrigamiId() throws Exception {
         List<PointAnnotationRequest> points = new ArrayList<>();

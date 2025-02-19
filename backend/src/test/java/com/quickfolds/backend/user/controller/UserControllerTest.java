@@ -24,23 +24,53 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Unit tests for `UserController`.
+ *
+ * - Uses `@WebMvcTest` to test only the controller layer.
+ * - Mocks `UserService` to isolate controller logic.
+ * - Simulates HTTP requests for user authentication and registration endpoints.
+ *
+ * Dependencies:
+ * - `MockMvc` for simulating HTTP requests.
+ * - `Mockito` for service mocking.
+ * - `ObjectMapper` for JSON serialization.
+ */
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class UserControllerTest {
-
+    /**
+     * `MockMvc` instance for simulating HTTP requests to the controller.
+     */
     @Autowired
     private MockMvc mockMvc;
 
+    /**
+     * `ObjectMapper` for converting Java objects to JSON format.
+     */
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Mocked `UserService` to isolate controller behavior from service logic.
+     */
     @MockBean
     private UserService userService;
 
-    // Provide a dummy JwtUtil bean to satisfy the dependency in JwtAuthenticationFilter.
+    /**
+     * Mocked `JwtUtil` to satisfy the dependency in `JwtAuthenticationFilter`.
+     */
     @MockBean
     private JwtUtil jwtUtil;
 
+    /**
+     * Tests that a user can retrieve their details successfully.
+     *
+     * - Uses `@WithMockUser` to simulate an authenticated user.
+     * - Sends a `GET` request to `/user/getUser`.
+     * - Expects `HTTP 200 OK` response.
+     * - Verifies that the returned username matches "testuser".
+     */
     @Test
     @WithMockUser(username = "testuser")
     void testGetUser() throws Exception {
@@ -50,6 +80,13 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.username").value("testuser"));
     }
 
+    /**
+     * Tests that a user can successfully sign up.
+     *
+     * - Mocks `userService.registerUser()` to return `true`.
+     * - Sends a `POST` request to `/user/signup` with valid user data.
+     * - Expects `HTTP 200 OK` response with a success message.
+     */
     @Test
     void testSignupSuccess() throws Exception {
         User user = new User();
@@ -66,6 +103,13 @@ class UserControllerTest {
                 .andExpect(content().string("Signup success"));
     }
 
+    /**
+     * Tests that signing up with an existing username results in a conflict error.
+     *
+     * - Mocks `userService.registerUser()` to return `false`.
+     * - Sends a `POST` request to `/user/signup` with an existing username.
+     * - Expects `HTTP 409 Conflict` response with an error message.
+     */
     @Test
     void testSignupConflict() throws Exception {
         User user = new User();
@@ -82,6 +126,13 @@ class UserControllerTest {
                 .andExpect(content().string("Username already exists"));
     }
 
+    /**
+     * Tests that a user can successfully log in.
+     *
+     * - Mocks `userService.login()` to return a dummy JWT token.
+     * - Sends a `POST` request to `/user/login` with valid credentials.
+     * - Expects `HTTP 200 OK` response with a valid token.
+     */
     @Test
     void testLoginSuccess() throws Exception {
         String dummyToken = "dummy-token";
@@ -99,6 +150,13 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.token").value(dummyToken));
     }
 
+    /**
+     * Tests that a failed login attempt returns an unauthorized error.
+     *
+     * - Mocks `userService.login()` to return `null` for incorrect credentials.
+     * - Sends a `POST` request to `/user/login` with incorrect credentials.
+     * - Expects `HTTP 401 Unauthorized` response with an error message.
+     */
     @Test
     void testLoginFailure() throws Exception {
         when(userService.login("testuser", "wrongpassword")).thenReturn(null);

@@ -3,8 +3,27 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotateLineMapper">
+<!--
+    MyBatis XML Mapper for handling database operations related to annotated lines in an origami model.
 
+    - Defines mappings between database columns and Java object properties.
+    - Supports retrieval, insertion, and soft deletion of annotated lines.
+
+    SQL Operations:
+    - `getsIdsByIdInFace`: Retrieves IDs of annotated lines for a given face.
+    - `getDependentIds`: Retrieves IDs of lines dependent on specific points.
+    - `addByObj`: Inserts a new annotated line into the database.
+    - `deleteMultipleByIdInFace`: Marks multiple annotated lines as deleted.
+
+    Dependencies:
+    - `AnnotatedLine`: The Java entity representing an annotated line.
+-->
+<mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotateLineMapper">
+    <!--
+        Maps database columns to the `AnnotatedLine` entity fields.
+
+        - Ensures MyBatis correctly maps query results to Java objects.
+    -->
     <resultMap id="AnnotatedLineResultMap" type="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
         <id property="id" column="id" />
         <result property="stepId" column="step_id" />
@@ -19,6 +38,11 @@
         <result property="updatedAt" column="updated_at" />
     </resultMap>
 
+    <!--
+    Retrieves the IDs of annotated lines for a given face.
+
+    - Filters lines by `face_id` and checks if their `id_in_face` is in the provided list.
+    -->
     <select id="getsIdsByIdInFace" resultType="java.lang.Long">
         SELECT id FROM annotated_line
         WHERE face_id = #{faceId}
@@ -29,7 +53,12 @@
         )
     </select>
 
+    <!--
+        Retrieves annotated line IDs that depend on specific points.
 
+        - Searches for lines where `point_1_id` or `point_2_id` matches any given `pointIds`.
+        - Excludes already deleted lines (`deleted_step_id IS NULL`).
+    -->
     <select id="getDependentIds" resultType="java.lang.Long">
         SELECT id FROM annotated_line
         WHERE face_id = #{faceId}
@@ -49,6 +78,12 @@
         )
     </select>
 
+    <!--
+    Inserts a new annotated line into the database.
+
+    - Conditionally includes `created_by`, `updated_by`, `created_at`, and `updated_at`
+      if they are not null.
+    -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
         INSERT INTO annotated_line (
         step_id,
@@ -75,6 +110,11 @@
         )
     </insert>
 
+    <!--
+    Marks multiple annotated lines as deleted by setting `deleted_step_id`.
+
+    - Only updates lines that are not already marked as deleted (`deleted_step_id IS NULL`).
+    -->
     <update id="deleteMultipleByIdInFace">
         UPDATE annotated_line
         SET deleted_step_id = #{deletedStepId}

@@ -5,6 +5,8 @@
 
 <mapper namespace="com.quickfolds.backend.geometry.mapper.StepTypeMapper">
 
+    <!-- Retrieves the ID of a step type based on its name.
+         Limits the result to 1 in case of duplicates. -->
     <select id="getIdByName">
         SELECT id
         FROM step_type
