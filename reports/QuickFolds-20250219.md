@@ -71,6 +71,26 @@ Assignee: Ryan Rozsnyai
 
 Is it finished: No
 
+#### Task: Add Publish Button
+Assignee: Ryan Rozsnyai
+
+Is it finished: No
+
+#### Task: Add background picture
+Assignee: Weizi Wu
+
+Is it finished: Yes
+
+#### Task: Add annotation points/lines
+Assignee: Weizi Wu
+
+Is it finished: Yes
+
+#### Task: Delete scroll bar
+Assignee: Weizi Wu
+
+Is it finished: Yes
+
 
 ---
 # Progress and issues:
@@ -114,7 +134,19 @@ Any Current Issues: N/A
 Team Discussion if still having issues: N/A
 
 
-#### Team Member 4:
+#### Team Member 4: Weizi Wu
+
+Action Items/What you did: Completed frontend 3D rendering, community board UI integration.
+
+Result (What worked/What didn’t): Annotation points and lines are rendered, adding and deleting them are supported.
+
+What did you learn: Three.js rendering
+
+Any Current Issues: I still feel the need to learn more about frontend libraries.
+
+Team Discussion if still having issues: N/A
+
+#### Team Member 5:
 
 Action Items/What you did:
 
