@@ -189,6 +189,18 @@ Any Current Issues: N/A
 
 Team Discussion if still having issues: N/A
 
+#### Team Member 6: Dennis Lam
+
+Action Items/What you did: Created backend tests for origami and user APIs.
+
+Result (What worked/What didn’t): I struggled a bit with setting up testing for the database - creating the correct environment is finicky, but I succeeded in the end.
+
+What did you learn: How to use SpringBootTest for testing API/database interactions.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
 ---
 # Goals for next week:
 ### Overall Plan For This Week:
