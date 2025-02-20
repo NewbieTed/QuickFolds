@@ -1,8 +1,10 @@
+
 /**
  * This is the file that deals with any logic inside the community board:
  *  + create new origami
  *  + look at public origami
  */
+const USER_ID = 1;
 
 
 // this is the type of data that backend sends when loading all public origami
@@ -27,7 +29,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
 
     const url = 'http://localhost:8080/origami/new';
     const data = {
-      userId: 1,
+      userId: USER_ID,
       origamiName:newOrigamiName
     }
 
@@ -113,6 +115,12 @@ function createProfile(profile: OrigamiProfile) : HTMLElement {
   const base = document.createElement("div");
   base.classList.add("card");
 
+  // Image element
+  const image = document.createElement("img");
+  image.src = "crane_blue.png";
+  image.alt = `${profile.origamiName} image`;
+  image.classList.add("origami-image");
+
   // generate children elements
   const title = document.createElement("p");
   title.textContent = profile.origamiName;
@@ -128,6 +136,7 @@ function createProfile(profile: OrigamiProfile) : HTMLElement {
   ratings.textContent = "Rating:" + stars(profile.ratings);
 
   // attach to base
+  base.appendChild(image);
   base.appendChild(title);
   base.appendChild(lineBreak);
   base.appendChild(author);
