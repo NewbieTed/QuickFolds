@@ -101,7 +101,20 @@ Any Current Issues: N/A, just a lot of things done
 Team Discussion if still having issues: N/A
 
 
-#### Team Member 3:
+#### Team Member 3: Bernice Tian
+
+Action Items/What you did: Completed backend origami/list api
+
+Result (What worked/What didn’t): backend origami/list api complete
+
+What did you learn: SQL, how to set up environment variables from .env files on windows, unit testing controllers with MockMvc
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
+
+#### Team Member 4:
 
 Action Items/What you did:
 
