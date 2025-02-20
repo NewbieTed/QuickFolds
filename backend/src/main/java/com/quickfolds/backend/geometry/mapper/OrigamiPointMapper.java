@@ -8,10 +8,10 @@ import java.util.List;
 
 /**
  * MyBatis Mapper interface for handling database operations related to origami points.
- *
+ * <p>
  * - Provides methods for retrieving, inserting, and deleting points within an origami face.
  * - Uses MyBatis `@Mapper` annotation for SQL mapping.
- *
+ * <p>
  * Dependencies:
  * - `OrigamiPoint`: The database entity representing a point in the origami model.
  */
@@ -20,7 +20,7 @@ public interface OrigamiPointMapper {
 
     /**
      * Retrieves the database ID of a point using its position within a face.
-     *
+     * <p>
      * - Each point within a face has a unique `idInFace` identifier.
      * - Used to map logical point identifiers to actual database records.
      *
@@ -32,7 +32,7 @@ public interface OrigamiPointMapper {
 
     /**
      * Retrieves the database IDs of multiple points within a specific face.
-     *
+     * <p>
      * - Used to efficiently map multiple logical point identifiers to database records.
      *
      * @param faceId The ID of the face containing the points.
@@ -43,18 +43,17 @@ public interface OrigamiPointMapper {
 
     /**
      * Inserts a new origami point into the database.
-     *
+     * <p>
      * - Uses MyBatis parameter binding to pass the `OrigamiPoint` entity.
      * - Returns the generated primary key after insertion.
      *
      * @param origamiPoint The `OrigamiPoint` entity to be inserted.
-     * @return The generated database ID of the newly inserted origami point.
      */
     void addByObj(@Param("origamiPoint") OrigamiPoint origamiPoint);
 
     /**
      * Deletes multiple origami points within a face.
-     *
+     * <p>
      * - Removes points based on their `idInFace` values.
      * - Used when reverting steps or cleaning up deleted faces.
      *

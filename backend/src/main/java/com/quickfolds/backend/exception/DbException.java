@@ -5,13 +5,13 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Custom exception to handle database inconsistencies or issues across all modules.
- *
+ * <p>
  * - Extends `RuntimeException`, allowing it to be thrown without explicit handling.
  * - Used to indicate errors related to database operations, such as:
  *   - Data inconsistency
  *   - Missing or invalid records
  *   - Query execution failures
- *
+ * <p>
  * Usage:
  * - Should be thrown in service or repository layers when a database-related error occurs.
  * - Can be caught at a higher level (e.g., in `GlobalExceptionHandler`) to return appropriate responses.

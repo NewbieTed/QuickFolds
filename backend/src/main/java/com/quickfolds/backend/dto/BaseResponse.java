@@ -8,7 +8,7 @@ import java.time.Instant;
 
 /**
  * A generic response wrapper for API responses.
- *
+ * <p>
  * - Standardizes API responses with a consistent structure.
  * - Includes success status, HTTP status code, message, timestamp, and data.
  * - Provides utility methods for creating standardized success and failure responses.

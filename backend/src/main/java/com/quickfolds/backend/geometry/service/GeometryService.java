@@ -169,6 +169,8 @@ public class GeometryService {
         // Recover the actual point IDs
         List<Long> deletedPointIds = origamiPointMapper.getIdsByIdInFace(faceId, deletedPointIdsInFace);
 
+        // TODO: Check if list contains vertices
+
         // Check if any points have dependent lines
         List<Long> dependentLines = annotateLineMapper.getDependentIds(faceId, deletedPointIds);
         if (!dependentLines.isEmpty()) {
