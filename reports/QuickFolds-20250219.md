@@ -27,7 +27,7 @@ Assignee: Yixuan Wang
 Is it Finished: Yes
 
 #### Task: Finish Backend Create New Origami feature
-Assignee: Yixuan Wang
+Assignee: Yixuan Wang, Dennis Lam
 
 Is it Finished: Yes
 
