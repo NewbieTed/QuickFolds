@@ -128,5 +128,9 @@
 
 /* main background */
 body {
-  background-color: rgb(199, 199, 199);
+  background-image: url('background.JPG'); /* Replace with the actual image path */
+  background-size: cover; /* Ensures the image covers the entire background */
+  background-repeat: no-repeat; /* Prevents repeating */
+  background-position: center; /* Centers the image */
+  background-attachment: fixed; /* Keeps the background fixed when scrolling */
 }
