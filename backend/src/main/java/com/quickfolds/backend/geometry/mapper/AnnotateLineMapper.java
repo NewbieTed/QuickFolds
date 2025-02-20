@@ -25,7 +25,7 @@ public interface AnnotateLineMapper {
      * @param idsInFace A list of annotated line identifiers within the face.
      * @return A list of database IDs corresponding to the requested annotated lines.
      */
-    List<Long> getsIdsByIdInFace(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
+    List<Long> getIdsByIdsInFace(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
 
     /**
      * Retrieves a list of annotated line IDs that are dependent on specific points.
@@ -55,7 +55,7 @@ public interface AnnotateLineMapper {
      *
      * @param annotateLineIds A list of database IDs representing the annotated lines to be deleted.
      */
-    void deleteMultipleById(@Param("annotateLineIds") List<Long> annotateLineIds);
+    void deleteByIds(@Param("annotateLineIds") List<Long> annotateLineIds);
 
     /**
      * Deletes an annotated line based on its position within a face.
@@ -73,8 +73,8 @@ public interface AnnotateLineMapper {
      * @param deletedStepId The step ID associated with the deleted annotations.
      * @return The number of rows affected by the delete operation.
      */
-    int deleteMultipleByIdInFace(@Param("faceId") long faceId,
-                                  @Param("idsInFace") List<Integer> idsInFace,
-                                  @Param("deletedStepId") long deletedStepId);
+    int deleteByIdsInFace(@Param("faceId") long faceId,
+                          @Param("idsInFace") List<Integer> idsInFace,
+                          @Param("deletedStepId") long deletedStepId);
 
 }

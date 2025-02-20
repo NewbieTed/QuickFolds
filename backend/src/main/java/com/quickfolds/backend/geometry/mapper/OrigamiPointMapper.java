@@ -39,7 +39,19 @@ public interface OrigamiPointMapper {
      * @param idsInFace A list of point identifiers within the face.
      * @return A list of database IDs corresponding to the requested points.
      */
-    List<Long> getIdsByIdInFace(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
+    List<Long> getIdsByIdsInFace(@Param("faceId") long faceId, @Param("idsInFace") List<Integer> idsInFace);
+
+    /**
+     * Retrieves the database IDs of vertices based on a list of vertex IDs.
+     * <p>
+     * - Filters the `vertex` table using the provided list of IDs.
+     * - Returns only the IDs that exist in the database.
+     *
+     * @param ids The list of vertex IDs to search for.
+     * @return A list of matching vertex IDs from the database.
+     */
+    List<Long> getIdsOfPointTypeByIds(@Param("pointTypeId") long pointTypeId, @Param("ids") List<Long> ids);
+
 
     /**
      * Inserts a new origami point into the database.
@@ -62,8 +74,8 @@ public interface OrigamiPointMapper {
      * @param deletedStepId The step ID associated with the deletion (for tracking history).
      * @return The number of rows affected by the delete operation.
      */
-    int deleteMultipleByIdInFace(@Param("faceId") long faceId,
-                                 @Param("idsInFace") List<Integer> idsInFace,
-                                 @Param("deletedStepId") long deletedStepId);
+    int deleteByIdsInFace(@Param("faceId") long faceId,
+                          @Param("idsInFace") List<Integer> idsInFace,
+                          @Param("deletedStepId") long deletedStepId);
 
 }

@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -87,8 +88,6 @@ public class GeometryService {
      */
     @Transactional
     public ResponseEntity<BaseResponse<Boolean>> annotate(AnnotationRequest request) {
-        // TODO: Do not delete vertices
-        // TODO: Do not delete edges
         // Extract origami and step information.
         long origamiId = request.getOrigamiId();
         int stepIdInOrigami = request.getStepIdInOrigami();
@@ -110,9 +109,8 @@ public class GeometryService {
 
         // Process each face annotation in the request.
         for (FaceAnnotateRequest face : request.getFaces()) {
-            // TODO: Check for null for wrappers
             long faceId = getFaceId(origamiId, face.getIdInOrigami());
-            Long stepId = createStep(origamiId, stepTypeId, stepIdInOrigami);
+            long stepId = createStep(origamiId, stepTypeId, stepIdInOrigami);
 
             deleteAnnotatedLines(origamiId, faceId, stepId, face.getAnnotations().getDeletedLines());
             deleteAnnotatedPoints(origamiId, faceId, stepId, face.getAnnotations().getDeletedPoints());
@@ -136,7 +134,15 @@ public class GeometryService {
             throw new IllegalArgumentException("Face id in origami not given, " +
                     "verify if request is valid (no face in origami id)");
         }
-        return faceMapper.getIdByFaceIdInOrigami(origamiId, faceIdInOrigami);
+
+        Long faceId = faceMapper.getIdByFaceIdInOrigami(origamiId, faceIdInOrigami);
+
+        // Check if face ID is found
+        if (faceId == null) {
+            throw new IllegalArgumentException("Invalid face ID, verify if request is valid (invalid face ID)");
+        }
+
+        return faceId;
     }
 
     /**
@@ -146,13 +152,20 @@ public class GeometryService {
      * @param stepIdInOrigami The step number in the origami.
      * @return The database ID of the newly created step.
      */
-    private Long createStep(long origamiId,Long stepTypeId, int stepIdInOrigami) {
+    private long createStep(long origamiId,Long stepTypeId, int stepIdInOrigami) {
         Step step = new Step();
         step.setOrigamiId(origamiId);
         step.setStepTypeId(stepTypeId);
         step.setIdInOrigami(stepIdInOrigami);
         stepMapper.addByObj(step);
-        return stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
+
+        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
+
+        if (stepId == null) {
+            throw new DbException("Cannot find step ID that is just created, verify if SQL is correct");
+        }
+
+        return stepId;
     }
 
     /**
@@ -167,9 +180,15 @@ public class GeometryService {
         if (deletedPointIdsInFace == null || deletedPointIdsInFace.isEmpty()) return;
 
         // Recover the actual point IDs
-        List<Long> deletedPointIds = origamiPointMapper.getIdsByIdInFace(faceId, deletedPointIdsInFace);
+        List<Long> deletedPointIds = origamiPointMapper.getIdsByIdsInFace(faceId, deletedPointIdsInFace);
 
-        // TODO: Check if list contains vertices
+        // Check if list contains vertices
+        long pointTypeId = getPointVertexTypeId();
+        List<Long> vertexIds = origamiPointMapper.getIdsOfPointTypeByIds(pointTypeId, deletedPointIds);
+        if (!vertexIds.isEmpty()) {
+            throw new IllegalArgumentException("Deleted points contains vertices, " +
+                    "verify if request is valid (vertex deletion)");
+        }
 
         // Check if any points have dependent lines
         List<Long> dependentLines = annotateLineMapper.getDependentIds(faceId, deletedPointIds);
@@ -179,11 +198,11 @@ public class GeometryService {
         }
 
         // Perform deletion
-        int rowsUpdated = origamiPointMapper.deleteMultipleByIdInFace(faceId, deletedPointIdsInFace, stepId);
+        int rowsUpdated = origamiPointMapper.deleteByIdsInFace(faceId, deletedPointIdsInFace, stepId);
 
         // Validate the deletion
         validateDeletion(origamiId, faceId, deletedPointIdsInFace, rowsUpdated,
-                "annotated point", origamiPointMapper.getIdsByIdInFace(faceId, deletedPointIdsInFace));
+                "annotated point", origamiPointMapper.getIdsByIdsInFace(faceId, deletedPointIdsInFace));
     }
 
 
@@ -195,15 +214,15 @@ public class GeometryService {
      * @param deletedLineIdsInFace List of line IDs in face to delete.
      * @throws IllegalArgumentException if lines do not exist.
      */
-    private void deleteAnnotatedLines(long origamiId, long faceId, Long stepId, List<Integer> deletedLineIdsInFace) {
+    private void deleteAnnotatedLines(long origamiId, long faceId, long stepId, List<Integer> deletedLineIdsInFace) {
         if (deletedLineIdsInFace == null || deletedLineIdsInFace.isEmpty()) return;
 
         // Perform deletion
-        int rowsUpdated = annotateLineMapper.deleteMultipleByIdInFace(faceId, deletedLineIdsInFace, stepId);
+        int rowsUpdated = annotateLineMapper.deleteByIdsInFace(faceId, deletedLineIdsInFace, stepId);
 
         // Validate the deletion
         validateDeletion(origamiId, faceId, deletedLineIdsInFace, rowsUpdated,
-                "annotated line", annotateLineMapper.getsIdsByIdInFace(faceId, deletedLineIdsInFace));
+                "annotated line", annotateLineMapper.getIdsByIdsInFace(faceId, deletedLineIdsInFace));
     }
 
 
@@ -215,12 +234,12 @@ public class GeometryService {
      * @param points List of new points to add.
      * @throws IllegalArgumentException if duplicate points exist.
      */
-    private void addAnnotatedPoints(long faceId, Long stepId, Long pointTypeId, List<PointAnnotationRequest> points) {
+    private void addAnnotatedPoints(long faceId, long stepId, Long pointTypeId, List<PointAnnotationRequest> points) {
         if (points == null || points.isEmpty()) return;
 
         // Check for duplicate points
         List<Integer> idsInFace = points.stream().map(PointAnnotationRequest::getIdInFace).toList();
-        if (!origamiPointMapper.getIdsByIdInFace(faceId, idsInFace).isEmpty()) {
+        if (!origamiPointMapper.getIdsByIdsInFace(faceId, idsInFace).isEmpty()) {
             throw new IllegalArgumentException("Duplicate points detected, " +
                     "verify if request is valid (duplicate annotated points).");
         }
@@ -263,20 +282,34 @@ public class GeometryService {
      * @param stepId The step ID in which the addition occurs.
      * @param lines List of new lines to add.
      */
-    private void addAnnotatedLines(long faceId, Long stepId, List<LineAnnotationRequest> lines) {
+    private void addAnnotatedLines(long faceId, long stepId, List<LineAnnotationRequest> lines) {
         if (lines == null || lines.isEmpty()) return;
 
-        // TODO: Check if points are present
+        // TODO: Check if it is an edge
+
         // Insert new lines
         for (LineAnnotationRequest lineRequest : lines) {
+            int point1IdInOrigami = lineRequest.getPoint1IdInOrigami();
+            int point2IdInOrigami = lineRequest.getPoint2IdInOrigami();
+            List<Integer> points = new ArrayList<>();
+            points.add(point1IdInOrigami);
+            points.add(point2IdInOrigami);
+
+            List<Long> pointIds = origamiPointMapper.getIdsByIdsInFace(faceId, points);
+
+            // Check if both points exists
+            if (pointIds.size() != points.size()) {
+                throw new IllegalArgumentException("Invalid point in annotated line " + lineRequest.getIdInFace() +
+                        ", verify if request is valid (invalid point in line)");
+            }
+
             AnnotatedLine line = new AnnotatedLine();
             line.setStepId(stepId);
             line.setFaceId(faceId);
             line.setIdInFace(lineRequest.getIdInFace());
 
-            // TODO: Check if exists
-            line.setPoint1Id(origamiPointMapper.getIdByIdInFace(faceId, lineRequest.getPoint1IdInOrigami()));
-            line.setPoint2Id(origamiPointMapper.getIdByIdInFace(faceId, lineRequest.getPoint2IdInOrigami()));
+            line.setPoint1Id(origamiPointMapper.getIdByIdInFace(faceId, point1IdInOrigami));
+            line.setPoint2Id(origamiPointMapper.getIdByIdInFace(faceId, point2IdInOrigami));
 
             annotateLineMapper.addByObj(line);
         }
@@ -327,10 +360,10 @@ public class GeometryService {
      *
      * @param origamiId The ID of the origami for which geometry is built.
      */
-    public void buildInitialOrigamiGeometry(Long origamiId) {
-        Long stepId = buildInitialStep(origamiId);
+    public void buildInitialOrigamiGeometry(long origamiId) {
+        long stepId = buildInitialStep(origamiId);
 
-        Long faceId = buildInitialFace(origamiId, stepId);
+        long faceId = buildInitialFace(origamiId, stepId);
 
         // Initialize four vertices at the corners.
         buildInitialVertices(stepId, faceId);
@@ -347,7 +380,7 @@ public class GeometryService {
      * @return The database ID of the created step.
      * @throws DbException if the step type does not exist in the database.
      */
-    public Long buildInitialStep(Long origamiId) {
+    private long buildInitialStep(long origamiId) {
         // Retrieve the step type ID from the database.
         String stepType = StepType.CREATE;
         Long stepTypeId = stepTypeMapper.getIdByName(stepType);
@@ -359,8 +392,15 @@ public class GeometryService {
         step.setIdInOrigami(0);
         stepMapper.addByObj(step);
 
-        // Retrieve and return the generated step ID.
-        return stepMapper.getIdByIdInOrigami(origamiId, 0);
+        // Retrieve the generated step ID.
+        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, 0);
+
+        // Check if step ID is found
+        if (stepId == null) {
+            throw new DbException("Cannot find step ID that is just created, verify if SQL is correct");
+        }
+
+        return stepId;
     }
 
     /**
@@ -371,7 +411,7 @@ public class GeometryService {
      * @param stepId The ID of the step in which the face is created.
      * @return The database ID of the created face.
      */
-    public Long buildInitialFace(Long origamiId, Long stepId) {
+    private long buildInitialFace(Long origamiId, Long stepId) {
         // Create a default face associated with the given origami and step.
         Face face = new Face();
         face.setOrigamiId(origamiId);
@@ -379,8 +419,15 @@ public class GeometryService {
         face.setIdInOrigami(0);  // Default face index (0-based)
         faceMapper.addByObj(face);
 
-        // Retrieve and return the generated face ID.
-        return faceMapper.getIdByFaceIdInOrigami(origamiId, 0);
+        // Retrieve the generated face ID.
+        Long faceId = faceMapper.getIdByFaceIdInOrigami(origamiId, 0);
+
+        // Check if step ID is found
+        if (faceId == null) {
+            throw new DbException("Cannot find face ID that is just created, verify if SQL is correct");
+        }
+
+        return faceId;
     }
 
     /**
@@ -390,10 +437,8 @@ public class GeometryService {
      * @param stepId The ID of the step in which the vertices are created.
      * @param faceId The ID of the face to which the vertices belong.
      */
-    public void buildInitialVertices(Long stepId, Long faceId) {
-        // Retrieve the vertex point type ID from the database.
-        String pointType = PointType.VERTEX;
-        Long pointTypeId = pointTypeMapper.getIdByName(pointType);
+    private void buildInitialVertices(long stepId, long faceId) {
+        long pointTypeId = getPointVertexTypeId();
 
         for (int i = 0; i < 4; i++) {
             double x = (i == 1 || i == 2) ? 3.0 : 0.0;
@@ -419,10 +464,16 @@ public class GeometryService {
      * @param stepId The ID of the step in which the edges are created.
      * @param faceId The ID of the face to which the edges belong.
      */
-    public void buildInitialEdges(Long stepId, Long faceId) {
+    private void buildInitialEdges(long stepId, long faceId) {
         // Retrieve the side edge type ID from the database.
         String edgeType = EdgeType.SIDE;
         Long edgeTypeId = edgeTypeMapper.getEdgeTypeByName(edgeType);
+
+        // Check if edge type ID is found
+        if (edgeTypeId == null) {
+            throw new DbException("Cannot find edge type ID with type name: " + EdgeType.SIDE +
+                    ", verify if DB is correctly set up");
+        }
 
         for (int i = 0; i < 4; i++) {
             // Create edge record.
@@ -433,6 +484,10 @@ public class GeometryService {
 
             // Retrieve the most recently added edge ID.
             Long edgeId = edgeMapper.getMostRecentId(stepId);
+
+            if (edgeId == null) {
+                throw new DbException("Cannot find edge ID that is just created, verify if SQL is correct");
+            }
 
             // Associate edge with vertices.
             SideEdge sideEdge = new SideEdge();
@@ -447,5 +502,20 @@ public class GeometryService {
             // Store edge connection in the database.
             sideEdgeMapper.addByObj(sideEdge);
         }
+    }
+
+
+    private long getPointVertexTypeId() {
+        // Retrieve the vertex point type ID from the database.
+        String pointType = PointType.VERTEX;
+        Long pointTypeId = pointTypeMapper.getIdByName(pointType);
+
+        // Check if point type ID is found
+        if (pointTypeId == null) {
+            throw new DbException("Cannot find step type ID with type name: " + PointType.VERTEX +
+                    ", verify if DB is correctly set up");
+        }
+
+        return pointTypeId;
     }
 }

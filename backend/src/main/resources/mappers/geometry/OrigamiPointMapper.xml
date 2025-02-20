@@ -9,9 +9,9 @@
 
     SQL Operations:
     - `getIdByIdInFace`: Retrieves a single origami point ID within a face.
-    - `getIdsByIdInFace`: Retrieves multiple origami point IDs within a face.
+    - `getIdsByIdsInFace`: Retrieves multiple origami point IDs within a face.
     - `addByObj`: Inserts a new origami point into the database.
-    - `deleteMultipleByIdInFace`: Marks multiple origami points as deleted.
+    - `deleteByIdsInFace`: Marks multiple origami points as deleted.
 
     Dependencies:
     - `OrigamiPoint`: The Java entity representing an origami point.
@@ -38,12 +38,24 @@
         - Uses `IN` to fetch all matching points efficiently.
         - Utilizes `<foreach>` to dynamically build the list of point IDs.
     -->
-    <select id="getIdsByIdInFace" resultType="java.lang.Long">
+    <select id="getIdsByIdsInFace" resultType="java.lang.Long">
         SELECT id FROM origami_point
         WHERE face_id = #{faceId}
         AND id_in_face IN (
         <foreach collection="idsInFace" item="idInFace" separator=",">
             #{idInFace}
+        </foreach>
+        )
+    </select>
+
+
+
+    <select id="getIdsOfPointTypeByIds" resultType="java.lang.Long">
+        SELECT id FROM origami_point
+        WHERE point_type_id = #{pointTypeId}
+        AND id IN (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
         </foreach>
         )
     </select>
@@ -88,7 +100,7 @@
         - Updates points that have not already been deleted (`deleted_step_id IS NULL`).
         - Uses `<foreach>` to handle batch deletions.
     -->
-    <update id="deleteMultipleByIdInFace">
+    <update id="deleteByIdsInFace">
         UPDATE origami_point
         SET deleted_step_id = #{deletedStepId}
         WHERE face_id = #{faceId}

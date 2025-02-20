@@ -40,6 +40,12 @@
         - Ensures only one matching edge is returned with `LIMIT 1`.
     -->
     <select id="getIdByIdInFace" resultType="java.lang.Long">
+        (SELECT edge_id FROM side_edge
+        WHERE
+        face_id = #{faceId} AND
+        id_in_face = #{idInFace}
+        LIMIT 1)
+        UNION ALL
         (SELECT edge_id FROM fold_edge
         WHERE
             face_1_id = #{faceId} AND
@@ -50,12 +56,6 @@
         WHERE
             face_2_id = #{faceId} AND
             id_in_face_2 = #{idInFace}
-        LIMIT 1)
-        UNION ALL
-        (SELECT edge_id FROM side_edge
-        WHERE
-            face_id = #{faceId} AND
-            id_in_face = #{idInFace}
         LIMIT 1)
         LIMIT 1;
     </select>

@@ -96,6 +96,10 @@ public class OrigamiService {
         // Retrieve the ID of the most recently created origami for the user.
         Long origamiId = origamiMapper.getMostRecentId(userId);
 
+        if (origamiId == null) {
+            throw new DbException("Cannot find origami ID that is just created, verify if SQL is correct");
+        }
+
         // Initialize the geometry structure for the new origami structure.
         geometryService.buildInitialOrigamiGeometry(origamiId);
 
