@@ -87,7 +87,7 @@ public class OrigamiService {
         origami.setOrigamiName(origamiName == null ? "Untitled" : origamiName);
 
         // Set default properties for a newly created origami model.
-        origami.setPublic(false);
+        origami.setPublic(true);
         origami.setRatings(0.0);
 
         // Insert the new origami record into the database.
