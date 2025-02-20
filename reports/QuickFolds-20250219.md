@@ -91,6 +91,36 @@ Assignee: Weizi Wu
 
 Is it finished: Yes
 
+#### Task: Create the Face3D class
+Assignee: Hady Fawal
+
+Is it finished: Yes
+
+#### Task: Create the Face2D class
+Assignee: Hady Fawal
+
+Is it finished: Yes
+
+#### Task: Create the Point types and utilities
+Assignee: Hady Fawal
+
+Is it finished: Yes
+
+#### Task: Create the SceneManager
+Assignee: Hady Fawal
+
+Is it finished: Yes
+
+#### Task: Refactor the editor into CameraManager
+Assignee: Hady Fawal
+
+Is it finished: Yes
+
+#### Task: Add basic animation framework
+Assignee: Hady Fawal
+
+Is it finished: Yes
+
 
 ---
 # Progress and issues:
@@ -146,17 +176,18 @@ Any Current Issues: I still feel the need to learn more about frontend libraries
 
 Team Discussion if still having issues: N/A
 
-#### Team Member 5:
+#### Team Member 5: Hady Fawal
 
-Action Items/What you did:
+Action Items/What you did: Created the geometry module which renders faces in 3D, mutates faces in 2D, and offers utilities to handle point and vector math. Created
+the scene manager which controls all the faces in the scene, and refactored the camera.
 
-Result (What worked/What didn’t):
+Result (What worked/What didn’t): Automatic management of faces, annotations in faces, and complex intersection calculations. Clean camera movement and rotation.
 
-What did you learn:
+What did you learn: I learned a lot about how to use Three.js, and also a fair amount 3D mathematics to do things like projection, finding certain distances, etc.
 
-Any Current Issues:
+Any Current Issues: N/A
 
-Team Discussion if still having issues:
+Team Discussion if still having issues: N/A
 
 ---
 # Goals for next week:
