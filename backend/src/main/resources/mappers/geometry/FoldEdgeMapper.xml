@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MyBatis XML Mapper for handling database operations related to fold edges in an origami model.
+
+    - Defines SQL mappings for retrieving and inserting fold edges.
+
+    SQL Operations:
+    -
+-->
+<mapper namespace="com.quickfolds.backend.geometry.mapper.FoldEdgeMapper">
+    <!--
+            Inserts a new fold edge into the database.
+
+            - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
+            - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+        -->
+    <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.FoldEdge">
+        INSERT INTO fold_edge (
+        edge_id,
+        face_1_id,
+        face_2_id,
+        angle,
+        id_in_face_1,
+        id_in_face_2
+        <if test="foldEdge.createdBy != null">, created_by</if>
+        <if test="foldEdge.updatedBy != null">, updated_by</if>
+        <if test="foldEdge.createdAt != null">, created_at</if>
+        <if test="foldEdge.updatedAt != null">, updated_at</if>
+        ) VALUES (
+        #{foldEdge.edgeId},
+        #{foldEdge.face1Id},
+        #{foldEdge.face2Id},
+        #{foldEdge.angle},
+        #{foldEdge.idInFace1},
+        #{foldEdge.idInFace2}
+        <if test="foldEdge.createdBy != null">, #{foldEdge.createdBy}</if>
+        <if test="foldEdge.updatedBy != null">, #{foldEdge.updatedBy}</if>
+        <if test="foldEdge.createdAt != null">, #{foldEdge.createdAt}</if>
+        <if test="foldEdge.updatedAt != null">, #{foldEdge.updatedAt}</if>
+        );
+    </insert>
+
+</mapper>

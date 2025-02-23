@@ -6,10 +6,10 @@ import org.apache.ibatis.annotations.Param;
 
 /**
  * MyBatis Mapper interface for handling database operations related to edges in an origami model.
- *
+ * <p>
  * - Provides methods to insert, retrieve, and manage edges within an origami face.
  * - Uses MyBatis `@Mapper` annotation for SQL mapping.
- *
+ * <p>
  * Dependencies:
  * - `Edge`: The database entity representing an edge in the origami model.
  */
@@ -40,7 +40,6 @@ public interface EdgeMapper {
      * Inserts a new edge into the database.
      * <p>
      * - Returns the generated primary key after insertion.
-     * - Uses MyBatis `@Options(useGeneratedKeys = true, keyProperty = "edge.id")`
      *   to retrieve the generated key.
      *
      * @param edge The `Edge` entity to be inserted.

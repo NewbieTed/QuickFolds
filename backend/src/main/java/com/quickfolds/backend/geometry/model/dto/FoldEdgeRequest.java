@@ -49,5 +49,5 @@ public class FoldEdgeRequest {
      * - No explicit validation on angle values (consider adding range validation if needed).
      */
     @NotNull(message = "Field 'angle' in Edge must not be null")
-    private Integer angle;
+    private Double angle;
 }

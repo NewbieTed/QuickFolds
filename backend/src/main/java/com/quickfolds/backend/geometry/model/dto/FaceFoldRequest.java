@@ -45,8 +45,8 @@ public class FaceFoldRequest {
      */
     @Valid
     @NotNull(message = "Field 'vertices' in Face Fold must not be null")
-    @Size(min = 1, message = "vertices list in Face Fold cannot be empty")
-    private List<VertexRequest> vertices;
+    @Size(min = 3, message = "vertices list in Face Fold cannot have less than 3 items")
+    private List<@Valid VertexRequest> vertices;
 
     /**
      * List of edges defining the new folded face.

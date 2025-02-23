@@ -54,8 +54,8 @@ public class FoldRequest {
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'anchoredIdInOrigami' in Fold must not be null")
-    @PositiveOrZero(message = "Field 'anchoredIdInOrigami' in Fold must be non-negative")
+    @NotNull(message = "Field 'anchoredFaceIdInOrigami' in Fold must not be null")
+    @PositiveOrZero(message = "Field 'anchoredFaceIdInOrigami' in Fold must be non-negative")
     private Integer anchoredFaceIdInOrigami;
 
     /**

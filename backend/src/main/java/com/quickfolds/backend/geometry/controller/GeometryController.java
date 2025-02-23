@@ -46,7 +46,7 @@ public class GeometryController {
      * @param request The fold request containing the necessary transformations.
      * @return ResponseEntity with a BaseResponse indicating success or failure.
      */
-    @GetMapping("/fold")
+    @PostMapping("/fold")
     public ResponseEntity<BaseResponse<Boolean>> fold(@Valid @RequestBody FoldRequest request) {
         // Validate that the request body is not null.
         if (request == null) {

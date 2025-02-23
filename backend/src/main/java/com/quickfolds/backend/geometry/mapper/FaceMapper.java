@@ -38,7 +38,7 @@ public interface FaceMapper {
      * @param idsInOrigami A list of annotated line identifiers within the face.
      * @return A list of database IDs corresponding to the requested faces.
      */
-    List<Long> getIdsByIdsInFace(@Param("origamiId") long origamiId, @Param("idsInFace") List<Integer> idsInOrigami);
+    List<Long> getIdsByIdsInFace(@Param("origamiId") long origamiId, @Param("idsInOrigami") List<Integer> idsInOrigami);
 
 
     /**

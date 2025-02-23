@@ -22,17 +22,17 @@
         INSERT INTO fold_step (
         step_id,
         anchored_face_id
-        <if test="step.createdBy != null">, created_by</if>
-        <if test="step.updatedBy != null">, updated_by</if>
-        <if test="step.createdAt != null">, created_at</if>
-        <if test="step.updatedAt != null">, updated_at</if>
+        <if test="foldStep.createdBy != null">, created_by</if>
+        <if test="foldStep.updatedBy != null">, updated_by</if>
+        <if test="foldStep.createdAt != null">, created_at</if>
+        <if test="foldStep.updatedAt != null">, updated_at</if>
         ) VALUES (
         #{foldStep.stepId},
         #{foldStep.anchoredFaceId}
-        <if test="step.createdBy != null">, #{step.createdBy}</if>
-        <if test="step.updatedBy != null">, #{step.updatedBy}</if>
-        <if test="step.createdAt != null">, #{step.createdAt}</if>
-        <if test="step.updatedAt != null">, #{step.updatedAt}</if>
+        <if test="foldStep.createdBy != null">, #{foldStep.createdBy}</if>
+        <if test="foldStep.updatedBy != null">, #{foldStep.updatedBy}</if>
+        <if test="foldStep.createdAt != null">, #{foldStep.createdAt}</if>
+        <if test="foldStep.updatedAt != null">, #{foldStep.updatedAt}</if>
         );
     </insert>
 
