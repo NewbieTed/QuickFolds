@@ -88,7 +88,7 @@ public class GeometryService {
         createFoldStep(stepId, anchoredFaceId);
 
         // Annotate faces based on new geometry
-        annotate(new AnnotationRequest(origamiId, stepIdInOrigami, collectFaceAnnotations(request.getFaces())));
+        annotate(new AnnotationRequest(origamiId, stepIdInOrigami, collectFaceAnnotations(request.getFaces())), stepId);
 
         return BaseResponse.success();
     }
@@ -110,7 +110,7 @@ public class GeometryService {
      *         - Attempting to delete or add a non-existent or duplicate point/line.
      */
     @Transactional
-    public ResponseEntity<BaseResponse<Boolean>> annotate(AnnotationRequest request) {
+    public ResponseEntity<BaseResponse<Boolean>> annotate(AnnotationRequest request, Long stepId) {
         // Extract origami and step information.
         long origamiId = request.getOrigamiId();
         int stepIdInOrigami = request.getStepIdInOrigami();
@@ -122,7 +122,9 @@ public class GeometryService {
         Long pointTypeId = getPointTypeId(PointType.ANNOTATED_POINT);
 
         // Create new step
-        long stepId = createStep(origamiId, StepType.ANNOTATE, stepIdInOrigami);
+        if (stepId == null) {
+            stepId = createStep(origamiId, StepType.ANNOTATE, stepIdInOrigami);
+        }
 
         // Process each face annotation in the request.
         for (FaceAnnotateRequest face : request.getFaces()) {
@@ -484,13 +486,18 @@ public class GeometryService {
                           List<FoldEdgeRequest> foldEdges, Long foldEdgeTypeId, Long sideEdgeTypeId) {
         for (int i = 0; i < vertexIds.size(); i++) {
             Long edgeTypeId = (foldEdges.get(i) != null) ? foldEdgeTypeId : sideEdgeTypeId;
-            long edgeId = createEdge(stepId, edgeTypeId);
 
             if (foldEdges.get(i) != null) {
+                Long otherFaceId = faceMapper.getIdByFaceIdInOrigami(origamiId, foldEdges.get(i).getOtherFaceIdInOrigami());
+                if (otherFaceId == null) {
+                    continue;
+                }
+                long edgeId = createEdge(stepId, edgeTypeId);
                 // Create a fold edge linking two faces
                 createFoldEdge(origamiId, faceId, i, foldEdges.get(i), edgeId);
             } else {
                 // Create a side edge between adjacent vertices
+                long edgeId = createEdge(stepId, edgeTypeId);
                 createSideEdge(faceId, edgeId, vertexIds.get(i), vertexIds.get((i + 1) % vertexIds.size()), i);
             }
         }
@@ -555,6 +562,67 @@ public class GeometryService {
         // Validate that the deletion was consistent with the request
         validateDeletion(origamiId, 0, deletedFaceIdsInOrigami, rowsUpdated,
                 "face", faceMapper.getIdsByIdsInFace(origamiId, deletedFaceIdsInOrigami));
+
+        deleteEdges(deletedFaceIds, stepId);
+        deletePoints(deletedFaceIds, stepId);
+        deleteAnnotatedLines(deletedFaceIds, stepId);
+    }
+
+
+    /**
+     * Deletes faces from the origami model.
+     *
+     * @param faceIds List of face IDs.
+     * @param stepId The ID of the current fold step.
+     * @throws DbException if invalid number of rows of points are updated.
+     */
+    private void deletePoints(List<Long> faceIds, long stepId) {
+        if (faceIds == null || faceIds.isEmpty()) return;
+
+        // Retrieve and delete the specified edges
+        int rowsUpdated = origamiPointMapper.deleteByFaceIds(faceIds, stepId);
+
+        if (rowsUpdated < 3 * faceIds.size()) {
+            throw new DbException("Invalid number of points deleted, " +
+                    "verify if DB state is correct (too little edges deleted)");
+        }
+    }
+
+
+    /**
+     * Deletes faces from the origami model.
+     *
+     * @param faceIds List of face IDs.
+     * @param stepId The ID of the current fold step.
+     * @throws DbException if invalid number of rows of edges are updated.
+     */
+    private void deleteEdges(List<Long> faceIds, long stepId) {
+        if (faceIds == null || faceIds.isEmpty()) return;
+
+        // Retrieve and delete the specified edges
+        int rowsSideUpdated = sideEdgeMapper.deleteByFaceIds(faceIds, stepId);
+        int rowsFoldUpdated = foldEdgeMapper.deleteByFaceIds(faceIds, stepId);
+
+
+        if (rowsSideUpdated + rowsFoldUpdated < 3 * faceIds.size()) {
+            throw new DbException("Invalid number of edges deleted, " +
+                    "verify if DB state is correct (too little edges deleted)");
+        }
+    }
+
+
+
+    /**
+     * Deletes faces from the origami model.
+     *
+     * @param faceIds List of face IDs.
+     * @param stepId The ID of the current fold step.
+     */
+    private void deleteAnnotatedLines(List<Long> faceIds, long stepId) {
+        if (faceIds == null || faceIds.isEmpty()) return;
+
+        // Retrieve and delete the specified annotated lines
+        annotateLineMapper.deleteByFaceIds(faceIds, stepId);
     }
 
 

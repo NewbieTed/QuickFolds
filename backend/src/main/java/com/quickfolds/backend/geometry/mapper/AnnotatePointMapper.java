@@ -4,6 +4,8 @@ import com.quickfolds.backend.geometry.model.database.AnnotatedPoint;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * MyBatis Mapper interface for handling database operations related to annotated points in an origami model.
  * <p>

@@ -109,7 +109,7 @@ public class GeometryControllerTest {
      */
     @Test
     public void handlesValidAnnotateRequest() throws Exception {
-        Mockito.when(geometryService.annotate(Mockito.any(AnnotationRequest.class)))
+        Mockito.when(geometryService.annotate(Mockito.any(AnnotationRequest.class), null))
                 .thenReturn(BaseResponse.success(true));
 
         List<PointAnnotationRequest> points = new ArrayList<>();

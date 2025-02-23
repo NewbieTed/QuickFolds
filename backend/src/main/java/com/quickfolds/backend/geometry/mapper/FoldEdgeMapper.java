@@ -4,6 +4,8 @@ import com.quickfolds.backend.geometry.model.database.FoldEdge;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * MyBatis Mapper interface for handling database operations related to fold edges in an origami model.
  * <p>
@@ -15,6 +17,9 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface FoldEdgeMapper {
+
+
+    Long getIdByFaceIdPair(@Param("face1Id") Long face1Id, @Param("face2Id") Long face2Id);
 
     /**
      * Inserts a new fold edge into the database.
@@ -29,4 +34,8 @@ public interface FoldEdgeMapper {
      * @return The generated database ID of the newly inserted fold edge.
      */
     Long addByObj(@Param("foldEdge") FoldEdge foldEdge);
+
+
+    int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
+                        @Param("deletedStepId") long deletedStepId);
 }

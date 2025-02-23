@@ -97,4 +97,8 @@ public interface AnnotateLineMapper {
     int deleteByIdsInFace(@Param("faceId") long faceId,
                           @Param("idsInFace") List<Integer> idsInFace,
                           @Param("deletedStepId") long deletedStepId);
+
+
+    int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
+                        @Param("deletedStepId") long deletedStepId);
 }

@@ -61,4 +61,19 @@
         )
     </insert>
 
+
+    <update id="deleteByFaceIds">
+        UPDATE edge e
+        SET deleted_step_id = #{deletedStepId}
+        FROM side_edge se
+        WHERE
+        se.edge_id = e.id
+        AND e.deleted_step_id IS NULL
+        AND se.face_id IN (
+        <foreach collection="faceIds" item="faceId" separator=",">
+            #{faceId}
+        </foreach>
+        );
+    </update>
+
 </mapper>

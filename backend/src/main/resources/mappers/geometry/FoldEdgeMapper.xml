@@ -19,6 +19,14 @@
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.FoldEdgeMapper">
 
+    <select id="getIdByFaceIdPair">
+        SELECT id from fold_edge
+        WHERE face_1_id = #{face1Id}
+        AND face_2_id = #{face2Id}
+        ORDER BY ID DESC
+        LIMIT 1;
+    </select>
+
     <!--
         Inserts a new fold edge into the database.
 
@@ -62,5 +70,27 @@
         <if test="foldEdge.updatedAt != null">, #{foldEdge.updatedAt}</if>
         );
     </insert>
+
+
+    <update id="deleteByFaceIds">
+        UPDATE edge e
+        SET deleted_step_id = #{deletedStepId}
+        FROM fold_edge fe
+        WHERE
+        fe.edge_id = e.id
+        AND e.deleted_step_id IS NULL
+        AND (
+        fe.face_1_id IN (
+        <foreach collection="faceIds" item="faceId" separator=",">
+            #{faceId}
+        </foreach>
+        )
+        OR fe.face_2_id IN (
+        <foreach collection="faceIds" item="faceId" separator=",">
+            #{faceId}
+        </foreach>
+        )
+        );
+    </update>
 
 </mapper>
