@@ -405,7 +405,6 @@ CREATE INDEX idx_step_step_type_id ON step(step_type_id);
 CREATE INDEX idx_step_id_in_origami ON step(id_in_origami);
 
 -- Face table
-CREATE INDEX idx_face_origami_id ON face(origami_id);
 CREATE INDEX idx_face_step_id ON face(step_id);
 CREATE INDEX idx_face_deleted_step_id ON face(deleted_step_id);
 CREATE INDEX idx_face_id_in_origami ON face(id_in_origami);
