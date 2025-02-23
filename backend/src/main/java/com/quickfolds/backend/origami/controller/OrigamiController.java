@@ -4,27 +4,27 @@ import com.quickfolds.backend.dto.BaseResponse;
 import com.quickfolds.backend.origami.model.dto.request.NewOrigamiRequest;
 import com.quickfolds.backend.origami.model.dto.response.NewOrigamiResponse;
 import com.quickfolds.backend.origami.model.dto.response.OrigamiListResponse;
-import com.quickfolds.backend.origami.model.dto.response.OrigamiResponse;
 import com.quickfolds.backend.origami.service.OrigamiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * REST controller for handling origami-related operations.
- *
- * - Provides endpoints for creating new origami models and retrieving existing ones.
- * - Delegates business logic to `OrigamiService`.
- *
+ * <p>
+ * This controller provides API endpoints for managing origami models, including
+ * creating new models and retrieving existing ones. It acts as the interface
+ * between the client and the business logic handled by {@link OrigamiService}.
+ * <p>
  * Endpoints:
- * - `/origami/new` (POST): Creates a new origami model.
- * - `/origami/list` (GET): Retrieves all public origami models.
- *
+ * <ul>
+ *     <li><strong>POST /origami/new:</strong> Creates a new origami model.</li>
+ *     <li><strong>GET /origami/list:</strong> Retrieves all public origami models.</li>
+ * </ul>
+ * <p>
  * Dependencies:
- * - `OrigamiService`: Handles the core origami operations.
+ * - {@link OrigamiService}: Handles the core business logic for origami operations.
  */
 @RestController
 @RequestMapping("/origami")
@@ -33,19 +33,22 @@ public class OrigamiController {
 
     /**
      * Service layer responsible for origami-related operations.
+     * <p>
+     * This service handles the core logic for creating and retrieving origami models.
      */
     private final OrigamiService origamiService;
 
-
     /**
      * Creates a new origami model.
-     *
-     * - Accepts a request containing user information and optional origami name.
-     * - Delegates creation logic to `OrigamiService.newOrigami()`.
-     * - Returns the newly created origami ID in a `NewOrigamiResponse`.
+     * <p>
+     * This endpoint allows users to create a new origami model by providing user information
+     * and an optional name for the origami. The request is validated, and the creation logic
+     * is handled by {@link OrigamiService#newOrigami(NewOrigamiRequest)}.
      *
      * @param request The request object containing details for creating a new origami.
-     * @return ResponseEntity with a `BaseResponse` wrapping a `NewOrigamiResponse`.
+     *                Must be valid according to the constraints defined in {@link NewOrigamiRequest}.
+     * @return {@link ResponseEntity} containing a {@link BaseResponse} with the created origami details,
+     *         wrapped in a {@link NewOrigamiResponse}.
      */
     @PostMapping("/new")
     public ResponseEntity<BaseResponse<NewOrigamiResponse>> newOrigami(@Valid @RequestBody NewOrigamiRequest request) {
@@ -54,11 +57,13 @@ public class OrigamiController {
 
     /**
      * Retrieves a list of all public origami models.
+     * <p>
+     * This endpoint fetches all available origami models that are marked as public.
+     * The request is processed by {@link OrigamiService#list()} and returns
+     * the results in an {@link OrigamiListResponse}.
      *
-     * - Calls `OrigamiService.list()` to fetch available origami models.
-     * - Returns a response containing a list of `OrigamiResponse` objects.
-     *
-     * @return ResponseEntity with a `BaseResponse` wrapping an `OrigamiListResponse`.
+     * @return {@link ResponseEntity} containing a {@link BaseResponse} with a list of origami models,
+     *         wrapped in an {@link OrigamiListResponse}.
      */
     @GetMapping("/list")
     public ResponseEntity<BaseResponse<OrigamiListResponse>> getAll() {

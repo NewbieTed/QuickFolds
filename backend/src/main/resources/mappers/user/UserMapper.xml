@@ -15,5 +15,24 @@
 -->
 <mapper namespace="com.quickfolds.backend.user.mapper.UserMapper">
 
+<!--    &lt;!&ndash; Retrieve user by ID &ndash;&gt;-->
+<!--    <select id="selectById" parameterType="long" resultType="com.quickfolds.backend.user.model.User">-->
+<!--        SELECT *-->
+<!--        FROM users-->
+<!--        WHERE id = #{userId}-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; Retrieve user by username &ndash;&gt;-->
+<!--    <select id="findByUsername" parameterType="string" resultType="com.quickfolds.backend.user.model.User">-->
+<!--        SELECT *-->
+<!--        FROM users-->
+<!--        WHERE username = #{username}-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; Insert new user &ndash;&gt;-->
+<!--    <insert id="insertUser" parameterType="com.quickfolds.backend.user.model.User" useGeneratedKeys="true" keyProperty="id">-->
+<!--        INSERT INTO users (username, password)-->
+<!--        VALUES (#{username}, #{password})-->
+<!--    </insert>-->
 
 </mapper>

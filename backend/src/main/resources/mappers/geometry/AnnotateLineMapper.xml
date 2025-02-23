@@ -6,23 +6,38 @@
 <!--
     MyBatis XML Mapper for handling database operations related to annotated lines in an origami model.
 
-    - Defines mappings between database columns and Java object properties.
-    - Supports retrieval, insertion, and soft deletion of annotated lines.
+    Purpose:
+    - This mapper provides SQL operations for managing annotated lines, including retrieval, insertion,
+      and soft deletion by setting the `deleted_step_id` field.
+    - It maps database columns to Java object properties using the `AnnotatedLine` entity.
 
-    SQL Operations:
-    - `getsIdsByIdInFace`: Retrieves IDs of annotated lines for a given face.
+    Key SQL Operations:
+    - `getIdsByIdsInFace`: Retrieves IDs of annotated lines for a given face.
     - `getDependentIds`: Retrieves IDs of lines dependent on specific points.
     - `addByObj`: Inserts a new annotated line into the database.
-    - `deleteMultipleByIdInFace`: Marks multiple annotated lines as deleted.
+    - `deleteByIdsInFace`: Marks multiple annotated lines as deleted.
 
     Dependencies:
     - `AnnotatedLine`: The Java entity representing an annotated line.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotateLineMapper">
-    <!--
-        Maps database columns to the `AnnotatedLine` entity fields.
 
-        - Ensures MyBatis correctly maps query results to Java objects.
+    <!--
+        Result Map for AnnotatedLine entity.
+
+        Purpose:
+        - Maps database columns to the fields of the `AnnotatedLine` Java entity.
+        - Ensures MyBatis correctly binds query results to Java objects.
+
+        Fields:
+        - `id`: Primary key of the annotated line.
+        - `step_id`: The step associated with the annotation.
+        - `face_id`: The face where the line is drawn.
+        - `point_1_id` / `point_2_id`: Start and end points of the line.
+        - `id_in_face`: Line identifier within the face.
+        - `deleted_step_id`: Step marking the deletion of the line.
+        - `created_by` / `updated_by`: Audit fields.
+        - `created_at` / `updated_at`: Timestamps for creation and modification.
     -->
     <resultMap id="AnnotatedLineResultMap" type="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
         <id property="id" column="id" />
@@ -39,12 +54,22 @@
     </resultMap>
 
     <!--
-    Retrieves the IDs of annotated lines for a given face.
+        Retrieves IDs of annotated lines for a specific face.
 
-    - Filters lines by `face_id` and checks if their `id_in_face` is in the provided list.
+        Purpose:
+        - This query returns the IDs of annotated lines within a given face, filtered
+          by the `face_id` and the list of `id_in_face` values provided.
+
+        Parameters:
+        - `faceId`: The ID of the origami face containing the annotated lines.
+        - `idsInFace`: A list of line identifiers within the face.
+
+        Result:
+        - List of `id` values for the matching annotated lines.
     -->
-    <select id="getsIdsByIdInFace" resultType="java.lang.Long">
-        SELECT id FROM annotated_line
+    <select id="getIdsByIdsInFace" resultType="java.lang.Long">
+        SELECT id
+        FROM annotated_line
         WHERE face_id = #{faceId}
         AND id_in_face IN (
         <foreach collection="idsInFace" item="idInFace" separator=",">
@@ -54,35 +79,54 @@
     </select>
 
     <!--
-        Retrieves annotated line IDs that depend on specific points.
+        Retrieves IDs of annotated lines that depend on specific points.
 
-        - Searches for lines where `point_1_id` or `point_2_id` matches any given `pointIds`.
-        - Excludes already deleted lines (`deleted_step_id IS NULL`).
+        Purpose:
+        - This query finds annotated lines where either `point_1_id` or `point_2_id`
+          matches any of the provided point IDs.
+        - Only active (non-deleted) lines are considered (`deleted_step_id IS NULL`).
+
+        Parameters:
+        - `faceId`: The ID of the origami face containing the lines.
+        - `pointIds`: A list of point IDs to check for line dependencies.
+
+        Result:
+        - List of `id` values for dependent annotated lines.
     -->
     <select id="getDependentIds" resultType="java.lang.Long">
-        SELECT id FROM annotated_line
+        SELECT id
+        FROM annotated_line
         WHERE face_id = #{faceId}
-        AND deleted_step_id IS null
+        AND deleted_step_id IS NULL
         AND (
-            point_1_id IN (
-                <foreach collection="pointIds" item="pointId" separator=",">
-                    #{pointId}
-                </foreach>
-            )
-            OR
-            point_2_id IN (
-                <foreach collection="pointIds" item="pointId" separator=",">
-                    #{pointId}
-                </foreach>
-            )
+        point_1_id IN (
+        <foreach collection="pointIds" item="pointId" separator=",">
+            #{pointId}
+        </foreach>
+        )
+        OR
+        point_2_id IN (
+        <foreach collection="pointIds" item="pointId" separator=",">
+            #{pointId}
+        </foreach>
+        )
         )
     </select>
 
     <!--
-    Inserts a new annotated line into the database.
+        Inserts a new annotated line into the database.
 
-    - Conditionally includes `created_by`, `updated_by`, `created_at`, and `updated_at`
-      if they are not null.
+        Purpose:
+        - This query adds a new annotated line record associated with a specific face
+          and step in the origami workflow. Optional fields such as `created_by` and
+          timestamps are conditionally included if they are not null.
+
+        Parameters:
+        - `annotatedLine`: The Java object representing the annotated line.
+
+        Fields Inserted:
+        - `step_id`, `face_id`, `point_1_id`, `point_2_id`, `id_in_face`, `deleted_step_id`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedLine">
         INSERT INTO annotated_line (
@@ -110,12 +154,36 @@
         )
     </insert>
 
-    <!--
-    Marks multiple annotated lines as deleted by setting `deleted_step_id`.
 
-    - Only updates lines that are not already marked as deleted (`deleted_step_id IS NULL`).
+    <update id="deleteByFaceIds">
+        UPDATE annotated_line
+        SET deleted_step_id = #{deletedStepId}
+        WHERE deleted_step_id IS NULL
+        AND face_id IN (
+        <foreach collection="faceIds" item="faceId" separator=",">
+            #{faceId}
+        </foreach>
+        )
+    </update>
+
+    <!--
+        Marks multiple annotated lines as deleted.
+
+        Purpose:
+        - This query performs a soft delete by setting `deleted_step_id` for annotated
+          lines matching the given face ID and line identifiers (`id_in_face`).
+        - Only lines that are not already marked as deleted (`deleted_step_id IS NULL`)
+          are affected.
+
+        Parameters:
+        - `faceId`: The ID of the origami face containing the lines.
+        - `deletedStepId`: The step ID representing the deletion.
+        - `idsInFace`: List of line IDs within the face.
+
+        Effect:
+        - Updates `deleted_step_id` for matching lines.
     -->
-    <update id="deleteMultipleByIdInFace">
+    <update id="deleteByIdsInFace">
         UPDATE annotated_line
         SET deleted_step_id = #{deletedStepId}
         WHERE face_id = #{faceId}
@@ -126,4 +194,5 @@
         </foreach>
         )
     </update>
+
 </mapper>

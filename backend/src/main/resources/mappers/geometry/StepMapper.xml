@@ -6,21 +6,35 @@
 <!--
     MyBatis XML Mapper for handling database operations related to steps in an origami model.
 
-    - Defines SQL mappings for retrieving and inserting steps.
+    Purpose:
+    - This mapper provides SQL operations for managing origami steps, including retrieval and insertion.
+    - Ensures steps are correctly associated with origami structures and maintains referential integrity.
 
-    SQL Operations:
+    Key SQL Operations:
     - `getIdByIdInOrigami`: Retrieves a step ID using its origami model and internal identifier.
     - `addByObj`: Inserts a new step into the database using a `Step` object.
     - `addByFields`: Inserts a new step using individual field values.
 
     Dependencies:
     - `Step`: The Java entity representing a step in the origami model.
+    - `step` table: Stores step information, including type, origami association, and metadata.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.StepMapper">
-    <!--
-        Maps database columns to the `Step` entity fields.
 
+    <!--
+        Result map for mapping database columns to the `Step` entity fields.
+
+        Purpose:
         - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to its corresponding Java property.
+
+        Mapped Fields:
+        - `id`: Primary key of the step.
+        - `origami_id`: Foreign key referencing the origami model.
+        - `step_type_id`: Identifies the type of the step (e.g., fold, annotation).
+        - `id_in_origami`: Step identifier within the origami context.
+        - `created_by` / `updated_by`: User metadata for auditing.
+        - `created_at` / `updated_at`: Timestamps for record creation and updates.
     -->
     <resultMap id="StepResultMap" type="com.quickfolds.backend.geometry.model.database.Step">
         <id property="id" column="id" />
@@ -36,23 +50,42 @@
     <!--
         Retrieves the database ID of a step using its identifier within a specific origami model.
 
+        Purpose:
         - Ensures that the queried step belongs to the specified origami model.
-        - Uses `LIMIT 1` to return only a single result.
+        - Uses `LIMIT 1` to return only a single result, preventing multiple matches.
+
+        Parameters:
+        - `origamiId`: The ID of the origami model containing the step.
+        - `idInOrigami`: The identifier of the step within the origami context.
+
+        Result:
+        - Returns the ID of the matching step, or null if not found.
     -->
-    <select id="getIdByIdInOrigami">
-        SELECT id FROM step
-        WHERE
-        origami_id = #{origamiId}
-        AND
-        id_in_origami = #{idInOrigami}
+    <select id="getIdByIdInOrigami" resultType="java.lang.Long">
+        SELECT id
+        FROM step
+        WHERE origami_id = #{origamiId}
+        AND id_in_origami = #{idInOrigami}
         LIMIT 1
     </select>
 
     <!--
         Inserts a new step into the database using a `Step` object.
 
-        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
-        - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+        Purpose:
+        - Adds a step associated with a specific origami structure.
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`)
+          using `<if test="...">` to conditionally add fields only when they are non-null.
+
+        Parameters:
+        - `step`: The Java object representing the step to insert.
+
+        Fields Inserted:
+        - Required: `origami_id`, `step_type_id`, `id_in_origami`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new step record and returns the generated primary key.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Step">
         INSERT INTO step (
@@ -63,7 +96,8 @@
         <if test="step.updatedBy != null">, updated_by</if>
         <if test="step.createdAt != null">, created_at</if>
         <if test="step.updatedAt != null">, updated_at</if>
-        ) VALUES (
+        )
+        VALUES (
         #{step.origamiId},
         #{step.stepTypeId},
         #{step.idInOrigami}
@@ -77,8 +111,18 @@
     <!--
         Inserts a new step into the database using individual field values.
 
+        Purpose:
         - Allows direct field-based insertion without requiring a `Step` object.
-        - Dynamically includes optional fields (`created_by`, `updated_by`).
+        - Dynamically includes optional fields (`created_by`, `updated_by`) using conditional checks.
+
+        Parameters:
+        - `origamiId`: The ID of the origami model associated with the step.
+        - `stepTypeId`: The type of the step (e.g., fold, annotation).
+        - `idInOrigami`: The identifier of the step within the origami context.
+        - Optional: `createdBy`, `updatedBy`
+
+        Result:
+        - Inserts a new step record and returns the generated primary key.
     -->
     <insert id="addByFields">
         INSERT INTO step (
@@ -87,16 +131,13 @@
         id_in_origami
         <if test="createdBy != null">, created_by</if>
         <if test="updatedBy != null">, updated_by</if>
-        ) VALUES (
+        )
+        VALUES (
         #{origamiId},
         #{stepTypeId},
         #{idInOrigami}
-        <if test="createdBy != null">
-            , #{createdBy}
-        </if>
-        <if test="updatedBy != null">
-            , #{updatedBy}
-        </if>
+        <if test="createdBy != null">, #{createdBy}</if>
+        <if test="updatedBy != null">, #{updatedBy}</if>
         );
     </insert>
 
