@@ -6,17 +6,36 @@
 <!--
     MyBatis XML Mapper for handling database operations related to fold steps in an origami model.
 
-    - Defines SQL mappings for retrieving and inserting fold steps.
+    Purpose:
+    - This mapper provides SQL operations for inserting fold steps into the database.
+    - Ensures that each fold step is associated with an origami structure and properly tracked.
 
-    SQL Operations:
-    -
+    Key SQL Operations:
+    - `addByObj`: Inserts a new fold step into the database with optional metadata fields.
+
+    Dependencies:
+    - `FoldStep`: The Java entity representing a fold step in the origami model.
+    - `fold_step` table: Stores information about fold steps, including step ID, anchored face, and metadata.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.FoldStepMapper">
+
     <!--
         Inserts a new fold step into the database using a `FoldStep` object.
 
-        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
-        - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+        Purpose:
+        - Adds a fold step associated with a specific origami structure.
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`)
+          using `<if test="...">` to conditionally add fields only when they are non-null.
+
+        Parameters:
+        - `foldStep`: The Java object representing the fold step to insert.
+
+        Fields Inserted:
+        - Required: `step_id`, `anchored_face_id`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new fold step record and returns the generated primary key.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.FoldStep">
         INSERT INTO fold_step (
@@ -26,7 +45,8 @@
         <if test="foldStep.updatedBy != null">, updated_by</if>
         <if test="foldStep.createdAt != null">, created_at</if>
         <if test="foldStep.updatedAt != null">, updated_at</if>
-        ) VALUES (
+        )
+        VALUES (
         #{foldStep.stepId},
         #{foldStep.anchoredFaceId}
         <if test="foldStep.createdBy != null">, #{foldStep.createdBy}</if>

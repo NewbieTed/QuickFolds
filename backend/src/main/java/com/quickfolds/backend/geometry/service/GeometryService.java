@@ -22,15 +22,18 @@ import java.util.List;
 
 /**
  * Service class responsible for managing geometric operations in the origami system.
+ * <p>
  * This includes creating initial geometry, handling annotation requests,
- * and managing face, edge, and point modifications.
+ * and managing faces, edges, and points during folding operations.
  * <p>
  * Dependencies:
- * - Mappers for database operations (FaceMapper, EdgeMapper, StepMapper, etc.).
- * - Uses transactional operations for consistency.
+ * <ul>
+ *     <li>Mappers for database operations (FaceMapper, EdgeMapper, StepMapper, etc.).</li>
+ *     <li>Transactional operations to maintain data consistency.</li>
+ * </ul>
  * <p>
  * Logging:
- * - Utilizes SLF4J for logging important actions and errors.
+ * - Utilizes SLF4J for tracking key actions and errors.
  */
 @Service
 @RequiredArgsConstructor
@@ -65,7 +68,7 @@ public class GeometryService {
      * Handles the folding process by deleting specified faces,
      * creating new faces, and managing edges and vertices.
      *
-     * @param request The request object containing the faces to delete and add.
+     * @param request The fold request containing faces to delete and add.
      * @return ResponseEntity with a BaseResponse indicating success.
      */
     @Transactional
@@ -160,6 +163,12 @@ public class GeometryService {
         }
     }
 
+    /**
+     * Collects face annotations from a list of face fold requests.
+     *
+     * @param faceRequests List of face fold requests containing annotations.
+     * @return A list of face annotation requests derived from the input.
+     */
     private List<FaceAnnotateRequest> collectFaceAnnotations(List<FaceFoldRequest> faceRequests) {
         List<FaceAnnotateRequest> annotations = new ArrayList<>();
         for (FaceFoldRequest request : faceRequests) {
@@ -194,6 +203,14 @@ public class GeometryService {
         return faceId;
     }
 
+    /**
+     * Retrieves the database ID of an anchored face by its origami-specific ID.
+     *
+     * @param origamiId The ID of the origami model.
+     * @param anchoredFaceIdInOrigami The ID of the anchored face within the origami context.
+     * @return The database ID of the anchored face.
+     * @throws IllegalArgumentException if the anchored face ID is not found.
+     */
     private Long getAnchoredFaceId(long origamiId, int anchoredFaceIdInOrigami) {
         Long anchoredFaceId = faceMapper.getIdByFaceIdInOrigami(origamiId, anchoredFaceIdInOrigami);
         if (anchoredFaceId == null) {
@@ -203,19 +220,29 @@ public class GeometryService {
     }
 
 
+    /**
+     * Retrieves the database ID for a specific point type.
+     *
+     * @param pointTypeName The name of the point type (e.g., VERTEX, ANNOTATED_POINT).
+     * @return The database ID for the specified point type.
+     * @throws DbException if the point type ID cannot be found.
+     */
     private long getPointTypeId(String pointTypeName) {
-        // Retrieve the vertex point type ID from the database.
         Long pointTypeId = pointTypeMapper.getIdByName(pointTypeName);
-
-        // Check if point type ID is found
         if (pointTypeId == null) {
-            throw new DbException("Cannot find step type ID with type name: " + PointType.VERTEX +
+            throw new DbException("Cannot find point type ID with type name: " + pointTypeName +
                     ", verify if DB is correctly set up");
         }
-
         return pointTypeId;
     }
 
+    /**
+     * Retrieves the database ID for a specific edge type.
+     *
+     * @param edgeTypeName The name of the edge type (e.g., FOLD, SIDE).
+     * @return The database ID of the specified edge type.
+     * @throws DbException if the edge type ID cannot be found.
+     */
     private Long getEdgeTypeId(String edgeTypeName) {
         Long edgeTypeId = edgeTypeMapper.getEdgeTypeByName(edgeTypeName);
         if (edgeTypeId == null) {
@@ -225,14 +252,16 @@ public class GeometryService {
     }
 
     /**
-     * Creates a new step in the annotation process for an origami.
-     * @param origamiId The ID of the origami.
-     * @param stepTypeName The name of the step type.
-     * @param stepIdInOrigami The step number in the origami.
-     * @return The database ID of the newly created step.
+     * Creates a new step within an origami workflow.
+     *
+     * @param origamiId The ID of the origami for which the step is created.
+     * @param stepTypeName The type of the step (e.g., FOLD, ANNOTATE).
+     * @param stepIdInOrigami The step number within the origami context.
+     * @return The database ID of the created step.
+     * @throws DbException if the step type ID or created step ID cannot be found.
      */
     private long createStep(long origamiId, String stepTypeName, int stepIdInOrigami) {
-        Long stepTypeId = stepTypeMapper.getIdByName(StepType.FOLD);
+        Long stepTypeId = stepTypeMapper.getIdByName(stepTypeName);
         if (stepTypeId == null) {
             throw new DbException("Unknown step type: " + stepTypeName + ", check if DB is set correctly");
         }
@@ -244,7 +273,6 @@ public class GeometryService {
         stepMapper.addByObj(step);
 
         Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
-
         if (stepId == null) {
             throw new DbException("Cannot find step ID that is just created, verify if SQL is correct");
         }
@@ -254,9 +282,10 @@ public class GeometryService {
 
 
     /**
-     * Creates a new fold step in the fold process for an origami.
-     * @param stepId The step ID of the fold step.
-     * @param anchoredFaceId the ID of the anchored face in the fold operation.
+     * Creates a new fold step associated with a specific anchored face.
+     *
+     * @param stepId The ID of the fold step.
+     * @param anchoredFaceId The ID of the anchored face for the fold.
      */
     private void createFoldStep(long stepId, Long anchoredFaceId) {
         FoldStep foldStep = new FoldStep();
@@ -266,6 +295,15 @@ public class GeometryService {
     }
 
 
+    /**
+     * Creates a new face for the given origami step.
+     *
+     * @param stepId The ID of the step associated with the new face.
+     * @param faceIdInOrigami The ID of the face within the origami context.
+     * @param origamiId The ID of the origami model.
+     * @return The database ID of the newly created face.
+     * @throws DbException if the created face ID cannot be retrieved.
+     */
     private long createFace(long stepId, int faceIdInOrigami, long origamiId) {
         Face face = new Face();
         face.setStepId(stepId);
@@ -279,6 +317,14 @@ public class GeometryService {
         return faceId;
     }
 
+    /**
+     * Creates a new edge within a specific step.
+     *
+     * @param stepId The ID of the step in which the edge is created.
+     * @param edgeTypeId The type ID of the edge (e.g., fold or side).
+     * @return The database ID of the created edge.
+     * @throws DbException if the created edge ID cannot be retrieved.
+     */
     private long createEdge(long stepId, Long edgeTypeId) {
         Edge edge = new Edge();
         edge.setStepId(stepId);
@@ -292,22 +338,44 @@ public class GeometryService {
         return edgeId;
     }
 
+    /**
+     * Creates a fold edge between two faces during a fold operation.
+     *
+     * @param origamiId The ID of the origami.
+     * @param faceId The ID of the first face.
+     * @param idInFace1 The index of the edge within the first face.
+     * @param request The fold edge request containing details about the other face.
+     * @param edgeId The ID of the newly created edge.
+     * @throws IllegalArgumentException if the other face ID is invalid.
+     */
     private void createFoldEdge(Long origamiId, long faceId, int idInFace1, FoldEdgeRequest request, long edgeId) {
         Long otherFaceId = faceMapper.getIdByFaceIdInOrigami(origamiId, request.getOtherFaceIdInOrigami());
-        if (otherFaceId == null) return;
+        if (otherFaceId == null) {
+            throw new IllegalArgumentException("Invalid other face ID, verify if request is valid (no such face)");
+        }
 
+        // Create fold edge linking the two faces
         FoldEdge foldEdge = new FoldEdge();
         foldEdge.setEdgeId(edgeId);
         foldEdge.setFace1Id(faceId);
         foldEdge.setFace2Id(otherFaceId);
         foldEdge.setAngle(request.getAngle());
         foldEdge.setIdInFace1(idInFace1);
-        foldEdge.setIdInFace2(request.getOtherFaceIdInOrigami());
+        foldEdge.setIdInFace2(request.getIdInOtherFace());
 
         foldEdgeMapper.addByObj(foldEdge);
     }
 
 
+    /**
+     * Creates a side edge connecting two vertices of a face.
+     *
+     * @param faceId The ID of the face where the edge exists.
+     * @param edgeId The ID of the created edge.
+     * @param vertex1Id The ID of the first vertex.
+     * @param vertex2Id The ID of the second vertex.
+     * @param idInFace The ID of the edge within the face context.
+     */
     private void createSideEdge(long faceId, long edgeId, Long vertex1Id, Long vertex2Id, int idInFace) {
         SideEdge sideEdge = new SideEdge();
         sideEdge.setEdgeId(edgeId);
@@ -319,6 +387,16 @@ public class GeometryService {
     }
 
 
+    /**
+     * Adds vertices to a face during a fold operation.
+     *
+     * @param faceId The ID of the face to which vertices are added.
+     * @param stepId The ID of the current fold step.
+     * @param pointTypeId The type ID for the vertex points.
+     * @param vertices List of vertex requests containing coordinates and IDs.
+     * @return A list of database IDs for the created vertices.
+     * @throws DbException if any vertex ID cannot be retrieved after creation.
+     */
     private List<Long> addVertices(long faceId, long stepId, long pointTypeId, List<VertexRequest> vertices) {
         List<Long> vertexIds = new ArrayList<>();
         for (int i = 0; i < vertices.size(); i++) {
@@ -391,6 +469,17 @@ public class GeometryService {
         }
     }
 
+    /**
+     * Adds edges to a newly created face, including fold and side edges.
+     *
+     * @param origamiId The ID of the origami.
+     * @param faceId The ID of the face.
+     * @param stepId The current fold step ID.
+     * @param vertexIds List of vertex IDs associated with the face.
+     * @param foldEdges List of fold edges to add.
+     * @param foldEdgeTypeId Type ID for fold edges.
+     * @param sideEdgeTypeId Type ID for side edges.
+     */
     private void addEdges(long origamiId, long faceId, long stepId, List<Long> vertexIds,
                           List<FoldEdgeRequest> foldEdges, Long foldEdgeTypeId, Long sideEdgeTypeId) {
         for (int i = 0; i < vertexIds.size(); i++) {
@@ -398,8 +487,10 @@ public class GeometryService {
             long edgeId = createEdge(stepId, edgeTypeId);
 
             if (foldEdges.get(i) != null) {
+                // Create a fold edge linking two faces
                 createFoldEdge(origamiId, faceId, i, foldEdges.get(i), edgeId);
             } else {
+                // Create a side edge between adjacent vertices
                 createSideEdge(faceId, edgeId, vertexIds.get(i), vertexIds.get((i + 1) % vertexIds.size()), i);
             }
         }
@@ -526,15 +617,17 @@ public class GeometryService {
 
 
     /**
-     * Validates whether a deletion operation was successful and raises appropriate exceptions if issues are found.
+     * Validates whether a deletion operation was successful and consistent.
+     * This ensures that only the expected rows were deleted without excess or missing entries.
+     *
      * @param origamiId The ID of the origami.
-     * @param faceId The ID of the face.
-     * @param deletedIds The list of IDs that were attempted to be deleted.
-     * @param numUpdatedRows The number of rows successfully deleted.
-     * @param entityType A string indicating the type of entity (e.g., "annotated point" or "annotated line").
-     * @param presentRows The list of IDs that still exist in the database.
-     * @throws IllegalArgumentException if deletion request contains invalid IDs.
-     * @throws DbException if an impossible state is reached.
+     * @param faceId The ID of the face associated with the deletion.
+     * @param deletedIds List of IDs that were intended to be deleted.
+     * @param numUpdatedRows The number of rows actually deleted.
+     * @param entityType The type of entity being deleted (e.g., face, edge, point).
+     * @param presentRows Remaining rows in the database after deletion.
+     * @throws IllegalArgumentException if invalid IDs are detected.
+     * @throws DbException if the database state is inconsistent.
      */
     private void validateDeletion(long origamiId, long faceId, List<Integer> deletedIds,
                                   int numUpdatedRows, String entityType, List<Long> presentRows) {

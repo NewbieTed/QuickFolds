@@ -9,9 +9,8 @@ import lombok.NoArgsConstructor;
 /**
  * DTO (Data Transfer Object) representing a request to annotate a line in an origami face.
  * <p>
- * - Contains information about the line, including its position within the face
- *   and the two points that define it.
- * - Ensures validation constraints to maintain data integrity.
+ * This class defines the structure for annotating a line within an origami face,
+ * including the line's unique identifier and the two points that define its endpoints.
  * <p>
  * Validation:
  * - `idInFace`: Must not be null and must be non-negative.
@@ -22,14 +21,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LineAnnotationRequest {
+
     /**
      * The unique identifier of the annotated line within the face.
      * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'idInFace' in Line Annotation must not be null")
-    @PositiveOrZero(message = "Field 'idInFace' in Line Annotation must be non-negative")
+    @NotNull(message = "Field 'idInFace' in LineAnnotationRequest must not be null")
+    @PositiveOrZero(message = "Field 'idInFace' in LineAnnotationRequest must be non-negative")
     private Integer idInFace;
 
     /**
@@ -38,8 +38,8 @@ public class LineAnnotationRequest {
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'point1IdInOrigami' in Line Annotation must not be null")
-    @PositiveOrZero(message = "Field 'point1IdInOrigami' in Line Annotation must be positive")
+    @NotNull(message = "Field 'point1IdInOrigami' in LineAnnotationRequest must not be null")
+    @PositiveOrZero(message = "Field 'point1IdInOrigami' in LineAnnotationRequest must be non-negative")
     private Integer point1IdInOrigami;
 
     /**
@@ -48,7 +48,7 @@ public class LineAnnotationRequest {
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'point2IdInOrigami' in Line Annotation must not be null")
-    @PositiveOrZero(message = "Field 'point2IdInOrigami' in Line Annotation must be non-negative")
+    @NotNull(message = "Field 'point2IdInOrigami' in LineAnnotationRequest must not be null")
+    @PositiveOrZero(message = "Field 'point2IdInOrigami' in LineAnnotationRequest must be non-negative")
     private Integer point2IdInOrigami;
 }

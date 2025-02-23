@@ -14,36 +14,42 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for `UserService`.
+ * Unit tests for {@link UserService}.
  * <p>
- * - Uses `@SpringBootTest` to load the full application context.
- * - Mocks `UserMapper` for database operations.
- * - Tests user registration and login functionality, including edge cases.
+ * This class tests the core functionalities of the UserService, ensuring that user registration
+ * and login operations work as expected. It focuses on both success and failure scenarios,
+ * including edge cases like duplicate usernames and invalid login attempts.
  * <p>
- * Features:
- * - Ensures password hashing is correctly applied.
- * - Verifies duplicate user registration is prevented.
- * - Tests login with correct and incorrect credentials.
+ * Key features tested:
+ * <ul>
+ *     <li>Successful user registration with password hashing.</li>
+ *     <li>Prevention of duplicate user registration.</li>
+ *     <li>Successful login with valid credentials.</li>
+ *     <li>Failed login with incorrect passwords and non-existent users.</li>
+ * </ul>
  * <p>
  * Annotations:
- * - `@Transactional`: Ensures tests rollback changes to maintain a clean database.
- * - `@ActiveProfiles`: Loads test-specific configurations.
+ * <ul>
+ *     <li>{@link SpringBootTest}: Loads the full application context for integration testing.</li>
+ *     <li>{@link Transactional}: Ensures each test rolls back its changes to keep the database clean.</li>
+ *     <li>{@link ActiveProfiles}: Loads test-specific configurations.</li>
+ * </ul>
  */
-
 @Data
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
 @ActiveProfiles(value = "${SPRING_PROFILES_ACTIVE}")
-@Transactional      // Rollback after each test
+@Transactional
 public class UserServiceTest {
+
     /**
-     * The `UserService` instance under test.
+     * Service under test for user-related operations.
      */
     @Autowired
     private UserService userService;
 
     /**
-     * The `UserMapper` instance used to interact with the database.
+     * UserMapper for database operations.
      */
     @Autowired
     private UserMapper userMapper;
@@ -51,9 +57,10 @@ public class UserServiceTest {
     /**
      * Tests successful user registration.
      * <p>
-     * - Creates a new user with a unique username.
-     * - Verifies that registration succeeds.
-     * - Ensures the user is stored in the database with a hashed password.
+     * This test verifies that a user can be registered successfully, ensuring:
+     * - The user is stored in the database.
+     * - The password is securely hashed.
+     * - The registration process returns {@code true}.
      */
     @Test
     void testRegisterUserSuccess() {
@@ -76,9 +83,9 @@ public class UserServiceTest {
     /**
      * Tests that registering a user with an existing username fails.
      * <p>
-     * - Registers a user with a specific username.
-     * - Attempts to register another user with the same username.
-     * - Verifies that duplicate registration is not allowed.
+     * This test ensures that duplicate usernames are not allowed:
+     * - The first registration succeeds.
+     * - A second attempt with the same username fails.
      */
     @Test
     void testRegisterUserDuplicate() {
@@ -86,27 +93,25 @@ public class UserServiceTest {
         User user = new User();
         user.setUsername("duplicateUser");
         user.setPassword("password");
-        boolean result = userService.registerUser(user);
-        assertTrue(result, "First registration should succeed");
+        assertTrue(userService.registerUser(user), "First registration should succeed");
 
         // Attempt duplicate registration
         User duplicate = new User();
         duplicate.setUsername("duplicateUser");
         duplicate.setPassword("anotherPassword");
-        boolean duplicateResult = userService.registerUser(duplicate);
-        assertFalse(duplicateResult, "Duplicate registration should fail");
+        assertFalse(userService.registerUser(duplicate), "Duplicate registration should fail");
     }
 
     /**
-     * Tests successful user login.
+     * Tests successful user login with correct credentials.
      * <p>
-     * - Registers a user.
-     * - Logs in with the correct credentials.
-     * - Expects a non-null JWT token as a response.
+     * This test ensures that:
+     * - A user can log in with the correct password.
+     * - A valid JWT token is returned upon successful login.
      */
     @Test
     void testLoginSuccess() {
-        // Register a new user first
+        // Register a new user
         User user = new User();
         user.setUsername("loginSuccessUser");
         user.setPassword("myPassword");
@@ -118,11 +123,11 @@ public class UserServiceTest {
     }
 
     /**
-     * Tests that login fails with an incorrect password.
+     * Tests failed login due to an incorrect password.
      * <p>
-     * - Registers a user.
-     * - Attempts to log in with an incorrect password.
-     * - Expects login to return `null` (failure).
+     * This test ensures that:
+     * - A user cannot log in with an incorrect password.
+     * - The login attempt returns {@code null}.
      */
     @Test
     void testLoginWrongPassword() {
@@ -138,10 +143,10 @@ public class UserServiceTest {
     }
 
     /**
-     * Tests that login fails for a non-existent user.
+     * Tests login failure for a non-existent user.
      * <p>
-     * - Attempts to log in with a username that doesn't exist.
-     * - Expects login to return `null` (failure).
+     * This test ensures that:
+     * - Attempting to log in with an unknown username returns {@code null}.
      */
     @Test
     void testLoginNonExistentUser() {

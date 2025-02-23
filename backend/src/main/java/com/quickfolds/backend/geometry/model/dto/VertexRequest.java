@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 /**
  * DTO (Data Transfer Object) representing a vertex in an origami face.
  * <p>
- * - Specifies the vertex's position and unique identifier within the face.
- * - Ensures validation constraints to maintain data integrity.
+ * This class defines the position of a vertex within a specific face of an origami model,
+ * ensuring that the provided coordinates meet validation constraints.
  * <p>
  * Validation:
  * - `x`: Must not be null (represents the x-coordinate of the vertex).
@@ -24,15 +24,17 @@ public class VertexRequest {
      * The x-coordinate of the vertex in the origami model.
      * <p>
      * - Must be non-null.
+     * - Represents the horizontal position of the vertex within the face.
      */
-    @NotNull(message = "Field 'xPos' in Vertex must not be null")
+    @NotNull(message = "Field 'x' in VertexRequest must not be null")
     private Double x;
 
     /**
      * The y-coordinate of the vertex in the origami model.
      * <p>
      * - Must be non-null.
+     * - Represents the vertical position of the vertex within the face.
      */
-    @NotNull(message = "Field 'yPos' in Vertex must not be null")
+    @NotNull(message = "Field 'y' in VertexRequest must not be null")
     private Double y;
 }

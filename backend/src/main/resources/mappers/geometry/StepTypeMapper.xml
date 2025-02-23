@@ -3,11 +3,35 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
+<!--
+    MyBatis XML Mapper for handling database operations related to step types in an origami model.
+
+    Purpose:
+    - This mapper provides SQL operations for retrieving step type IDs based on their names.
+    - Ensures that steps reference valid, predefined types stored in the `step_type` table.
+
+    Key SQL Operations:
+    - `getIdByName`: Retrieves the database ID of a step type by its name.
+
+    Dependencies:
+    - `step_type` table: Stores system-defined step types (e.g., "fold", "annotate").
+-->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.StepTypeMapper">
 
-    <!-- Retrieves the ID of a step type based on its name.
-         Limits the result to 1 in case of duplicates. -->
-    <select id="getIdByName">
+    <!--
+        Retrieves the database ID of a step type based on its name.
+
+        Purpose:
+        - Ensures that steps reference valid types stored in the `step_type` table.
+        - Uses `LIMIT 1` to guarantee a single result, preventing multiple matches.
+
+        Parameters:
+        - `stepTypeName`: The name of the step type to retrieve.
+
+        Result:
+        - Returns the ID of the matching step type, or null if not found.
+    -->
+    <select id="getIdByName" resultType="java.lang.Long" parameterType="string">
         SELECT id
         FROM step_type
         WHERE step_type_name = #{stepTypeName}

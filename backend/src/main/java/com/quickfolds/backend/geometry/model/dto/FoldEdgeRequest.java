@@ -7,14 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO (Data Transfer Object) representing an edge in an origami face.
+ * DTO (Data Transfer Object) representing a fold edge in an origami face.
  * <p>
- * - Defines an edge with its position within a face and its angle.
- * - Ensures validation constraints to maintain data integrity.
+ * This class defines the connection between two faces along a fold edge,
+ * including their relative positions and the fold angle.
  * <p>
  * Validation:
- * - `idInFace`: Must not be null and must be non-negative.
- * - `faceIdInOrigami`: Must not be null and must be non-negative.
+ * - `idInOtherFace`: Must not be null and must be non-negative.
+ * - `otherFaceIdInOrigami`: Must not be null and must be non-negative.
  * - `angle`: Must not be null.
  */
 @Data
@@ -23,13 +23,13 @@ import lombok.NoArgsConstructor;
 public class FoldEdgeRequest {
 
     /**
-     * The unique identifier of the other edge within the face.
+     * The unique identifier of the edge within the other face.
      * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'idInFace2' in Edge must not be null")
-    @PositiveOrZero(message = "Field 'idInFace2' in Edge must be non-negative")
+    @NotNull(message = "Field 'idInOtherFace' in FoldEdgeRequest must not be null")
+    @PositiveOrZero(message = "Field 'idInOtherFace' in FoldEdgeRequest must be non-negative")
     private Integer idInOtherFace;
 
     /**
@@ -38,16 +38,16 @@ public class FoldEdgeRequest {
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'face2IdInOrigami' in Edge must not be null")
-    @PositiveOrZero(message = "Field 'face2IdInOrigami' in Edge must be non-negative")
+    @NotNull(message = "Field 'otherFaceIdInOrigami' in FoldEdgeRequest must not be null")
+    @PositiveOrZero(message = "Field 'otherFaceIdInOrigami' in FoldEdgeRequest must be non-negative")
     private Integer otherFaceIdInOrigami;
 
     /**
-     * The angle of the edge relative to its face.
+     * The angle of the fold edge relative to its face.
      * <p>
      * - Must be non-null.
      * - No explicit validation on angle values (consider adding range validation if needed).
      */
-    @NotNull(message = "Field 'angle' in Edge must not be null")
+    @NotNull(message = "Field 'angle' in FoldEdgeRequest must not be null")
     private Double angle;
 }

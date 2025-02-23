@@ -9,54 +9,59 @@ import java.util.List;
 /**
  * MyBatis Mapper interface for handling database operations related to faces in an origami model.
  * <p>
- * - Provides methods for retrieving and inserting face records.
- * - Uses MyBatis `@Mapper` annotation for SQL mapping.
+ * This interface provides methods for retrieving, inserting, and deleting face records
+ * while ensuring efficient database operations using MyBatis annotations.
  * <p>
  * Dependencies:
- * - `Face`: The database entity representing a face in the origami model.
+ * - {@link Face}: The database entity representing a face in the origami model.
  */
 @Mapper
 public interface FaceMapper {
+
     /**
      * Retrieves the database ID of a face using its identifier within a specific origami model.
      * <p>
-     * - Each face in an origami structure has a unique `faceIdInOrigami`.
-     * - This method ensures that operations reference the correct database record.
+     * This method returns the unique database ID of a face based on its logical identifier (`faceIdInOrigami`)
+     * within a specific origami model. It ensures that operations reference the correct database record.
      *
      * @param origamiId The ID of the origami model containing the face.
      * @param faceIdInOrigami The unique identifier of the face within the origami model.
-     * @return The database ID of the corresponding face, or `null` if not found.
+     * @return The database ID of the corresponding face, or {@code null} if not found.
      */
     Long getIdByFaceIdInOrigami(@Param("origamiId") long origamiId,
                                 @Param("faceIdInOrigami") int faceIdInOrigami);
 
-
     /**
-     * Retrieves a list of database IDs for faces within a given origami.
+     * Retrieves a list of database IDs for faces within a given origami model.
+     * <p>
+     * This method returns a list of unique database IDs corresponding to faces identified
+     * by their logical IDs (`idsInOrigami`) within a specific origami model.
      *
-     * @param origamiId The ID of the origami containing the annotated lines.
-     * @param idsInOrigami A list of annotated line identifiers within the face.
-     * @return A list of database IDs corresponding to the requested faces.
+     * @param origamiId The ID of the origami model containing the faces.
+     * @param idsInOrigami A list of unique face identifiers within the origami model.
+     * @return A list of database IDs corresponding to the requested faces, or an empty list if none are found.
      */
-    List<Long> getIdsByIdsInFace(@Param("origamiId") long origamiId, @Param("idsInOrigami") List<Integer> idsInOrigami);
-
+    List<Long> getIdsByIdsInFace(@Param("origamiId") long origamiId,
+                                 @Param("idsInOrigami") List<Integer> idsInOrigami);
 
     /**
      * Inserts a new face into the database.
      * <p>
-     * - Adds a face record associated with a specific origami model.
-     * - Uses MyBatis parameter binding to pass the `Face` entity.
+     * This method adds a {@link Face} entity representing a new face associated with a specific origami model.
+     * The face record is linked to the model and can be further manipulated in subsequent folding steps.
      *
-     * @param face The `Face` entity representing the new face to be inserted.
+     * @param face The {@link Face} entity representing the new face to be inserted.
      */
     void addByObj(@Param("face") Face face);
 
-
     /**
-     * Deletes multiple faces within an origami, linked to a specific step ID.
+     * Deletes multiple faces within an origami model, linked to a specific step ID.
+     * <p>
+     * This method performs a logical deletion by marking faces as deleted, associating them with a deletion step.
+     * The historical context is retained for potential rollback or auditing purposes.
      *
-     * @param ids A list of database IDs of the faces.
-     * @param deletedStepId The step ID associated with the deleted faces.
+     * @param ids A list of database IDs representing the faces to be deleted.
+     * @param deletedStepId The ID of the step associated with the deletion operation.
      * @return The number of rows affected by the delete operation.
      */
     int deleteByIds(@Param("ids") List<Long> ids,

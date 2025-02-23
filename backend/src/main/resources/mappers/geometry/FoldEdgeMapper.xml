@@ -6,18 +6,37 @@
 <!--
     MyBatis XML Mapper for handling database operations related to fold edges in an origami model.
 
-    - Defines SQL mappings for retrieving and inserting fold edges.
+    Purpose:
+    - This mapper provides SQL operations for managing fold edges, including insertion.
+    - Ensures fold edges are correctly linked to origami faces and edge identifiers.
 
-    SQL Operations:
-    -
+    Key SQL Operations:
+    - `addByObj`: Inserts a new fold edge into the database with optional metadata fields.
+
+    Dependencies:
+    - `FoldEdge`: The Java entity representing a fold edge in the origami model.
+    - `fold_edge` table: Stores information about fold edges, including associated faces, angles, and metadata.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.FoldEdgeMapper">
-    <!--
-            Inserts a new fold edge into the database.
 
-            - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
-            - Uses `<if test="...">` to conditionally add fields only when they are non-null.
-        -->
+    <!--
+        Inserts a new fold edge into the database.
+
+        Purpose:
+        - Adds a fold edge representing the connection between two faces in the origami structure.
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`)
+          using `<if test="...">` to conditionally add fields only when they are non-null.
+
+        Parameters:
+        - `foldEdge`: The Java object representing the fold edge to insert.
+
+        Fields Inserted:
+        - Required: `edge_id`, `face_1_id`, `face_2_id`, `angle`, `id_in_face_1`, `id_in_face_2`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new fold edge record and returns the generated primary key.
+    -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.FoldEdge">
         INSERT INTO fold_edge (
         edge_id,
