@@ -106,16 +106,25 @@ public class GeometryController {
     /**
      * Retrieves a specific step in the origami folding process.
      * <p>
-     * This endpoint expects a long value representing the step ID.
-     * It currently returns a success response as a placeholder, with the actual
-     * retrieval logic to be implemented in the future.
+     * This endpoint expects a long value representing the origami ID
+     * and an int value representing the step ID in the origami.
+     * It insures the parameters are not null, and then delegates the processing
+     * to the {@link GeometryService#getStep(long, int)} method.
      *
-     * @param request The ID of the step to retrieve.
+     * @param origamiId The ID of the origami the step is in.
+     * @param stepIdInOrigami The ID of the step to retrieve in the origami.
      * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success.
      */
-    @GetMapping("/get/step")
-    public ResponseEntity<BaseResponse<Boolean>> getStep(@RequestBody long request) {
-        // TODO: Implement logic to retrieve and return the requested step.
-        return BaseResponse.success();
+    @GetMapping("/get/step/{origamiId}/{stepIdInOrigami}")
+    public ResponseEntity<BaseResponse<Boolean>> getStep(@PathVariable long origamiId, @PathVariable int stepIdInOrigami) {
+        if (origamiId == null) {
+            throw new IllegalArgumentException("Origami ID is null, verify if request is valid (null origami ID");
+        }
+
+        if (stepIdInOrigami == null) {
+            throw new IllegalArgumentException("Step ID in origami is null, verify if request is valid (null step ID in origami)");
+        }
+
+        return geometryService.getStep(origamiId, stepIdInOrigami);
     }
 }
