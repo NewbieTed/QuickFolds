@@ -11,6 +11,7 @@ import {CameraManager} from "../CameraManager"
 import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine} from "../../controller/Controller"
 import { createPoint3D } from '../../geometry/Point';
 import { Face3D } from '../../geometry/Face3D';
+import { addlogfeedMessage } from './errordisplay/usererror';
 
 
 document.addEventListener('keydown', onKeyDown);
@@ -72,7 +73,7 @@ let [closestPoint1, faceId1]: [bigint, bigint] = [-1n, -1n];
 let [closestPoint2, faceId2]: [bigint, bigint] = [-1n, -1n];
 
 // dom function that activates when a mouse button is pressed
-function onMouseDown(event : MouseEvent) {
+async function onMouseDown(event : MouseEvent) {
 	if (input.getIsPickPointButtonPressed()) {
 		mouse.x = (event.clientX / window.innerWidth) * 2 - 1.015;
 		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.02;
@@ -93,7 +94,10 @@ function onMouseDown(event : MouseEvent) {
 			if (face3d === undefined) {
 				return;
 			}
-			addAnnotationPoint(createPoint3D(point.x, point.y, point.z), face3d.ID);
+			const result: string | true = await addAnnotationPoint(createPoint3D(point.x, point.y, point.z), face3d.ID);
+			if (result !== true) {
+				addlogfeedMessage("red", "Error: ", result);
+			}
 
 			input.resetIsPickPointButtonPressed(); // Reset after picking
 		}
@@ -106,7 +110,10 @@ function onMouseDown(event : MouseEvent) {
 				console.log("RESUL OF CLOSES POINT ID: " + closestPoint);
         if (closestPoint) {
             // remove the closest annotation point
-            deleteAnnotationPoint(closestPoint, faceId);
+            const result: string | true = await deleteAnnotationPoint(closestPoint, faceId);
+						if (result !== true) {
+							addlogfeedMessage("red", "Error: ", result);
+						}
         } else {
             console.log('No annotation point found near the click.');
         }
@@ -138,7 +145,11 @@ function onMouseDown(event : MouseEvent) {
 				if (closestPoint1 && closestPoint2) {
 						// create line
 						console.log("points ids: ", closestPoint1, closestPoint2);
-						addAnnotationLine(closestPoint1, closestPoint2, faceId1);
+
+						const result: string | true = await addAnnotationLine(closestPoint1, closestPoint2, faceId1);
+						if (result !== true) {
+							addlogfeedMessage("red", "Error: ", result);
+						}
 						console.log(`Ran`);
 				} else {
 						console.log('No annotation point found near the clicks.');
@@ -185,7 +196,12 @@ function onMouseDown(event : MouseEvent) {
 						if (lineId === -1n) {
 							return;
 						}
-						deleteAnnotationLine(lineId, face3d.ID);
+
+						const result: string | true = await deleteAnnotationLine(lineId, face3d.ID);
+						if (result !== true) {
+							addlogfeedMessage("red", "Error: ", result);
+						}
+
 						console.log(`Ran`);
 				} else {
 						console.log('No annotation point found near the clicks.');
@@ -238,7 +254,7 @@ function animate() {
 	}
 
 	SceneManager.updateAnimations();
-	
+
 	renderer.render(
 		SceneManager.getScene(),
 		cameraManager.getCamera()
