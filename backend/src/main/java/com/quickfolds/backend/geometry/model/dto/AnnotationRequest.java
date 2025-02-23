@@ -30,7 +30,7 @@ import java.util.List;
 public class AnnotationRequest {
     /**
      * The ID of the origami model being annotated.
-     *
+     * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative IDs allowed).
      */
@@ -40,7 +40,7 @@ public class AnnotationRequest {
 
     /**
      * The step identifier within the origami model where the annotation is applied.
-     *
+     * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values).
      */
@@ -50,7 +50,7 @@ public class AnnotationRequest {
 
     /**
      * A list of faces within the origami model that will be annotated.
-     *
+     * <p>
      * - Must not be null.
      * - Must contain at least one face (empty lists are not allowed).
      * - Each face must pass its own validation constraints.
@@ -58,5 +58,5 @@ public class AnnotationRequest {
     @Valid
     @NotNull(message = "Field 'faces' in Annotate Request must not be null")
     @Size(min = 1, message = "Faces list in Annotate Request cannot be empty")
-    private List<FaceAnnotateRequest> faces;
+    private List<@Valid @NotNull FaceAnnotateRequest> faces;
 }

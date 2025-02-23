@@ -16,15 +16,15 @@ import java.util.List;
 
 /**
  * REST controller for handling geometry-related operations in the origami system.
- *
+ * <p>
  * Endpoints:
  * - `/geometry/fold` (GET): Handles origami folding operations.
  * - `/geometry/annotate` (POST): Adds annotations to an origami structure.
  * - `/geometry/get/step` (GET): Retrieves a specific step in the origami process.
- *
+ * <p>
  * Dependencies:
  * - `GeometryService`: Service layer that processes folding and annotation requests.
- *
+ * <p>
  * Validation:
  * - Uses `@Valid` to validate incoming request bodies.
  * - Performs additional null and empty checks on `annotate()` requests.
@@ -38,7 +38,7 @@ public class GeometryController {
 
     /**
      * Handles the folding operation for an origami structure.
-     *
+     * <p>
      * - Expects a `FoldRequest` containing the necessary fold instructions.
      * - Returns an error if the request body is missing.
      * - Delegates the request to `GeometryService.fold()`.
@@ -59,7 +59,7 @@ public class GeometryController {
 
     /**
      * Handles annotation requests for an origami structure.
-     *
+     * <p>
      * - Validates the request to ensure it contains necessary data.
      * - Checks that the origami ID, step ID, and faces list are not null or empty.
      * - Delegates annotation processing to `GeometryService.annotate()`.
@@ -115,7 +115,7 @@ public class GeometryController {
 
     /**
      * Retrieves a specific step in the origami folding process.
-     *
+     * <p>
      * - Expects a long value representing the step ID.
      * - Currently returns a success response without implementation.
      *

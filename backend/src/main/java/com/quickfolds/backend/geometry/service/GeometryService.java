@@ -24,11 +24,11 @@ import java.util.List;
  * Service class responsible for managing geometric operations in the origami system.
  * This includes creating initial geometry, handling annotation requests,
  * and managing face, edge, and point modifications.
- *
+ * <p>
  * Dependencies:
  * - Mappers for database operations (FaceMapper, EdgeMapper, StepMapper, etc.).
  * - Uses transactional operations for consistency.
- *
+ * <p>
  * Logging:
  * - Utilizes SLF4J for logging important actions and errors.
  */
@@ -39,6 +39,7 @@ public class GeometryService {
     // Data mappers responsible for retrieving and modifying step-related data.
     private final StepMapper stepMapper;
     private final StepTypeMapper stepTypeMapper;
+    private final FoldStepMapper foldStepMapper;
 
     // Mapper for handling faces (polygonal regions) in an origami structure.
     private final FaceMapper faceMapper;
@@ -66,14 +67,121 @@ public class GeometryService {
      * @return ResponseEntity with a BaseResponse indicating success.
      */
     public ResponseEntity<BaseResponse<Boolean>> fold(FoldRequest request) {
-        // TODO: Implement deletion of faces and creation of new ones based on fold operation.
+        // Extract origami and step information
+        long origamiId = request.getOrigamiId();
+        int stepIdInOrigami = request.getStepIdInOrigami();
+
+        int anchoredFaceIdInOrigami = request.getAnchoredFaceIdInOrigami();
+        Long anchoredFaceId = faceMapper.getIdByFaceIdInOrigami(origamiId, anchoredFaceIdInOrigami);
+
+        if (anchoredFaceId == null) {
+            throw new IllegalArgumentException("Anchored face id in origami is not found in DB, " +
+                    "verify if request is valid (no face with face in origami id in DB)");
+        }
+
+        // Create new step and fold step
+        long stepId = createStep(origamiId, StepType.FOLD, stepIdInOrigami);
+        createFoldStep(stepId, anchoredFaceId);
+
+
+        List<Integer> deletedFaceIdInOrigami = request.getDeletedFaces();
+        List<Long> deletedFaceIds = faceMapper.getIdsByIdsInFace(origamiId, deletedFaceIdInOrigami);
+        // Perform deletion
+        int rowsUpdated = faceMapper.deleteByIds(deletedFaceIds, stepId);
+
+        // TODO: Validate the deletion
+//        validateDeletion(origamiId, faceId, deletedLineIdsInFace, rowsUpdated,
+//                "annotated line", annotateLineMapper.getIdsByIdsInFace(faceId, deletedLineIdsInFace));
+
+        List<FaceFoldRequest> faceRequests = request.getFaces();
+
+        // Add fold data for each face
+        for (FaceFoldRequest faceRequest : faceRequests) {
+            // Extract face information
+            int faceIdInOrigami = faceRequest.getIdInOrigami();
+            List<VertexRequest> vertexRequests = faceRequest.getVertices();
+            List<FoldEdgeRequest> foldEdges = faceRequest.getEdges();
+            Annotation annotations = faceRequest.getAnnotations();
+
+            // TODO: Refactor
+            Face face = new Face();
+            face.setStepId(stepId);
+            face.setIdInOrigami(faceIdInOrigami);
+            faceMapper.addByObj(face);
+
+            Long faceId = faceMapper.getIdByFaceIdInOrigami(origamiId, faceIdInOrigami);
+            if (faceId == null) {
+                throw new DbException("Cannot find face ID that is just created, verify if SQL is correct");
+            }
+
+            // Retrieve point type ID for vertices.
+            Long pointTypeId = pointTypeMapper.getIdByName(PointType.VERTEX);
+            if (pointTypeId == null) {
+                throw new DbException("Unknown point type: " + PointType.VERTEX + ", check if DB is set correctly");
+            }
+
+            List<Long> vertexIds = new ArrayList<>();
+
+            // TODO: Add vertices
+            for (VertexRequest vertexRequest : vertexRequests) {
+                // Extract vertex information
+                int vertexIdInFace = vertexRequest.getIdInFace();
+                double xPos = vertexRequest.getX();
+                double yPos = vertexRequest.getY();
+
+                OrigamiPoint vertex = new OrigamiPoint();
+                vertex.setStepId(stepId);
+                vertex.setFaceId(faceId);
+                vertex.setPointTypeId(pointTypeId);
+
+                vertex.setXPos(xPos);
+                vertex.setYPos(yPos);
+                vertex.setIdInFace(vertexIdInFace);
+                origamiPointMapper.addByObj(vertex);
+
+                Long vertexId = origamiPointMapper.getIdByIdInFace(faceId, vertexIdInFace);
+
+                if (vertexId == null) {
+                    throw new DbException("Cannot find vertex ID that is just created, verify if SQL is correct");
+                }
+
+                vertexIds.add(vertexId);
+            }
+
+
+            for (int i = 0; i < vertexIds.size(); i++) {
+                // Create Edge
+                Edge edge = new Edge();
+
+
+
+                FoldEdgeRequest foldEdgeRequest = foldEdges.get(i);
+
+                if (foldEdgeRequest != null) {
+                    // Create fold edge
+                    FoldEdge foldEdge = new FoldEdge();
+
+
+
+                } else {
+                    // Create side edge
+
+                }
+
+
+
+            }
+
+        }
+
+
         return BaseResponse.success();
     }
 
     /**
      * Processes an annotation request, handling points and lines on origami faces.
      * Supports addition and deletion of annotations.
-     *
+     * <p>
      * - Retrieves and validates step and point types.
      * - Processes face annotations, deleting and adding points/lines as needed.
      * - Throws exceptions if invalid operations are attempted (e.g., deleting non-existent points/lines).
@@ -95,22 +203,18 @@ public class GeometryService {
         // TODO: Case overwrite
         logger.info("Starting annotation for origamiId={}, stepIdInOrigami={}", origamiId, stepIdInOrigami);
 
-        // Retrieve step type ID for annotation.
-        Long stepTypeId = stepTypeMapper.getIdByName(StepType.ANNOTATE);
-        if (stepTypeId == null) {
-            throw new DbException("Unknown step type: " + StepType.ANNOTATE + ", check if DB is set correctly");
-        }
-
         // Retrieve point type ID for annotated points.
         Long pointTypeId = pointTypeMapper.getIdByName(PointType.ANNOTATED_POINT);
         if (pointTypeId == null) {
             throw new DbException("Unknown point type: " + PointType.ANNOTATED_POINT + ", check if DB is set correctly");
         }
 
+        // Create new step
+        long stepId = createStep(origamiId, StepType.ANNOTATE, stepIdInOrigami);
+
         // Process each face annotation in the request.
         for (FaceAnnotateRequest face : request.getFaces()) {
             long faceId = getFaceId(origamiId, face.getIdInOrigami());
-            long stepId = createStep(origamiId, stepTypeId, stepIdInOrigami);
 
             deleteAnnotatedLines(origamiId, faceId, stepId, face.getAnnotations().getDeletedLines());
             deleteAnnotatedPoints(origamiId, faceId, stepId, face.getAnnotations().getDeletedPoints());
@@ -148,11 +252,16 @@ public class GeometryService {
     /**
      * Creates a new step in the annotation process for an origami.
      * @param origamiId The ID of the origami.
-     * @param stepTypeId The step type identifier.
+     * @param stepTypeName The name of the step type.
      * @param stepIdInOrigami The step number in the origami.
      * @return The database ID of the newly created step.
      */
-    private long createStep(long origamiId,Long stepTypeId, int stepIdInOrigami) {
+    private long createStep(long origamiId, String stepTypeName, int stepIdInOrigami) {
+        Long stepTypeId = stepTypeMapper.getIdByName(StepType.FOLD);
+        if (stepTypeId == null) {
+            throw new DbException("Unknown step type: " + stepTypeName + ", check if DB is set correctly");
+        }
+
         Step step = new Step();
         step.setOrigamiId(origamiId);
         step.setStepTypeId(stepTypeId);
@@ -166,6 +275,19 @@ public class GeometryService {
         }
 
         return stepId;
+    }
+
+
+    /**
+     * Creates a new fold step in the fold process for an origami.
+     * @param stepId The step ID of the fold step.
+     * @param anchoredFaceId the ID of the anchored face in the fold operation.
+     */
+    private void createFoldStep(long stepId, Long anchoredFaceId) {
+        FoldStep foldStep = new FoldStep();
+        foldStep.setStepId(stepId);
+        foldStep.setAnchoredFaceId(anchoredFaceId);
+        foldStepMapper.addByObj(foldStep);
     }
 
     /**
@@ -414,7 +536,6 @@ public class GeometryService {
     private long buildInitialFace(Long origamiId, Long stepId) {
         // Create a default face associated with the given origami and step.
         Face face = new Face();
-        face.setOrigamiId(origamiId);
         face.setStepId(stepId);
         face.setIdInOrigami(0);  // Default face index (0-based)
         faceMapper.addByObj(face);
@@ -441,8 +562,8 @@ public class GeometryService {
         long pointTypeId = getPointVertexTypeId();
 
         for (int i = 0; i < 4; i++) {
-            double x = (i == 1 || i == 2) ? 3.0 : 0.0;
-            double y = (i == 2 || i == 3) ? 3.0 : 0.0;
+            double x = (i == 1 || i == 2) ? 3.0 : -3.0;
+            double y = (i == 2 || i == 3) ? 3.0 : -3.0;
 
             OrigamiPoint vertex = new OrigamiPoint();
             vertex.setStepId(stepId);

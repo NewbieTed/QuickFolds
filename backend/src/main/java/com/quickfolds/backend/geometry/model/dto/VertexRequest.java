@@ -1,7 +1,6 @@
 package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,10 +8,10 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO (Data Transfer Object) representing a vertex in an origami face.
- *
+ * <p>
  * - Specifies the vertex's position and unique identifier within the face.
  * - Ensures validation constraints to maintain data integrity.
- *
+ * <p>
  * Validation:
  * - `idInFace`: Must not be null and must be non-negative.
  * - `x`: Must not be null (represents the x-coordinate of the vertex).
@@ -24,7 +23,7 @@ import lombok.NoArgsConstructor;
 public class VertexRequest {
     /**
      * The unique identifier of the vertex within the face.
-     *
+     * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
@@ -34,7 +33,7 @@ public class VertexRequest {
 
     /**
      * The x-coordinate of the vertex in the origami model.
-     *
+     * <p>
      * - Must be non-null.
      */
     @NotNull(message = "Field 'xPos' in Vertex must not be null")
@@ -42,7 +41,7 @@ public class VertexRequest {
 
     /**
      * The y-coordinate of the vertex in the origami model.
-     *
+     * <p>
      * - Must be non-null.
      */
     @NotNull(message = "Field 'yPos' in Vertex must not be null")

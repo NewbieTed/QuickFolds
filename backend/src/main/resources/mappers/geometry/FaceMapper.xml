@@ -23,12 +23,31 @@
         - Uses both `origami_id` and `id_in_origami` for precise matching.
     -->
     <select id="getIdByFaceIdInOrigami">
-        SELECT id FROM face
+        SELECT f.id FROM face f
+        INNER JOIN step s ON f.step_id = s.id
         WHERE
-        origami_id = #{origamiId}
+        s.origami_id = #{origamiId}
         AND
-        id_in_origami = #{faceIdInOrigami}
+        f.id_in_origami = #{faceIdInOrigami};
     </select>
+
+
+    <!--
+    Retrieves the IDs of faces for a given origami.
+
+    - Filters faces by `origami_id` and checks if their `id_in_face` is in the provided list.
+    -->
+    <select id="getIdsByIdsInFace" resultType="java.lang.Long">
+        SELECT f.id FROM face f
+        INNER JOIN step s ON f.step_id = s.id
+        WHERE s.origami_id = #{origamiId}
+        AND f.id_in_origami IN (
+        <foreach collection="idsInOrigami" item="idInOrigami" separator=",">
+            #{idInOrigami}
+        </foreach>
+        )
+    </select>
+
 
     <!--
         Inserts a new face into the database.
@@ -38,7 +57,6 @@
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Face">
         INSERT INTO face (
-            origami_id,
             step_id,
             id_in_origami
             <if test="face.createdBy != null">, created_by</if>
@@ -46,7 +64,6 @@
             <if test="face.createdAt != null">, created_at</if>
             <if test="face.updatedAt != null">, updated_at</if>
         ) VALUES (
-            #{face.origamiId},
             #{face.stepId},
             #{face.idInOrigami}
             <if test="face.createdBy != null">, #{face.createdBy}</if>
@@ -55,6 +72,22 @@
             <if test="face.updatedAt != null">, #{face.updatedAt}</if>
         );
     </insert>
+
+
+    <!--
+    Marks multiple faces as deleted by setting `deleted_step_id`.
+
+    - Only updates faces that are not already marked as deleted (`deleted_step_id IS NULL`).
+    -->
+    <update id="deleteByIds">
+        UPDATE face
+        SET deleted_step_id = #{deletedStepId}
+        WHERE id IN (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
 
 
 </mapper>

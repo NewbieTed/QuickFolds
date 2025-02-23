@@ -8,10 +8,10 @@ import java.util.List;
 
 /**
  * MyBatis Mapper interface for handling database operations related to annotated points in an origami model.
- *
+ * <p>
  * - Provides methods for inserting annotated points.
  * - Uses MyBatis `@Mapper` for SQL mapping.
- *
+ * <p>
  * Dependencies:
  * - `AnnotatedPoint`: The database entity representing an annotated point.
  */
@@ -19,7 +19,7 @@ import java.util.List;
 public interface AnnotatePointMapper {
     /**
      * Inserts a new annotated point into the database.
-     *
+     * <p>
      * - Adds an annotation at a specific location within an origami face.
      * - Requires a valid `AnnotatedPoint` object with appropriate attributes.
      *

@@ -33,13 +33,6 @@ public class Face {
     private Long id;
 
     /**
-     * Foreign key referencing the origami this face belongs to.
-     * Links this record to a specific origami in the "origami" table.
-     */
-    @Column(name = "origami_id", nullable = false)
-    private Long origamiId;
-
-    /**
      * Foreign key referencing the step during which this face was created.
      * Links to a specific step in the "step" table.
      */

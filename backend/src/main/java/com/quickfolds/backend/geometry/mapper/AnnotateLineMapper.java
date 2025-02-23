@@ -8,11 +8,11 @@ import java.util.List;
 
 /**
  * MyBatis Mapper interface for handling operations related to annotated lines in an origami model.
- *
+ * <p>
  * - Provides methods for retrieving, inserting, and deleting annotated lines.
  * - Uses MyBatis `@Mapper` for SQL mapping.
  * - Supports batch operations for efficient data handling.
- *
+ * <p>
  * Dependencies:
  * - `AnnotatedLine`: The database entity representing an annotated line.
  */

@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -25,35 +26,37 @@ import java.util.List;
 public class Annotation {
     /**
      * List of points to be added as annotations.
-     *
+     * <p>
      * - Each point is validated separately using `PointAnnotationRequest`.
      */
     @Valid
-    private List<PointAnnotationRequest> points;
+    private List<@Valid @NotNull PointAnnotationRequest> points;
 
     /**
      * List of lines to be added as annotations.
-     *
+     * <p>
      * - Each line is validated separately using `LineAnnotationRequest`.
      */
     @Valid
-    private List<LineAnnotationRequest> lines;
+    private List<@Valid @NotNull LineAnnotationRequest> lines;
 
     /**
      * List of point IDs that should be deleted.
-     *
+     * <p>
      * - All values must be non-negative.
      * - Ensures no negative indices are referenced.
      */
     @Valid
-    private List<@PositiveOrZero(message = "All elements in deletedPoints in Annotate must be non-negative.") Integer> deletedPoints;
+    private List<@NotNull @PositiveOrZero
+            (message = "All elements in deletedPoints in Annotate must be non-negative.") Integer> deletedPoints;
 
     /**
      * List of line IDs that should be deleted.
-     *
+     * <p>
      * - All values must be non-negative.
      * - Prevents invalid deletions by enforcing positive indices.
      */
     @Valid
-    private List<@PositiveOrZero(message = "All elements in deletedLines in Annotate must be non-negative.") Integer> deletedLines;
+    private List<@NotNull @PositiveOrZero
+            (message = "All elements in deletedLines in Annotate must be non-negative.") Integer> deletedLines;
 }

@@ -8,10 +8,10 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO (Data Transfer Object) representing a request to annotate a point in an origami face.
- *
+ * <p>
  * - Contains coordinates and optional edge association for the annotated point.
  * - Ensures validation constraints for data integrity.
- *
+ * <p>
  * Validation:
  * - `idInFace`: Must not be null and must be non-negative.
  * - `x`, `y`: Must not be null (represents the coordinates of the point).
@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 public class PointAnnotationRequest {
     /**
      * The unique identifier of the annotated point within the face.
-     *
+     * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
@@ -33,7 +33,7 @@ public class PointAnnotationRequest {
 
     /**
      * The x-coordinate of the annotated point.
-     *
+     * <p>
      * - Must be non-null.
      */
     @NotNull(message = "Field 'x' in Point Annotation must not be null")
@@ -41,7 +41,7 @@ public class PointAnnotationRequest {
 
     /**
      * The y-coordinate of the annotated point.
-     *
+     * <p>
      * - Must be non-null.
      */
     @NotNull(message = "Field 'y' in Point Annotation must not be null")
@@ -49,7 +49,7 @@ public class PointAnnotationRequest {
 
     /**
      * The ID of the edge within the face on which this point is located.
-     *
+     * <p>
      * - Must be zero or positive if provided.
      * - Can be null if the point is not on an edge.
      */

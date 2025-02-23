@@ -2,7 +2,6 @@ package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -13,12 +12,12 @@ import java.util.List;
 
 /**
  * DTO (Data Transfer Object) representing a request to create or modify a folded face in an origami model.
- *
+ * <p>
  * - Specifies the new face structure after a fold operation.
  * - Ensures validation constraints for data integrity.
- *
+ * <p>
  * Validation:
- * - `idInOrigami`: Must not be null and must be non-negative.
+ * - `idInOrigami`: Must not be null and must be positive.
  * - `vertices`: Must not be null and must contain at least one vertex.
  * - `edges`: Can be null, but if present, must be validated.
  * - `annotations`: Represents annotations applied to this face.
@@ -29,7 +28,7 @@ import java.util.List;
 public class FaceFoldRequest {
     /**
      * The unique identifier of the face within the origami model.
-     *
+     * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
@@ -39,7 +38,7 @@ public class FaceFoldRequest {
 
     /**
      * List of vertices defining the new folded face.
-     *
+     * <p>
      * - Must not be null.
      * - Must contain at least one vertex.
      * - Each vertex is validated using `VertexRequest`.
@@ -51,16 +50,16 @@ public class FaceFoldRequest {
 
     /**
      * List of edges defining the new folded face.
-     *
+     * <p>
      * - Can be null.
-     * - If provided, each edge is validated using `EdgeRequest`.
+     * - If provided, each edge is validated using `FoldEdgeRequest`.
      */
     @Valid
-    private List<EdgeRequest> edges;
+    private List<FoldEdgeRequest> edges;
 
     /**
      * Annotations applied to this folded face.
-     *
+     * <p>
      * - Can be null.
      * - If provided, the annotation object is validated using `@Valid`.
      */

@@ -39,7 +39,7 @@ public class OrigamiController {
 
     /**
      * Creates a new origami model.
-     *
+     * <p>
      * - Accepts a request containing user information and optional origami name.
      * - Delegates creation logic to `OrigamiService.newOrigami()`.
      * - Returns the newly created origami ID in a `NewOrigamiResponse`.
@@ -54,7 +54,7 @@ public class OrigamiController {
 
     /**
      * Retrieves a list of all public origami models.
-     *
+     * <p>
      * - Calls `OrigamiService.list()` to fetch available origami models.
      * - Returns a response containing a list of `OrigamiResponse` objects.
      *

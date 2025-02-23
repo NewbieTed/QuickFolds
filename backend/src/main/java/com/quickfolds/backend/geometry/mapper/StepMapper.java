@@ -2,15 +2,14 @@ package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.Step;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 
 /**
  * MyBatis Mapper interface for handling database operations related to steps in an origami model.
- *
+ * <p>
  * - Provides methods for inserting and retrieving steps.
  * - Uses MyBatis `@Mapper` annotation for SQL mapping.
- *
+ * <p>
  * Dependencies:
  * - `Step`: The database entity representing a step in the origami model.
  */
@@ -18,7 +17,7 @@ import org.apache.ibatis.annotations.Param;
 public interface StepMapper {
     /**
      * Retrieves the database ID of a step using its identifier within a specific origami model.
-     *
+     * <p>
      * - Each step in an origami structure has a unique `idInOrigami`.
      * - Ensures that operations reference the correct step in the database.
      *
@@ -30,7 +29,7 @@ public interface StepMapper {
 
     /**
      * Inserts a new step into the database.
-     *
+     * <p>
      * - Uses MyBatis parameter binding to pass the `Step` entity.
      * - Returns the generated primary key after insertion.
      *
@@ -41,7 +40,7 @@ public interface StepMapper {
 
     /**
      * Inserts a new step into the database using individual field values.
-     *
+     * <p>
      * - Allows direct field-based insertion without requiring a `Step` object.
      * - Returns the generated primary key after insertion.
      *
