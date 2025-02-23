@@ -12,6 +12,7 @@ import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, Annotate
 import {addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId} from "../model/PaperGraph"
 import { getFace3DByID, incrementStepID, updateFace } from '../view/SceneManager';
+import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
 
 /**
  * Given a provided point (ie you can provided the layered shot, no need to
@@ -29,13 +30,17 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
   let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
-    return "face 3d id doesn't exists";
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
 
   let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
   if (flattedPoint == null) {
     console.error("Point creation isn't on plane");
-    return "Point creation isn't on plane";
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
 
 
@@ -43,20 +48,28 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     console.error("face 2d id doesn't exists");
-    return "face 2d id doesn't exists";
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
   let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
   if (getTranslated2dPoint == null) {
     console.error("Error translating to 2d");
-    return "Error translating to 2d";
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
 
   let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint)
   if (addPointResult.status !== "NORMAL") {
-    return "Error creating 2d point:" + addPointResult.status;
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
   if (addPointResult.pointsAdded.size !== 1) {
-    return "Didn't add 1 point, added: " + addPointResult.pointsAdded.size;
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
 
   // create manual new update change, since we already know the 3d point
@@ -68,8 +81,9 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
   let result: boolean = await addUpdatedAnnoationToDB(addPointResult, faceId);
 
   if (!result) {
-    console.error("Error occured with adding point to DB");
-    return "Error occured with adding point to DB";
+    const myStatus: EditorStatusType = "BACKEND_500_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
   }
 
   incrementStepID();
