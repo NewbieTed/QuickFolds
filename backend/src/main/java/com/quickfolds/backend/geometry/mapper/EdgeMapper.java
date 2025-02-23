@@ -17,7 +17,7 @@ import org.apache.ibatis.annotations.Param;
 public interface EdgeMapper {
     /**
      * Retrieves the most recently added edge ID for a given step.
-     *
+     * <p>
      * - Useful for tracking the last inserted edge in a particular step.
      *
      * @param stepId The ID of the step for which to retrieve the most recent edge.
@@ -27,7 +27,7 @@ public interface EdgeMapper {
 
     /**
      * Retrieves the database ID of an edge using its position within a face.
-     *
+     * <p>
      * - Each edge within a face has a unique `idInFace` identifier.
      *
      * @param faceId The ID of the face containing the edge.
@@ -38,7 +38,7 @@ public interface EdgeMapper {
 
     /**
      * Inserts a new edge into the database.
-     *
+     * <p>
      * - Returns the generated primary key after insertion.
      * - Uses MyBatis `@Options(useGeneratedKeys = true, keyProperty = "edge.id")`
      *   to retrieve the generated key.

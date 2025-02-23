@@ -55,7 +55,7 @@ public class FaceFoldRequest {
      * - If provided, each edge is validated using `FoldEdgeRequest`.
      */
     @Valid
-    private List<FoldEdgeRequest> edges;
+    private List<@Valid FoldEdgeRequest> edges;
 
     /**
      * Annotations applied to this folded face.

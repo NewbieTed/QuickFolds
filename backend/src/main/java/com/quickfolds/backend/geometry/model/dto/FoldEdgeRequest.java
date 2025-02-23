@@ -21,35 +21,26 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FoldEdgeRequest {
+
     /**
-     * The unique identifier of the edge within the face.
+     * The unique identifier of the other edge within the face.
      * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'idInFace' in Edge must not be null")
-    @PositiveOrZero(message = "Field 'idInFace' in Edge must be non-negative")
-    private Integer idInFace;
+    @NotNull(message = "Field 'idInFace2' in Edge must not be null")
+    @PositiveOrZero(message = "Field 'idInFace2' in Edge must be non-negative")
+    private Integer idInOtherFace;
 
     /**
-     * The ID of the first face in the origami model where this edge is located.
-     * <p>
-     * - Must be non-null.
-     * - Must be zero or positive (no negative values allowed).
-     */
-    @NotNull(message = "Field 'face1IdInOrigami' in Edge must not be null")
-    @PositiveOrZero(message = "Field 'face1IdInOrigami' in Edge must be non-negative")
-    private Integer face1IdInOrigami;
-
-    /**
-     * The ID of the second face in the origami model where this edge is located.
+     * The ID of the other face in the origami model where this edge is located.
      * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
     @NotNull(message = "Field 'face2IdInOrigami' in Edge must not be null")
     @PositiveOrZero(message = "Field 'face2IdInOrigami' in Edge must be non-negative")
-    private Integer face2IdInOrigami;
+    private Integer otherFaceIdInOrigami;
 
     /**
      * The angle of the edge relative to its face.
@@ -59,7 +50,4 @@ public class FoldEdgeRequest {
      */
     @NotNull(message = "Field 'angle' in Edge must not be null")
     private Integer angle;
-
-
-
 }

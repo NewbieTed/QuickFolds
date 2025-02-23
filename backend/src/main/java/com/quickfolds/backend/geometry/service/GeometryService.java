@@ -66,6 +66,7 @@ public class GeometryService {
      * @param request The request object containing the faces to delete and the new faces to add.
      * @return ResponseEntity with a BaseResponse indicating success.
      */
+    @Transactional
     public ResponseEntity<BaseResponse<Boolean>> fold(FoldRequest request) {
         // Extract origami and step information
         long origamiId = request.getOrigamiId();
@@ -77,6 +78,26 @@ public class GeometryService {
         if (anchoredFaceId == null) {
             throw new IllegalArgumentException("Anchored face id in origami is not found in DB, " +
                     "verify if request is valid (no face with face in origami id in DB)");
+        }
+
+
+        // Retrieve point type ID for vertices.
+        Long pointTypeId = pointTypeMapper.getIdByName(PointType.VERTEX);
+        if (pointTypeId == null) {
+            throw new DbException("Unknown point type: " + PointType.VERTEX + ", check if DB is set correctly");
+        }
+
+        // Retrieve edge type ID for fold edges.
+        Long foldEdgeTypeID = edgeTypeMapper.getEdgeTypeByName(EdgeType.FOLD);
+        if (foldEdgeTypeID == null) {
+            throw new DbException("Unknown point type: " + EdgeType.FOLD + ", check if DB is set correctly");
+        }
+
+
+        // Retrieve edge type ID for side edges.
+        Long sideEdgeTypeID = edgeTypeMapper.getEdgeTypeByName(EdgeType.SIDE);
+        if (sideEdgeTypeID == null) {
+            throw new DbException("Unknown point type: " + EdgeType.SIDE + ", check if DB is set correctly");
         }
 
         // Create new step and fold step
@@ -114,12 +135,6 @@ public class GeometryService {
                 throw new DbException("Cannot find face ID that is just created, verify if SQL is correct");
             }
 
-            // Retrieve point type ID for vertices.
-            Long pointTypeId = pointTypeMapper.getIdByName(PointType.VERTEX);
-            if (pointTypeId == null) {
-                throw new DbException("Unknown point type: " + PointType.VERTEX + ", check if DB is set correctly");
-            }
-
             List<Long> vertexIds = new ArrayList<>();
 
             // TODO: Add vertices
@@ -149,30 +164,52 @@ public class GeometryService {
             }
 
 
-            for (int i = 0; i < vertexIds.size(); i++) {
+            for (int j = 0; j < vertexIds.size(); j++) {
                 // Create Edge
                 Edge edge = new Edge();
 
+                edge.setStepId(stepId);
 
+                FoldEdgeRequest foldEdgeRequest = foldEdges.get(j);
 
-                FoldEdgeRequest foldEdgeRequest = foldEdges.get(i);
+                if (foldEdgeRequest != null) {
+                    edge.setEdgeTypeId(foldEdgeTypeID);
+                } else {
+                    edge.setEdgeTypeId(sideEdgeTypeID);
+                }
+
+                edgeMapper.addByObj(edge);
+
+                Long edgeId = edgeMapper.getMostRecentId(stepId);
 
                 if (foldEdgeRequest != null) {
                     // Create fold edge
                     FoldEdge foldEdge = new FoldEdge();
 
+//                    int face1IdInOrigami = foldEdgeRequest.getFace1IdInOrigami();
+//                    int face2IdInOrigami = foldEdgeRequest.getFace2IdInOrigami();
 
+//                    Long face1Id = faceMapper.getIdByFaceIdInOrigami(origamiId, face1IdInOrigami);
+//                    Long face2Id = faceMapper.getIdByFaceIdInOrigami(origamiId, face2IdInOrigami);
+//
+//                    if (face1Id == null || face2Id == null) {
+//                        continue;
+//                    }
+//
+//                    foldEdge.setEdgeId(edgeId);
+//                    foldEdge.setFace1Id(face1Id);
+//                    foldEdge.setFace1Id(face2Id);
 
                 } else {
                     // Create side edge
-
+                    SideEdge sideEdge = new SideEdge();
                 }
 
 
-
             }
-
         }
+
+
 
 
         return BaseResponse.success();
