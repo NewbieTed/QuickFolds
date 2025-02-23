@@ -4,6 +4,8 @@ import com.quickfolds.backend.geometry.model.database.Edge;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * MyBatis Mapper interface for handling database operations related to edges in an origami model.
  * <p>
@@ -27,6 +29,9 @@ public interface EdgeMapper {
      */
     Long getMostRecentId(@Param("stepId") long stepId);
 
+
+    List<Long> getIdsByFaceIds(@Param("faceIds") List<Long> faceIds);
+
     /**
      * Retrieves the database ID of an edge using its position within a face.
      * <p>
@@ -49,4 +54,8 @@ public interface EdgeMapper {
      * @return The generated database ID of the newly inserted edge.
      */
     Long addByObj(@Param("edge") Edge edge);
+
+    int deleteByIds(@Param("ids") List<Long> ids,
+                    @Param("deletedStepId") long deletedStepId);
+
 }

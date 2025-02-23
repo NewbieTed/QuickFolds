@@ -64,6 +64,10 @@ public interface OrigamiPointMapper {
      */
     void addByObj(@Param("origamiPoint") OrigamiPoint origamiPoint);
 
+
+    int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
+                        @Param("deletedStepId") long deletedStepId);
+
     /**
      * Deletes multiple origami points within a specific face.
      * <p>
@@ -78,4 +82,6 @@ public interface OrigamiPointMapper {
     int deleteByIdsInFace(@Param("faceId") long faceId,
                           @Param("idsInFace") List<Integer> idsInFace,
                           @Param("deletedStepId") long deletedStepId);
+
+
 }

@@ -100,7 +100,7 @@ public class GeometryController {
             throw new IllegalArgumentException("Faces list is null or empty, verify if request is valid");
         }
 
-        return geometryService.annotate(request);
+        return geometryService.annotate(request, null);
     }
 
     /**

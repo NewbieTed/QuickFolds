@@ -4,6 +4,8 @@ import com.quickfolds.backend.geometry.model.database.SideEdge;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * MyBatis Mapper interface for handling database operations related to side edges in an origami model.
  * <p>
@@ -28,4 +30,8 @@ public interface SideEdgeMapper {
      * @param sideEdge The {@link SideEdge} entity representing the new side edge.
      */
     void addByObj(@Param("sideEdge") SideEdge sideEdge);
+
+
+    int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
+                        @Param("deletedStepId") long deletedStepId);
 }
