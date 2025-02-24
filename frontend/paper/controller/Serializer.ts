@@ -26,7 +26,11 @@ function processVertex(face: Face2D) {
   return retList;
 }
 
-
+/**
+ * creates json edges for face fold
+ * @param face- the face to get the edge from
+ * @returns - the json format for the edges under /fold {face:...} request
+ */
 function processEdges(face: Face2D) {
   const adjList : Map<bigint, EdgesAdjList[]> = getAdjList();
   const list: EdgesAdjList[] | undefined = adjList.get(face.ID);
@@ -56,7 +60,11 @@ function processEdges(face: Face2D) {
   return retList;
 }
 
-
+/**
+ * creates json annotation points for face fold
+ * @param face- the face to get the annotation points from
+ * @returns - the json format for the annotation points under /fold {face:...} request
+ */
 function processAnnoPoints(face: Face2D) {
   const retList: any[] = [];
   for (const [pointId, pointObj] of face.getAnnotatedPointMap()) {
@@ -71,6 +79,11 @@ function processAnnoPoints(face: Face2D) {
   return retList;
 }
 
+/**
+ * creates json annotation lines for face fold
+ * @param face- the face to get the annotation lines from
+ * @returns - the json format for the annotation lines under /fold {face:...} request
+ */
 function processAnnoLines(face: Face2D) {
   const retList: any[] = [];
   for (const [lineId, lineObj] of face.getAnnotatedLinesMap()) {
@@ -84,6 +97,13 @@ function processAnnoLines(face: Face2D) {
   return retList;
 }
 
+/**
+ * Formats the JSON for merging two planes together when updating backend via API
+ * @param leftFaceId - the id of the first face to merge
+ * @param rightFaceId - the id of the second face to merge
+ * @param mergedFace - the new Merged faces
+ * @returns the JSON format to send to /fold
+ */
 export function serializeMergeFold(leftFaceId: bigint, rightFaceId: bigint, mergedFace: Face2D) {
   // create two new faces
   const faces: any[] = [
@@ -119,7 +139,14 @@ export function serializeMergeFold(leftFaceId: bigint, rightFaceId: bigint, merg
   return finalHeader;
 }
 
-
+/**
+ *  Formats the JSON for splitting a plane together when updating backend via API
+ * @param leftFace - the new split first face obj
+ * @param rightFace - the new split second face obj
+ * @param ogFaceId - the id of the face that got split
+ * @param anchoredFaceIdInOrigami - the id of the new origami that states stationary
+ * @returns
+ */
 export function serializeSplitFold(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, anchoredFaceIdInOrigami: bigint) {
 
   // create two new faces

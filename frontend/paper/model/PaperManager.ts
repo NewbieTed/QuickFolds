@@ -39,7 +39,12 @@ export function graphAddAnnotationPoint(
 }
 
 
-
+/**
+ * Update the paper module when merging faces
+ * @param faceId1 - the first face to be merged
+ * @param faceId2 = the second face to be merged
+ * @returns [merged face object, mapping of points from faceId1 to merged face, mapping of points from faceId2 to merged face]
+ */
 export function mergeFaces(faceId1: bigint, faceId2: bigint):
   [Face2D, Map<bigint, bigint>,Map<bigint, bigint>] | false{
   let face1Obj2d: Face2D | undefined = getFace2dFromId(faceId1);
@@ -172,6 +177,11 @@ export function mergeFaces(faceId1: bigint, faceId2: bigint):
 }
 
 
+/**
+ * @param face - the face you want the closest point
+ * @param point - the point you want to find the closest existing annotated point to
+ * @returns - the first point found that is closest to provided point that is under the "too close" threshold
+ */
 function closestPoint(face: Face2D, point: Point2D) {
   for(const [pointId, pointObj] of face.getAnnotatedPointMap()) {
     if (distance(pointObj.point, point) <= DISTANCE_TO_ALLOW_MERGING_POINTS) {
@@ -182,6 +192,12 @@ function closestPoint(face: Face2D, point: Point2D) {
   return undefined
 }
 
+/**
+ * @param face1Obj2d - the first face to find the edge of the connection wiht Face2Obj2
+ * @param face2Obj2d  - the second face to find the edge of the connection wiht face1Obj2d
+ * @returns - the edges that connect the provided faces together in the adj list
+ *            [edge that connects in face 1, edge that connects in face 2]
+ */
 function getEdgesThatAreApartOfMerging(face1Obj2d: Face2D, face2Obj2d: Face2D) {
   const adjList: Map<bigint, EdgesAdjList[]> = getAdjList();
 
@@ -200,6 +216,14 @@ function getEdgesThatAreApartOfMerging(face1Obj2d: Face2D, face2Obj2d: Face2D) {
   throw new Error();
 }
 
+
+/**
+ * Creates a new Face object that combines face1 and face 2
+ * no annotation points/lines are added
+ * @param face1ObjId - the first face to combine
+ * @param face2ObjId - the second face to combine
+ * @returns [new mergedFace, new mergedFace 3d version, mapping of points from face1 -> merged, mapping of points from face2 -> merged];
+ */
 function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
   [Face2D, Face3D, Map<bigint, bigint>, Map<bigint, bigint>] {
   const face1Obj2d: Face2D | undefined = getFace2dFromId(face1ObjId);
@@ -317,7 +341,15 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
 }
 
 
-
+/**
+ * Creates a new split between the two points in face id
+ * @param point1Id - the first point on the fold edge
+ * @param point2Id  - the second point on the fold edge
+ * @param faceId - the id of the face this happens at
+ * @param angle - the angle between the faces
+ * @param pointThatShouldKeepFaceStationary - a point on the side of the face that shouldn't move
+ * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary]
+ */
 export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D): [Face2D,Face2D,bigint] | false {
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
@@ -541,7 +573,12 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 }
 
 
-
+/**
+ * Copies all annotations from 2d version to 3d version
+ * @param ogFaceID - the face to copy the connents from
+ * @param face2d - the face to get the contents from
+ * @returns - the Update stuff that needs to happen in the 3d version
+ */
 function copyAllAnnotationsFrom2dTo3d(ogFaceID: bigint, face2d: Face2D): AnnotationUpdate3D {
   const pointsAdded: Map<bigint, AnnotatedPoint3D> = new Map<bigint, AnnotatedPoint3D>();
   const pointsDeleted: bigint[] = [];
@@ -575,7 +612,17 @@ function copyAllAnnotationsFrom2dTo3d(ogFaceID: bigint, face2d: Face2D): Annotat
   return annotationResult;
 }
 
-
+/**
+ *
+ * @param vectorTowardsLeftFaceBasedOnOgPointIds -the the vector that occurs after following the
+ *          face in a clockwise direction starting from vertex zero and following the fold edge
+ * @param pointOfStartVector - the end point of the fold edge
+ * @param targetPoint - the vector to check
+ * @param face2d - the face this occurs at
+ * @returns a boolean if the provided point is on the "left face"
+ *          more formally, the "left face" is the vector that occurs after following the
+ *          face in a clockwise direction starting from vertex zero and following the fold edge
+ */
 function isPointOnLeftFace(vectorTowardsLeftFaceBasedOnOgPointIds: Point2D, pointOfStartVector: Point2D, targetPoint: Point2D, face2d: Face2D) {
   // create our target vector centered at origin
   const targetPosition: Point2D = createPoint2D(
@@ -594,12 +641,30 @@ function isPointOnLeftFace(vectorTowardsLeftFaceBasedOnOgPointIds: Point2D, poin
   return dotProduct(projectedTarget, vectorTowardsLeftFaceBasedOnOgPointIds) > 0
 }
 
-
+/**
+ * @param vector - the vector to project to
+ * @param target - the target point to be projected
+ * @returns the point projected to vector from target, both centered at origin
+ */
 function projectPointToCustomVectorCenteredAtOrigin(vector: Point2D, target: Point2D) : Point2D {
   return scalarMult(vector, (1.0 * dotProduct(target, vector))/(dotProduct(vector, vector)))
 }
 
+/**
+ * Creates a split face and returns the created content for it
+ * @param param0 - [the edge that the first fold vertex is on, the id of the point that's being folded: could be vertex or anno point]
+ * @param param1 - [the edge that the second fold vertex is on, the id of the point that's being folded: could be vertex or anno point]
+ * @param face2D - the 2d face to split
+ * @param face3D - the 3d face to split
+ * @returns [
+ *          [leftFace 2d object,  leftFace 3d obj,  map of points from og -> left face,  edge of left face that is folded with right face],
 
+            [rightFace 2d object,  rightFace 3d obj,  map of points from og -> right face,  edge of right face that is folded with right face],
+
+           the vertex that will check for direction, it is centered at origin,
+
+            the starting point of the vector that checks for direction]
+ */
 function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEdgePointId, secondEdgeId]: [bigint, bigint], face2D: Face2D, face3D: Face3D):
 [[Face2D, Face3D, Map<bigint, bigint>, bigint], [Face2D, Face3D, Map<bigint, bigint>, bigint], Point2D, Point2D] {
   const listOfVertexForLeftFace: Point2D[] = [];
@@ -709,10 +774,13 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
 
 
 /**
- * Given two points, return the point objects based on which point has their edge come first
- * @param point1Id
- * @param point2Id
- * @param faceId
+ * Given two points, return the point objects based on which point has their edge come first, starting
+ * from vertex zero going in a clockwise direction
+ * @param point1Id - the first point to compare
+ * @param point2Id - the second point to compare
+ * @param faceId - the id of the face this occurs at
+ * @returns [the edge that the first fold vertex is on, the id of the point that's being folded: could be vertex or anno point],
+ *          [the edge that the second fold vertex is on, the id of the point that's being folded: could be vertex or anno point]
  */
 function getPointEdgeOrder(point1Id: bigint, point2Id: bigint, faceId: bigint): [[bigint, bigint], [bigint, bigint]] {
   const face2d: Face2D | undefined = getFace2dFromId(faceId);
@@ -828,7 +896,12 @@ function getColinearLine(lineId: bigint, face2d: Face2D) :  bigint[] {
   return retList;
 }
 
-
+/**
+ * min(a, b)
+ * @param a - the first value
+ * @param b - the second value
+ * @returns the minimum between a and b as a bigint
+ */
 function intMin(a: bigint, b: bigint): bigint {
   if (a < b) {
     return a;
@@ -836,6 +909,12 @@ function intMin(a: bigint, b: bigint): bigint {
   return b;
 }
 
+/**
+ * max(a, b)
+ * @param a - the first value
+ * @param b - the second value
+ * @returns the max between a and b as a bigint
+ */
 function intMax(a: bigint, b: bigint): bigint {
   if (a > b) {
     return a;

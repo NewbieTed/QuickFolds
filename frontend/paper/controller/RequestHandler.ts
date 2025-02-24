@@ -7,12 +7,17 @@
  */
 
 import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D";
-import { Point2D } from "../geometry/Point";
 import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./Serializer";
 
 
 
-
+/**
+ * Sends the backend a fold request to merge the faces, no rotation
+ * @param leftFaceId - the first face to merge
+ * @param rightFaceId - the id of the second face to merge
+ * @param mergedFace - the new Face object that comes from merging
+ * @returns a boolean as to the result of the action
+ */
 export async function addMergeFoldToDB(leftFaceId: bigint, rightFaceId: bigint, mergedFace: Face2D): Promise<boolean> {
   // add points locally
   const url = 'http://localhost:8080/geometry/fold';
@@ -45,7 +50,14 @@ export async function addMergeFoldToDB(leftFaceId: bigint, rightFaceId: bigint, 
 
 
 
-
+/**
+ * Sends the backend a fold request to split the faces, no rotation
+ * @param leftFace - the newly created first face
+ * @param rightFace - the newly created second face
+ * @param ogFaceId - the id of the broken face
+ * @param stationaryNewFaceID - the id of the new face that doesn't move during a rotation
+ * @returns boolean as to result
+ */
 export async function addSplitFacesToDB(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, stationaryNewFaceID: bigint): Promise<boolean> {
   // add points locally
   const url = 'http://localhost:8080/geometry/fold';

@@ -22,11 +22,20 @@ export type EdgesAdjList = {
 const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
 const adjList : Map<bigint, EdgesAdjList[]> = new Map<bigint, EdgesAdjList[]>();
 
-
+/**
+ * @returns - the adjcency list of connected faces
+ */
 export function getAdjList() {
   return adjList;
 }
 
+/**
+ * Udpate the adjcency list when splitting a face
+ * @param ogFaceId - the original face to split
+ * @param param1 - a list of the updated left face information, [id, the edge that is being folded, map of points from ogFace to LeftFace]
+ * @param param2 - a list of the updated right face information, [id, the edge that is being folded, map of points from ogFace to rightFace]
+ * @param angle - the angle between the two faces
+ */
 export function updateAdjListForSplitGraph(
   ogFaceId: bigint,
   [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
@@ -169,6 +178,14 @@ export function updateAdjListForSplitGraph(
 }
 
 
+/**
+ * Udpate the adjcency list when merging a face
+ * @param mergedFaceId - the id of the new merged face
+ * @param firstFaceId - the id of the first face that's merged
+ * @param secondFaceId  - the id of the second face that's merged
+ * @param mapFromFirstFaceEdgeIdsToMergedEdges - a map of point ids in the left face that map to the merged face
+ * @param mapFromSecondFaceEdgeIdsToMergedEdges - a map of point ids in the right face that map to the merged face
+ */
 export function updateAdjListForMergeGraph(
   mergedFaceId: bigint,
   firstFaceId: bigint,
@@ -311,7 +328,12 @@ export function updateAdjListForMergeGraph(
 
 
 
-
+/**
+ * Delete outsideFace -> [ogFaceId] in the adjency list
+ * @param outsideFace - the face to look for connections in adj list
+ * @param ogFaceId - the face to remove for in list of connections
+ * @returns void
+ */
 function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
   let outsideFacesPairs: EdgesAdjList[] | undefined = adjList.get(outsideFace);
   if (outsideFacesPairs === undefined) {
@@ -326,7 +348,12 @@ function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
   }
 }
 
-
+/**
+ * Given two faces that are connected, update the angle between them
+ * @param faceId1 - the first face that you want to update the angle of
+ * @param faceId2 - the second face that you want to update the angle of
+ * @param relativeChange - the new relative angle between them
+ */
 export function updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1: bigint, faceId2: bigint, relativeChange: bigint) {
   const lookingAtFace1Connections = adjList.get(faceId1);
   if (lookingAtFace1Connections === undefined) {
@@ -406,15 +433,25 @@ export function createNewGraph(startingPlaneId: bigint) {
 
 }
 
+/**
+ * Adds the new face2D object to the mapping of ids to faces
+ * @param face2d - the new Face object to add
+ */
 export function add2dFaceToPaperGraph(face2d: Face2D) {
   idsToFaces.set(face2d.ID, face2d);
 }
 
+/**
+ * Deletes the mapping of faceId  -> FaceObj
+ * @param faceId - the id of the face you want to remove from the mapping
+ */
 export function delete2dFaceToPaperGraph(faceId: bigint) {
   idsToFaces.delete(faceId);
 }
 
-
+/**
+ * Prints out a state of the 2d graph. useful for debugging
+ */
 export function print2dGraph() {
   console.log("------Display 2d Graph---------");
   console.log(idsToFaces);
@@ -431,6 +468,9 @@ export function print2dGraph() {
   console.log("-------------------------------");
 }
 
+/**
+ * Prints out the state of the adjancency list, useful for debugging
+ */
 export function printAdjList() {
   console.log(Array.from(adjList.entries()));
 }

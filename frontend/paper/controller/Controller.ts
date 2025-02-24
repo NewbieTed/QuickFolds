@@ -16,10 +16,19 @@ import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
 import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
 
 
-
+/**
+ * Achieves a part of a fold action by actually rotating the planes
+ * assumes the planes are correctly split up, and connected via an edge
+ * @param faceId1 - the first face that rotates
+ * @param faceId2  - the second face that roates
+ * @param stationaryFace - the face that is stationary/doesn't move during rotation
+ * @param relativeChange - the relative rotation in degrees of the moving plane, where positive is in the prinicpal
+ *                         normal vector direction for faces
+ * @returns true/ or an error message
+ */
 export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
   if (faceId1 === faceId2) {
-    return;
+    return "Faces are the same";
   }
 
 
@@ -40,9 +49,20 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
 
 
 // creates a new split based on the edge, face, and what part should move
+/**
+ * Creates a new fold by splitting a face into two. Does not perform any rotation.
+ * update the front end system,
+ * and backend system accordingly
+ * @param point1Id - the id of the point on the fold edge
+ * @param point2Id - the id of the other point on the fold edge
+ * @param faceId - the id of the face that is split into two
+ * @param vertexOfFaceStationary - provide a point that is stationary in case of movement in future
+ * @param angle - the angle to start between them. should be 180
+ * @returns true/ or a string of error msg
+ */
 export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
-  if (angle == 180n || point1Id == point2Id) {
-    return;
+  if (point1Id == point2Id) {
+    return "Points cannot be same";
   }
 
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
@@ -121,10 +141,15 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
 
 
 
-// create a new split by merging
-export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint, vectexOfFaceStationary: bigint) {
+/**
+ * Creates a new fold operation by merging two faces that are together (180 degrees apart)
+ * @param faceId1 - the id of the first face to be merged
+ * @param faceId2 - the id of the other face to be merged
+ * @returns - true, or a string message error
+ */
+export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) {
   if (faceId1 == faceId2) {
-    return;
+    return "Faces are the same";
   }
 
   let face2d1: Face2D | undefined = getFace2dFromId(faceId1);
@@ -382,7 +407,12 @@ export async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Pro
   return true;
 }
 
-
+/**
+ * Takes a 3d point in space and returns the prjected point in 2d space
+ * @param point - the point to project
+ * @param faceId - the id of the face to project to
+ * @returns the translated 2d point, or null if there's an error
+ */
 function getConvertedPoint2D(point: Point3D, faceId: bigint) : Point2D | null{
   let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
