@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.service;
 
 import com.quickfolds.backend.dto.BaseResponse;
+import com.quickfolds.backend.geometry.model.dto.response.StepResponse;
 import com.quickfolds.backend.exception.DbException;
 import com.quickfolds.backend.geometry.constants.EdgeType;
 import com.quickfolds.backend.geometry.constants.PointType;
@@ -137,6 +138,16 @@ public class GeometryService {
         }
 
         return BaseResponse.success();
+    }
+
+    /**
+     * Handles the retrieval of data needed to go forward or backward
+     * one step in the origami folding process.
+     * TODO: add function logic description, params, and return
+     */
+    @Transactional
+    public ResponseEntity<BaseResponse<StepResponse>> getStep(long origamiId, int startStep, int endStep, boolean isForward) {
+        //TODO: implement logic
     }
 
 
