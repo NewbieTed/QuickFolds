@@ -106,7 +106,7 @@ public class OrigamiServiceTest {
             assertNotNull(origamiList, "Origami list should not be null");
             assertEquals(origamiList.getOrigamis().size(), i + 1,
                     "Origami list have different number of elements, " +
-                             "expected: " + (i + 1) + " actual: " + "origamiList.getOrigamis().size()");
+                            "expected: " + (i + 1) + " actual: " + "origamiList.getOrigamis().size()");
 
             int index = i;
             OrigamiResponse origami = origamiList.getOrigamis()
