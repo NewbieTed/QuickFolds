@@ -468,7 +468,6 @@ CREATE INDEX idx_side_edge_vertex_2_id ON side_edge(vertex_2_id);
 CREATE INDEX idx_side_edge_face_id ON side_edge(face_id);
 
 COMMIT;
-COMMIT;
 
 -- frontend make button to hook up to editor if sucessful api call
     -- return id of origami
