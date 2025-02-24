@@ -41,17 +41,6 @@ public class OrigamiServiceTest {
     @Autowired
     private OrigamiService origamiService;
 
-    /**
-     * OrigamiMapper for database operations.
-     */
-    @Autowired
-    private OrigamiMapper origamiMapper;
-
-    /**
-     * OrigamiMapper for database operations.
-     */
-
-
 
     private void prepData() {
         for (int i = 0; i < 5; i++) {
