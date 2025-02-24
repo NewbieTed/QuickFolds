@@ -6,7 +6,398 @@
 import { Face2D } from "../geometry/Face2D";
 import { createPoint2D } from "../geometry/Point";
 
+/**
+ * stores the values of the adjacency list when doing folds
+ */
+export type EdgesAdjList = {
+    readonly idOfOtherFace: bigint;
+    readonly angleBetweenThem: bigint;
+    readonly edgeIdOfMyFace: bigint;
+    readonly edgeIdOfOtherFace: bigint;
+}
+
+
+
+
 const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
+const adjList : Map<bigint, EdgesAdjList[]> = new Map<bigint, EdgesAdjList[]>();
+
+/**
+ * @returns - the adjcency list of connected faces
+ */
+export function getAdjList() {
+  return adjList;
+}
+
+/**
+ * Udpate the adjcency list when splitting a face
+ * @param ogFaceId - the original face to split
+ * @param param1 - a list of the updated left face information, [id, the edge that is being folded, map of points from ogFace to LeftFace]
+ * @param param2 - a list of the updated right face information, [id, the edge that is being folded, map of points from ogFace to rightFace]
+ * @param angle - the angle between the two faces
+ */
+export function updateAdjListForSplitGraph(
+  ogFaceId: bigint,
+  [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
+  [rightFaceId, rightFaceEdgeIdThatFolds, ogPoingIdsToRightPointIds]: [bigint, bigint, Map<bigint, bigint>],
+  angle: bigint
+) {
+  // create new list, since we are making new planes
+  adjList.set(leftFaceId, []);
+  adjList.set(rightFaceId, []);
+
+  const correctLeftFaceEdge: bigint | undefined =  leftFaceEdgeIdThatFolds;
+  const correctRightFaceEdge:  bigint | undefined = rightFaceEdgeIdThatFolds;
+
+  if (correctLeftFaceEdge === undefined || correctRightFaceEdge === undefined) {
+    throw new Error("Incorrect mapping");
+  }
+
+  if (adjList.size === 1) {
+    // this is the first fold ever
+
+    const value: EdgesAdjList = {
+      idOfOtherFace: rightFaceId,
+      angleBetweenThem: angle,
+      edgeIdOfMyFace: correctLeftFaceEdge,
+      edgeIdOfOtherFace: correctRightFaceEdge
+    }
+    adjList.get(leftFaceId)?.push(value);
+
+    const value2: EdgesAdjList = {
+      idOfOtherFace: leftFaceId,
+      angleBetweenThem: angle,
+      edgeIdOfMyFace: correctRightFaceEdge,
+      edgeIdOfOtherFace: correctLeftFaceEdge
+    }
+    adjList.get(rightFaceId)?.push(value2);
+  } else {
+    // there have been folds before, so we need update the list parameters
+    // first we create the new items for our list
+    const value: EdgesAdjList = {
+      idOfOtherFace: rightFaceId,
+      angleBetweenThem: angle,
+      edgeIdOfMyFace: correctLeftFaceEdge,
+      edgeIdOfOtherFace: correctRightFaceEdge
+    }
+    adjList.get(leftFaceId)?.push(value);
+
+    const value2: EdgesAdjList = {
+      idOfOtherFace: leftFaceId,
+      angleBetweenThem: angle,
+      edgeIdOfMyFace: correctRightFaceEdge,
+      edgeIdOfOtherFace: correctLeftFaceEdge
+    }
+    adjList.get(rightFaceId)?.push(value2);
+
+
+    // now we update any connection to our old id using the old adj list
+    // and add these to the new fold objects
+    let allOldConnectionsThatNeedToBeUdpdated: EdgesAdjList[] | undefined = adjList.get(ogFaceId);
+    if (allOldConnectionsThatNeedToBeUdpdated === undefined) {
+      throw new Error("OUTDATED ADJ LIST");
+    }
+
+
+    // delete the copy from the other faces
+    for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
+      const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
+      const outsideFaceToUpdate = currentItem.idOfOtherFace;
+
+      deleteValue(outsideFaceToUpdate, ogFaceId);
+    }
+
+
+    // create the copy list, and add the copy to the other faces
+    for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
+      const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
+      const theOldEdgeIdOfMyFace = currentItem.edgeIdOfMyFace;
+
+      // find out where the old edge when to
+      if (Array.from(ogPointIdsToLeftPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
+        // left face has the connection
+        const theEdgeForTheSplitFace: bigint | undefined = ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace);
+        if (theEdgeForTheSplitFace === undefined) {
+          throw new Error("missed edge in adj list");
+        }
+
+        // create the new value for the left face
+        const valueForNewFace: EdgesAdjList = {
+          idOfOtherFace: currentItem.idOfOtherFace,
+          angleBetweenThem: currentItem.angleBetweenThem,
+          edgeIdOfMyFace: theEdgeForTheSplitFace,
+          edgeIdOfOtherFace: currentItem.edgeIdOfOtherFace
+        }
+
+        adjList.get(leftFaceId)?.push(valueForNewFace);
+
+        // creat the update value for the outside connection
+        const valueForTheOutsideValue: EdgesAdjList = {
+          idOfOtherFace: leftFaceId,
+          angleBetweenThem: currentItem.angleBetweenThem,
+          edgeIdOfMyFace: currentItem.edgeIdOfOtherFace,
+          edgeIdOfOtherFace: theEdgeForTheSplitFace
+        }
+
+        adjList.get(currentItem.idOfOtherFace)?.push(valueForTheOutsideValue);
+      } else if (Array.from(ogPoingIdsToRightPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
+        // right face has the connection
+        const theEdgeForTheSplitFace: bigint | undefined = ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace);
+        if (theEdgeForTheSplitFace === undefined) {
+          throw new Error("missed edge in adj list");
+        }
+
+        // create the new value for the right face
+        const valueForNewFace: EdgesAdjList = {
+          idOfOtherFace: currentItem.idOfOtherFace,
+          angleBetweenThem: currentItem.angleBetweenThem,
+          edgeIdOfMyFace: theEdgeForTheSplitFace,
+          edgeIdOfOtherFace: currentItem.edgeIdOfOtherFace
+        }
+
+        adjList.get(rightFaceId)?.push(valueForNewFace);
+
+        // creat the update value for the outside connection
+        const valueForTheOutsideValue: EdgesAdjList = {
+          idOfOtherFace: rightFaceId,
+          angleBetweenThem: currentItem.angleBetweenThem,
+          edgeIdOfMyFace: currentItem.edgeIdOfOtherFace,
+          edgeIdOfOtherFace: theEdgeForTheSplitFace
+        }
+
+        adjList.get(currentItem.idOfOtherFace)?.push(valueForTheOutsideValue);
+      } else {
+        throw new Error("one should have happened");
+      }
+    }
+
+
+    // delete the old face adj list
+    adjList.delete(ogFaceId);
+  }
+}
+
+
+/**
+ * Udpate the adjcency list when merging a face
+ * @param mergedFaceId - the id of the new merged face
+ * @param firstFaceId - the id of the first face that's merged
+ * @param secondFaceId  - the id of the second face that's merged
+ * @param mapFromFirstFaceEdgeIdsToMergedEdges - a map of point ids in the left face that map to the merged face
+ * @param mapFromSecondFaceEdgeIdsToMergedEdges - a map of point ids in the right face that map to the merged face
+ */
+export function updateAdjListForMergeGraph(
+  mergedFaceId: bigint,
+  firstFaceId: bigint,
+  secondFaceId: bigint,
+  mapFromFirstFaceEdgeIdsToMergedEdges: Map<bigint, bigint>,
+  mapFromSecondFaceEdgeIdsToMergedEdges: Map<bigint, bigint>
+) {
+    // create new list, since we are making new planes
+    adjList.set(mergedFaceId, []);
+
+    // we need to update the list parameters of our new faces (ones that are attached to first/second)
+    // then we do the others after
+    const firstFaceConnections: EdgesAdjList[] | undefined = adjList.get(firstFaceId);
+    if(firstFaceConnections === undefined) {
+      throw new Error("missing adj storage");
+    }
+
+    // add udpate items for my mergedface -> list for the firstFace for INDEPENDENT FACES
+    for(const item of firstFaceConnections) {
+      if (item.idOfOtherFace !== secondFaceId) {
+        const updatedEdge: bigint | undefined = mapFromFirstFaceEdgeIdsToMergedEdges.get(item.edgeIdOfMyFace);
+        if (updatedEdge === undefined) {
+          throw new Error();
+        }
+        const myFaceUpdatedValues: EdgesAdjList = {
+          idOfOtherFace: item.idOfOtherFace,
+          angleBetweenThem: item.angleBetweenThem,
+          edgeIdOfOtherFace: item.edgeIdOfOtherFace,
+          edgeIdOfMyFace: updatedEdge
+        };
+
+        // we know this exists from very top of method, so ? syntax is ok
+        adjList.get(mergedFaceId)?.push(myFaceUpdatedValues);
+      }
+    }
+
+    const secondFaceConnections: EdgesAdjList[] | undefined = adjList.get(secondFaceId);
+    if(secondFaceConnections === undefined) {
+      throw new Error("missing adj storage");
+    }
+
+    // add udpate items for my mergedface -> list for the second Face
+    for(const item of secondFaceConnections) {
+      if (item.idOfOtherFace !== firstFaceId) {
+        const updatedEdge: bigint | undefined = mapFromSecondFaceEdgeIdsToMergedEdges.get(item.edgeIdOfMyFace);
+        if (updatedEdge === undefined) {
+          throw new Error();
+        }
+        const myFaceUpdatedValues: EdgesAdjList = {
+          idOfOtherFace: item.idOfOtherFace,
+          angleBetweenThem: item.angleBetweenThem,
+          edgeIdOfOtherFace: item.edgeIdOfOtherFace,
+          edgeIdOfMyFace: updatedEdge
+        };
+
+        // we know this exists from very top of method, so ? syntax is ok
+        adjList.get(mergedFaceId)?.push(myFaceUpdatedValues);
+      }
+    }
+
+
+    // now we need to update all of the other faces that have our oudated version
+    // other connections -> [.., new merged face, ...]
+    // now we update any connection to our old id using the old adj list
+    // and add these to the new fold objects
+    // for the first face
+    let allOldConnectionsThatNeedToBeUdpdated: EdgesAdjList[] | undefined = adjList.get(firstFaceId);
+    if (allOldConnectionsThatNeedToBeUdpdated === undefined) {
+      throw new Error("OUTDATED ADJ LIST");
+    }
+
+    // delete the copy from the other faces
+    for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
+      const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
+      if (currentItem.idOfOtherFace !== secondFaceId) {
+        const outsideFaceToUpdate = currentItem.idOfOtherFace;
+        // deletes the outsideFace -> firstFace kv pair
+        deleteValue(outsideFaceToUpdate, firstFaceId);
+      }
+    }
+
+    // now we add the update values back in
+    for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
+      const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
+      if (currentItem.idOfOtherFace !== secondFaceId) {
+        const outsideFaceToUpdate = currentItem.idOfOtherFace;
+        // deletes the outsideFace -> firstFace kv pair
+        const outsideFaceUpdatedValues: EdgesAdjList = {
+          idOfOtherFace: currentItem.idOfOtherFace,
+          angleBetweenThem: currentItem.angleBetweenThem,
+          edgeIdOfOtherFace: currentItem.edgeIdOfMyFace,
+          edgeIdOfMyFace: currentItem.edgeIdOfOtherFace
+        };
+
+        adjList.get(outsideFaceToUpdate)?.push(outsideFaceUpdatedValues);
+      }
+    }
+
+    // now we delete the firstFace adj list pair
+    adjList.delete(firstFaceId);
+
+
+
+    // repeat for second face
+    let allOldConnectionsThatNeedToBeUdpdated2: EdgesAdjList[] | undefined = adjList.get(secondFaceId);
+    if (allOldConnectionsThatNeedToBeUdpdated2 === undefined) {
+      throw new Error("OUTDATED ADJ LIST");
+    }
+
+    // delete the copy from the other faces
+    for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated2.length; i++) {
+      const currentItem = allOldConnectionsThatNeedToBeUdpdated2[i];
+      if (currentItem.idOfOtherFace !== firstFaceId) {
+        const outsideFaceToUpdate = currentItem.idOfOtherFace;
+        // deletes the outsideFace -> firstFace kv pair
+        deleteValue(outsideFaceToUpdate, secondFaceId);
+      }
+    }
+
+    // now we add the update values back in
+    for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated2.length; i++) {
+      const currentItem = allOldConnectionsThatNeedToBeUdpdated2[i];
+      if (currentItem.idOfOtherFace !== firstFaceId) {
+        const outsideFaceToUpdate = currentItem.idOfOtherFace;
+        // deletes the outsideFace -> firstFace kv pair
+        const outsideFaceUpdatedValues: EdgesAdjList = {
+          idOfOtherFace: currentItem.idOfOtherFace,
+          angleBetweenThem: currentItem.angleBetweenThem,
+          edgeIdOfOtherFace: currentItem.edgeIdOfMyFace,
+          edgeIdOfMyFace: currentItem.edgeIdOfOtherFace
+        };
+
+        adjList.get(outsideFaceToUpdate)?.push(outsideFaceUpdatedValues);
+      }
+    }
+
+    // now we delete the firstFace adj list pair
+    adjList.delete(secondFaceId);
+  }
+
+
+
+/**
+ * Delete outsideFace -> [ogFaceId] in the adjency list
+ * @param outsideFace - the face to look for connections in adj list
+ * @param ogFaceId - the face to remove for in list of connections
+ * @returns void
+ */
+function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
+  let outsideFacesPairs: EdgesAdjList[] | undefined = adjList.get(outsideFace);
+  if (outsideFacesPairs === undefined) {
+    throw new Error();
+  }
+  for(let i = 0; i < outsideFacesPairs.length; i++) {
+    if (outsideFacesPairs[i].idOfOtherFace === ogFaceId) {
+      // found the outdated value
+      adjList.get(outsideFace)?.splice(i, 1);
+      return;
+    }
+  }
+}
+
+/**
+ * Given two faces that are connected, update the angle between them
+ * @param faceId1 - the first face that you want to update the angle of
+ * @param faceId2 - the second face that you want to update the angle of
+ * @param relativeChange - the new relative angle between them
+ */
+export function updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1: bigint, faceId2: bigint, relativeChange: bigint) {
+  const lookingAtFace1Connections = adjList.get(faceId1);
+  if (lookingAtFace1Connections === undefined) {
+    throw new Error();
+  }
+
+  for(let i = 0; i < lookingAtFace1Connections.length; i++) {
+    if (lookingAtFace1Connections[i].idOfOtherFace === faceId2) {
+      // found the outdated value
+      const updatedAngles: EdgesAdjList = {
+        idOfOtherFace: lookingAtFace1Connections[i].idOfOtherFace,
+        angleBetweenThem: lookingAtFace1Connections[i].angleBetweenThem + relativeChange,
+        edgeIdOfMyFace: lookingAtFace1Connections[i].edgeIdOfMyFace,
+        edgeIdOfOtherFace: lookingAtFace1Connections[i].edgeIdOfOtherFace
+      }
+      adjList.get(faceId1)?.splice(i, 1);
+      adjList.get(faceId1)?.push(updatedAngles);
+      break;
+    }
+  }
+
+
+  const lookingAtFace2Connections = adjList.get(faceId2);
+  if (lookingAtFace2Connections === undefined) {
+    throw new Error();
+  }
+
+  for(let i = 0; i < lookingAtFace2Connections.length; i++) {
+    if (lookingAtFace2Connections[i].idOfOtherFace === faceId1) {
+      // found the outdated value
+      const updatedAngles: EdgesAdjList = {
+        idOfOtherFace: lookingAtFace2Connections[i].idOfOtherFace,
+        angleBetweenThem: lookingAtFace2Connections[i].angleBetweenThem + relativeChange,
+        edgeIdOfMyFace: lookingAtFace2Connections[i].edgeIdOfMyFace,
+        edgeIdOfOtherFace: lookingAtFace2Connections[i].edgeIdOfOtherFace
+      }
+      adjList.get(faceId2)?.splice(i, 1);
+      adjList.get(faceId2)?.push(updatedAngles);
+      break;
+    }
+  }
+
+}
+
 
 
 /**
@@ -19,9 +410,6 @@ const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
  * If no element is associated with the specified id, undefined is returned.
  */
 export function getFace2dFromId(faceId : bigint) {
-  console.log(faceId);
-  console.log("here is map:");
-  console.log(idsToFaces);
   return idsToFaces.get(faceId);
 }
 
@@ -41,6 +429,51 @@ export function createNewGraph(startingPlaneId: bigint) {
       createPoint2D(3, -3),
     ]
   )); // big face
+  adjList.set(startingPlaneId, []);
 
 }
+
+/**
+ * Adds the new face2D object to the mapping of ids to faces
+ * @param face2d - the new Face object to add
+ */
+export function add2dFaceToPaperGraph(face2d: Face2D) {
+  idsToFaces.set(face2d.ID, face2d);
+}
+
+/**
+ * Deletes the mapping of faceId  -> FaceObj
+ * @param faceId - the id of the face you want to remove from the mapping
+ */
+export function delete2dFaceToPaperGraph(faceId: bigint) {
+  idsToFaces.delete(faceId);
+}
+
+/**
+ * Prints out a state of the 2d graph. useful for debugging
+ */
+export function print2dGraph() {
+  console.log("------Display 2d Graph---------");
+  console.log(idsToFaces);
+  for(const [faceId, faceObj] of idsToFaces) {
+    console.log("  ", faceId, ":");
+    console.log("  anno points size", faceObj.getAnnotatedPointMap().size);
+    for( const [pointId, pointObj] of faceObj.getAnnotatedPointMap()) {
+      console.log("     ", pointId);
+    }
+    console.log("  anno line size", faceObj.getAnnotatedLinesMap().size);
+  }
+
+
+  console.log("-------------------------------");
+}
+
+/**
+ * Prints out the state of the adjancency list, useful for debugging
+ */
+export function printAdjList() {
+  console.log(Array.from(adjList.entries()));
+}
+
+
 

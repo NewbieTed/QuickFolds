@@ -8,11 +8,180 @@
 import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d } from "../geometry/Point";
-import {addUpdatedAnnoationToDB} from "./RequestHandler";
-import {getFace2dFromId} from "../model/PaperGraph"
-import { getFace3DByID, incrementStepID, updateFace } from '../view/SceneManager';
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point";
+import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
+import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph"
+import { getFace3DByID, incrementStepID, print3dGraph, updateFace } from '../view/SceneManager';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
+import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
+
+
+/**
+ * Achieves a part of a fold action by actually rotating the planes
+ * assumes the planes are correctly split up, and connected via an edge
+ * @param faceId1 - the first face that rotates
+ * @param faceId2  - the second face that roates
+ * @param stationaryFace - the face that is stationary/doesn't move during rotation
+ * @param relativeChange - the relative rotation in degrees of the moving plane, where positive is in the prinicpal
+ *                         normal vector direction for faces
+ * @returns true/ or an error message
+ */
+export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+  if (faceId1 === faceId2) {
+    return "Faces are the same";
+  }
+
+
+
+  updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1, faceId2, relativeChange);
+  // hady do rotation math here
+  // render stuff... using stationaryFace
+
+  // backend needs a simple update angle step
+
+  // print2dGraph();
+  // print3dGraph();
+  printAdjList();
+
+  incrementStepID();
+  return true;
+}
+
+
+// creates a new split based on the edge, face, and what part should move
+/**
+ * Creates a new fold by splitting a face into two. Does not perform any rotation.
+ * update the front end system,
+ * and backend system accordingly
+ * @param point1Id - the id of the point on the fold edge
+ * @param point2Id - the id of the other point on the fold edge
+ * @param faceId - the id of the face that is split into two
+ * @param vertexOfFaceStationary - provide a point that is stationary in case of movement in future
+ * @param angle - the angle to start between them. should be 180
+ * @returns true/ or a string of error msg
+ */
+export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+  if (point1Id == point2Id) {
+    return "Points cannot be same";
+  }
+
+  let face2d: Face2D | undefined = getFace2dFromId(faceId);
+  if (face2d === undefined) {
+    console.error("error getting face 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
+  if (face3d === undefined) {
+    console.error("error getting face 3d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  // if a point isn't a vertex, have to check it's on the edge of the face
+  if (point1Id >= face2d.vertices.length) {
+    const point1: AnnotatedPoint2D = face2d.getAnnotatedPoint(point1Id);
+    if (point1.edgeID == null) {
+      const myStatus: EditorStatusType = "POINT_NOT_ON_EDGE_ERROR";
+      const msg = EditorStatus[myStatus].msg;
+      return msg;
+    }
+  }
+
+  if (point2Id >= face2d.vertices.length) {
+    const pointCheck: AnnotatedPoint2D = face2d.getAnnotatedPoint(point2Id);
+    if (pointCheck.edgeID == null) {
+      const myStatus: EditorStatusType = "POINT_NOT_ON_EDGE_ERROR";
+      const msg = EditorStatus[myStatus].msg;
+      return msg;
+    }
+  }
+
+
+  // need to get flattened 2d point
+  const flattedPoint3d: Point3D | null = projectPointToFace(vertexOfFaceStationary, face3d);
+  if (flattedPoint3d === null) {
+    console.error("error getting face 3d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  const flattedPoint2d: Point2D| null = translate3dTo2d(flattedPoint3d, faceId);
+  if (flattedPoint2d === null) {
+    console.error("error translating 3d to 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+
+  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
+  if (resultOfUpdatingPaperGraph === false) {
+    throw new Error("Error saving paper graph");
+  }
+
+  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
+
+  if (result === false) {
+    throw new Error("error with db");
+  }
+
+
+  print2dGraph();
+  print3dGraph();
+  printAdjList();
+
+  incrementStepID();
+  return true;
+}
+
+
+
+/**
+ * Creates a new fold operation by merging two faces that are together (180 degrees apart)
+ * @param faceId1 - the id of the first face to be merged
+ * @param faceId2 - the id of the other face to be merged
+ * @returns - true, or a string message error
+ */
+export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) {
+  if (faceId1 == faceId2) {
+    return "Faces are the same";
+  }
+
+  let face2d1: Face2D | undefined = getFace2dFromId(faceId1);
+  if (face2d1 === undefined) {
+    console.error("error getting face 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  const resFrontend = mergeFaces(faceId1, faceId2);
+  if (resFrontend === false) {
+    console.error("error getting face 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  const [mergedFace, leftFacePointIdsToNewIds, rightFacePointIdsToNewIds] = resFrontend;
+  updateAdjListForMergeGraph(mergedFace.ID, faceId1, faceId2, leftFacePointIdsToNewIds,rightFacePointIdsToNewIds);
+
+  let result: boolean = await addMergeFoldToDB(faceId1, faceId2, mergedFace);
+
+  // print2dGraph();
+  // print3dGraph();
+  printAdjList();
+
+  incrementStepID();
+  return true;
+}
+
+
 
 /**
  * Given a provided point (ie you can provided the layered shot, no need to
@@ -22,14 +191,14 @@ import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
  * @param faceId - the face to add the point to
  * @returns either true, or a message about while the action failed
  */
-export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promise<string | true> {
+export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId: bigint = -1n) : Promise<string | true> {
   // add points to frontend
-  console.log("internal system face id: " + faceId);
+
 
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
-    console.error("face 3d id doesn't exists");
+    console.error("face 3d id doesn't exists", faceId );
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;
     return msg;
@@ -60,7 +229,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
     return msg;
   }
 
-  let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint)
+  let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId)
   if (addPointResult.status !== "NORMAL") {
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;
@@ -74,7 +243,6 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint) : Promi
 
   // create manual new update change, since we already know the 3d point
   let pointId: bigint = getaddPointFromResultMap(addPointResult);
-  console.log("created point id", pointId);
   const renderUpdateResult = face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
   updateFace(renderUpdateResult);
 
@@ -239,6 +407,37 @@ export async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Pro
   return true;
 }
 
+/**
+ * Takes a 3d point in space and returns the prjected point in 2d space
+ * @param point - the point to project
+ * @param faceId - the id of the face to project to
+ * @returns the translated 2d point, or null if there's an error
+ */
+function getConvertedPoint2D(point: Point3D, faceId: bigint) : Point2D | null{
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
+  if (face3d === undefined) {
+    return null;
+  }
+
+  let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
+  if (flattedPoint == null) {
+    return null;
+  }
+
+
+  // add annotated point to face2d [ie in paper module]
+  let face2d: Face2D | undefined = getFace2dFromId(faceId);
+  if (face2d === undefined) {
+    return null;
+  }
+  let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
+  if (getTranslated2dPoint == null) {
+    return null;
+  }
+
+  return getTranslated2dPoint;
+}
+
 
 
 /**
@@ -384,7 +583,7 @@ function translate3dTo2d(point: Point3D, faceId: bigint) : Point2D | null {
  * @param faceId - the faceId the point lines on
  * @returns the corresponding point2d, or null if the 3d point isn't on the face
  */
-function translate2dTo3d(point: Point2D, faceId: bigint) : Point3D | null {
+export function translate2dTo3d(point: Point2D, faceId: bigint) : Point3D | null {
   let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
     console.error("face 3d id doesn't exists");
@@ -421,7 +620,6 @@ export function processTranslate2dTo3d(point: Point2D, face3d : Face3D, face2d: 
     points[1].y - points[0].y,
   );
 
-  console.log(basis1);
 
   const basis2 : Point2D = createPoint2D(
     points[2].x - points[0].x,
@@ -436,6 +634,7 @@ export function processTranslate2dTo3d(point: Point2D, face3d : Face3D, face2d: 
 
 
   if (basisResult == null) {
+    console.log("NO SOLUTION");
     return null;
   }
 

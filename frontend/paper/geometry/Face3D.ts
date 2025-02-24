@@ -67,10 +67,15 @@ export class Face3D {
                 vertices: pt.Point3D[],
                 paperThickness: number,
                 offset: number,
-                principalNormal: pt.Point3D
+                principalNormal: pt.Point3D,
+                faceID: bigint | null = null
                 ) {
+        if (faceID !== null) {
+            this.ID = faceID;
+        } else {
+            this.ID = getNextFaceID();
+        }
 
-        this.ID = getNextFaceID();
         this.vertices = vertices;
         this.N = BigInt(vertices.length);
         this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint3D>();
@@ -84,6 +89,17 @@ export class Face3D {
         this.mesh = this.createFaceGeometry();
     }
 
+    public getThickness(): number {
+        return this.paperThickness;
+    }
+
+    public getOffset(): number {
+        return this.offset;
+    }
+
+    public getPrincipleNormal(): pt.Point3D {
+        return this.principalNormal;
+    }
 
     /**
      * Generates the 3D polygon geometry from the initialization of vertices.
@@ -570,9 +586,9 @@ export class Face3D {
             obj.position.add(this.mesh.position);
             obj.quaternion.premultiply(q);
         }
-        
+
     }
-    
+
     // TODO: rotate the three js geometry method, vs rotate the true face.
     // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
