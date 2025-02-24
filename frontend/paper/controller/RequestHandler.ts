@@ -6,9 +6,45 @@
  * and frontend data (that is, serialization and deserialization).
  */
 
-import { AnnotationUpdate2D } from "../geometry/Face2D";
+import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D";
 import { Point2D } from "../geometry/Point";
-import {serializeResultChange} from "./Serializer";
+import {serializeResultChange, serializeSplitFold} from "./Serializer";
+
+
+
+
+
+
+export async function addSplitFacesToDB(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, angle: bigint, stationaryNewFaceID: bigint): Promise<boolean> {
+  // add points locally
+  const url = 'http://localhost:8080/geometry/fold';
+  const data = serializeSplitFold(leftFace, rightFace, ogFaceId, angle, stationaryNewFaceID);
+
+  console.log(data);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Content-Type" : "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Request failed');
+    }
+
+    const result = await response.json();
+    console.log('Response:', result);
+    return Promise.resolve(true);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+
+  return Promise.resolve(false);
+}
+
 
 /**
  * takes a status update,

@@ -29,7 +29,12 @@ export const EditorStatus = {
     BACKEND_500_ERROR: {
         code: 4,
         msg: "An error occured trying save your action to our servers"
-    }
+    },
+
+    POINT_NOT_ON_EDGE_ERROR: {
+        code: 5,
+        msg: "The point must be on the edge of a face"
+    },
 
 } as const;
 

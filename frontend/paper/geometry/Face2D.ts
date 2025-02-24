@@ -8,6 +8,7 @@ import {EditorStatusType} from "../view/EditorMessage";
 import {getNextFaceID} from "../view/SceneManager"
 import * as pt from "./Point";
 
+const DISTANCE_TO_FOLD_EDGE_TO_DELETE = 0.5;
 
 /**
  * An AnnotationUpdate2D object describes the new points
@@ -57,6 +58,35 @@ export class Face2D {
 
 
     /**
+     * @returns a defensive copy of the annotated Points map [id to point]
+     */
+    public getAnnotatedPointMap() : Map<bigint, pt.AnnotatedPoint2D>  {
+        return new Map(this.annotatedPoints);
+    }
+
+
+    /**
+     * @returns a defensive copy of the annotated Lines map [id to point]
+     */
+    public getAnnotatedLinesMap() : Map<bigint, pt.AnnotatedLine>  {
+        return new Map(this.annotatedLines);
+    }
+
+    /**
+     * Given a provided point, returns if the given line id is on the point
+     * Because of how floating point works, we consider a point close enough to a line if it
+     * is less than DISTANCE_TO_FOLD_EDGE_TO_DELETE
+     * @param pointToCheck - the point to check if it's merged
+     * @param lineId - the id to check from
+     * @returns whether the point is close enough
+     */
+    public isPointOnCustomLine(pointToCheck: pt.Point2D, lineId: bigint) : boolean {
+        const projPoint: pt.Point2D = this.projectToEdge(pointToCheck, lineId);
+        return pt.distance(projPoint, pointToCheck) <= DISTANCE_TO_FOLD_EDGE_TO_DELETE;
+    }
+
+
+    /**
      * Adds an annotated point to this Face2D.
      * @param point The point to add (assumed to be on this face).
      * @param edgeID The ID of the edge that this point lies on.
@@ -89,6 +119,30 @@ export class Face2D {
         }
 
         return update;
+    }
+
+    /**
+     * Creates a new annotated line directly, without any rendering, and doesn't cause any intersection
+     * changes. THIS METHOD IS DANGEROUS. It will break the system if not used correctly.
+     * This method is intended for temporary math caluclations given only to Annotated Lines.
+     * @param startPointId - the id of the start point to add to our new "line"
+     * @param endPointID - the id of the end point to add to our new "line"
+     * @returns the id of the created line
+     */
+    public addRawAnnotatedLine(
+                startPointId: bigint,
+                endPointID: bigint
+                ) : bigint {
+
+        const line1: pt.AnnotatedLine = {
+            startPointID: startPointId,
+            endPointID: endPointID
+        };
+
+        this.annotatedLines.set(this.nextLineID, line1);
+        this.nextLineID++;
+
+        return this.nextLineID - 1n;
     }
 
     /**
@@ -224,6 +278,22 @@ export class Face2D {
         return update;
     }
 
+
+    /**
+     * @param pointId - the id of the point you want to see what lines it's apart of
+     * @returns A list of line ids that the pointId is inside of
+     */
+    public getIdsOfLinesPointIsIn(pointId: bigint) {
+        const retList: bigint[] = [];
+        for (const [lineId, lineObj] of this.annotatedLines) {
+            if (lineObj.endPointID == pointId || lineObj.startPointID == pointId) {
+                retList.push(lineId);
+            }
+        }
+
+        return retList;
+    }
+
     /**
      * Checks whether two annotated lines are close to overlapping.
      * @param line1 The first annotated line.
@@ -281,6 +351,7 @@ export class Face2D {
 
         return Math.abs(cosAngle - 1) < 0.0001;
     }
+
 
     /**
      * Checks whether two annotated lines intersect.
@@ -497,6 +568,35 @@ export class Face2D {
             return result;
         }
         throw new Error(`This face has no annotated line with id ${lineID}.`);
+    }
+
+
+
+
+    /**
+     * Projects the given Point2D onto the edge of the given ID.
+     * @param point The point to project onto the edge.
+     * @param edgeID The ID of the edge to project onto.
+     * @returns The projection of the given point onto the edge.
+     * @throws Error if the given ID is not a valid edge ID.
+     */
+    public projectToEdge(point: pt.Point2D, edgeID: bigint): pt.Point2D {
+        if (edgeID < 0 || edgeID >= BigInt(this.vertices.length)) {
+            throw new Error(`The ID ${edgeID} is not a valid edge.`);
+        }
+
+        const edgeStart: pt.Point2D = this.getPoint(edgeID);
+        const edgeEnd: pt.Point2D = this.getPoint((edgeID + 1n) % this.N);
+        const direction: pt.Point2D = pt.normalize(pt.subtract(
+            edgeEnd, edgeStart
+        ));
+        const displacement: number = pt.dotProduct(
+            direction, pt.subtract(point, edgeStart)
+        );
+        const result: pt.Point2D = pt.add(
+            edgeStart, pt.scalarMult(direction, displacement)
+        );
+        return result;
     }
 
 }

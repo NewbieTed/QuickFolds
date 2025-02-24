@@ -15,7 +15,10 @@ import { Animation } from './animation/Animation';
 import { FlipAnimation } from './animation/FlipAnimation';
 
 let stepID = 1n;
-const origamiID = 1n;
+const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
+if (origamiID === null) {
+    throw new Error();
+}
 
 let nextFaceId: bigint = 0n;
 const scene = new THREE.Scene();
@@ -23,6 +26,10 @@ let animations: Animation[] = [];
 const idsToFace3D = new Map<bigint, Face3D>();
 const idsToFaceObj = new Map<bigint, THREE.Object3D>();
 const threeIDtoFaceID = new Map<number, bigint>();
+
+export function print3dGraph() {
+    console.log(idsToFace3D);
+}
 
 
 /**
@@ -58,7 +65,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
         createPoint3D(3, 0, -3, "Vertex"),
     ]
     const principalNormal = createPoint3D(0, 1, 0);
-    const plane = new Face3D(vertices3D, 0.05, 0, principalNormal);
+    const plane = new Face3D(vertices3D, 0.05, 0, principalNormal, 0n);
     scene.add(plane.getFaceMesh());
 
     idsToFace3D.set(plane.ID, plane);
@@ -155,12 +162,10 @@ export function updateFace(update: FaceUpdate3D) {
 
     // Add / remove the needed objects from the scene.
     for (let i = 0; i < update.objectsToAdd.length; i++) {
-        console.log("hady add:", update.objectsToAdd[i]);
         scene.add(update.objectsToAdd[i]);
     }
 
     for (let i = 0; i < update.objectsToDelete.length; i++) {
-        console.log("hady remove:", update.objectsToDelete[i]);
         scene.remove(update.objectsToDelete[i]);
     }
 
@@ -212,12 +217,13 @@ export function deleteFace(faceID: bigint) {
     // Clean up the face properly.
     face.dispose();
 
+    idsToFace3D.delete(faceID);
+
 }
 
 // Test animation function.
 export function spinFace() {
 
-    console.log("SPINNING");
     // Spin the only face in the scene.
     const face: Face3D | undefined = getFace3DByID(0n);
     if (face === undefined) {
