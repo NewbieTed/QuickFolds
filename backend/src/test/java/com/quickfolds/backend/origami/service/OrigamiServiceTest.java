@@ -6,6 +6,7 @@ import com.quickfolds.backend.geometry.mapper.StepTypeMapper;
 import com.quickfolds.backend.origami.mapper.OrigamiMapper;
 import com.quickfolds.backend.origami.model.dto.request.NewOrigamiRequest;
 import com.quickfolds.backend.origami.model.dto.response.OrigamiListResponse;
+import com.quickfolds.backend.origami.model.dto.response.OrigamiResponse;
 import com.quickfolds.backend.user.mapper.UserMapper;
 import com.quickfolds.backend.user.model.User;
 import com.quickfolds.backend.user.service.UserService;
@@ -17,6 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,20 +46,28 @@ public class OrigamiServiceTest {
     @Autowired
     private OrigamiService origamiService;
 
+    /**
+     * UserMapper for database operations.
+     */
+    @Autowired
+    private UserMapper userMapper;
 
-    private void prepData() {
+
+    private List<Long> prepData() {
+        List<Long> userIds = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             // Create a new user
+            String userName = "user" + i;
             User user = new User();
-            user.setUsername("user" + i);
+            user.setUsername(userName);
             user.setPassword("password" + i);
 
             // Register user and verify success
-            boolean result = userService.registerUser(user);
-            assertTrue(result, "User should be registered successfully");
+            userMapper.insertUser(user);
+            userIds.add(userMapper.getIdByUsername(userName));
         }
 
-        // TODO: Write SQL to insert steps
+        return userIds;
     }
 
     private void insertOrigami(Long userId, String origamiName, boolean isPublic) {
@@ -69,10 +82,10 @@ public class OrigamiServiceTest {
 
     @Test
     public void testListAllPublic() throws Exception {
-        prepData();
+        List<Long> userIds = prepData();
 
         for (int i = 0; i < NUM_TRIALS; i++) {
-            insertOrigami((long) i % 5 + 1, "origami" + i, true);
+            insertOrigami(userIds.get(i % userIds.size()), "origami" + i, true);
 
             ResponseEntity<BaseResponse<OrigamiListResponse>> response = origamiService.list();
 
@@ -94,8 +107,15 @@ public class OrigamiServiceTest {
             assertEquals(origamiList.getOrigamis().size(), i + 1, "Origami list have different number of elements, " +
                     "expected: " + (i + 1) + " actual: " + "origamiList.getOrigamis().size()");
 
-            assertEquals("user" + (i % 5), origamiList.getOrigamis().get(i).getAuthor());
-            assertEquals("origami" + i, origamiList.getOrigamis().get(i).getOrigamiName());
+            int index = i;
+            OrigamiResponse origami = origamiList.getOrigamis()
+                    .stream()
+                    .filter(o -> o.getOrigamiName().equals("origami" + index))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("Origami not found for name: origami" + index));
+
+            assertEquals("user" + (i % userIds.size()), origami.getAuthor());
+            assertEquals("origami" + i, origami.getOrigamiName());
         }
     }
 }
