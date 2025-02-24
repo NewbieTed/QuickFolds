@@ -2,12 +2,15 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <!--
     MyBatis XML Mapper for handling database operations related to origami models.
 
-    - Defines SQL mappings for retrieving and inserting origami models.
+    Purpose:
+    - This mapper provides SQL operations for managing origami models, including retrieval and insertion.
+    - Ensures origami records are properly linked to user accounts and metadata.
 
-    SQL Operations:
+    Key SQL Operations:
     - `getPublicOrigamis`: Retrieves public origami models with author details.
     - `getPublicOrigamiIds`: Retrieves only the IDs of public origami models.
     - `getMostRecentId`: Retrieves the most recently created origami model by a user.
@@ -18,9 +21,19 @@
     - `OrigamiResponse`: The DTO used for returning public origami details.
 -->
 <mapper namespace="com.quickfolds.backend.origami.mapper.OrigamiMapper">
+
     <!--
-        Maps database columns to the `OrigamiResponse` DTO fields.
+        Result Map for mapping database columns to the `OrigamiResponse` DTO fields.
+
+        Purpose:
         - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to the corresponding Java property.
+
+        Mapped Fields:
+        - `origami_id`: Maps to `origamiId` in the DTO.
+        - `origami_name`: Maps to `origamiName` in the DTO.
+        - `author`: Maps to the author's username.
+        - `ratings`: Maps to the origami's average rating.
     -->
     <resultMap id="OrigamiResponseMap" type="com.quickfolds.backend.origami.model.dto.response.OrigamiResponse">
         <id property="origamiId" column="origami_id"/>
@@ -32,8 +45,15 @@
     <!--
         Retrieves a list of public origami models with author details.
 
-        - Joins the `users` table to fetch the author's username.
-        - Returns data mapped to `OrigamiResponseMap`.
+        Purpose:
+        - Fetches all origami models marked as `public` along with their authors' usernames.
+        - Joins the `users` table to retrieve the `username` corresponding to each origami's `user_id`.
+
+        Parameters:
+        - None.
+
+        Result:
+        - List of `OrigamiResponse` objects containing the origami ID, name, author, and ratings.
     -->
     <select id="getPublicOrigamis" resultMap="OrigamiResponseMap">
         SELECT o.id AS origami_id, o.origami_name, u.username AS author, o.ratings
@@ -45,52 +65,79 @@
     <!--
         Retrieves only the IDs of public origami models.
 
-        - Optimized for scenarios where only IDs are needed, reducing data transfer.
+        Purpose:
+        - Optimized for scenarios where only origami IDs are required, reducing data transfer.
+
+        Parameters:
+        - None.
+
+        Result:
+        - List of IDs (`Long`) for all public origami models.
     -->
     <select id="getPublicOrigamiIds" resultType="java.lang.Long">
-        SELECT id FROM origami
-        WHERE
-        is_public = true
+        SELECT id
+        FROM origami
+        WHERE is_public = true
     </select>
 
     <!--
         Retrieves the database ID of the most recently created origami model by a specific user.
 
-        - Sorts origami by `id` in descending order.
-        - Uses `LIMIT 1` to fetch only the most recent entry.
+        Purpose:
+        - Finds the latest origami model created by a user, based on the `user_id` field.
+        - Sorts by `id` in descending order to fetch the newest record.
+
+        Parameters:
+        - `userId`: The ID of the user whose recent origami is being queried.
+
+        Result:
+        - The ID (`Long`) of the most recently created origami, or null if none exist.
     -->
     <select id="getMostRecentId" resultType="java.lang.Long">
-        SELECT id FROM origami
-        WHERE
-        user_id = #{userId}
+        SELECT id
+        FROM origami
+        WHERE user_id = #{userId}
         ORDER BY id DESC
         LIMIT 1
     </select>
 
     <!--
-    Inserts a new origami model into the database.
+        Inserts a new origami model into the database.
 
-    - Uses `<if test="...">` to conditionally insert optional fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
+        Purpose:
+        - Adds an origami record associated with a user.
+        - Supports conditional insertion of optional metadata fields using `<if test="...">`.
+
+        Parameters:
+        - `origami`: The `Origami` Java object representing the new origami model.
+
+        Fields Inserted:
+        - Required: `user_id`, `origami_name`, `is_public`, `ratings`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new origami record and returns the generated primary key.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.origami.model.database.Origami">
         INSERT INTO origami (
-            user_id,
-            origami_name,
-            is_public,
-            ratings
-            <if test="origami.createdBy != null">, created_by</if>
-            <if test="origami.updatedBy != null">, updated_by</if>
-            <if test="origami.createdAt != null">, created_at</if>
-            <if test="origami.updatedAt != null">, updated_at</if>
-        ) VALUES (
-            #{origami.userId},
-            #{origami.origamiName},
-            #{origami.isPublic},
-            #{origami.ratings}
-            <if test="origami.createdBy != null">, #{origami.createdBy}</if>
-            <if test="origami.updatedBy != null">, #{origami.updatedBy}</if>
-            <if test="origami.createdAt != null">, #{origami.createdAt}</if>
-            <if test="origami.updatedAt != null">, #{origami.updatedAt}</if>
+        user_id,
+        origami_name,
+        is_public,
+        ratings
+        <if test="origami.createdBy != null">, created_by</if>
+        <if test="origami.updatedBy != null">, updated_by</if>
+        <if test="origami.createdAt != null">, created_at</if>
+        <if test="origami.updatedAt != null">, updated_at</if>
+        )
+        VALUES (
+        #{origami.userId},
+        #{origami.origamiName},
+        #{origami.isPublic},
+        #{origami.ratings}
+        <if test="origami.createdBy != null">, #{origami.createdBy}</if>
+        <if test="origami.updatedBy != null">, #{origami.updatedBy}</if>
+        <if test="origami.createdAt != null">, #{origami.createdAt}</if>
+        <if test="origami.updatedAt != null">, #{origami.updatedAt}</if>
         )
     </insert>
 

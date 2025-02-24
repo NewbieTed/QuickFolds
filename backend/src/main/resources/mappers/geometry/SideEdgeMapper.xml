@@ -2,24 +2,40 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <!--
     MyBatis XML Mapper for handling database operations related to side edges in an origami model.
 
-    - Defines SQL mappings for inserting side edges.
+    Purpose:
+    - This mapper provides SQL operations for managing side edges, including insertion.
+    - Ensures side edges are correctly linked to vertices and faces within the origami structure.
 
-    SQL Operations:
-    - `addByObj`: Inserts a new side edge into the database.
+    Key SQL Operations:
+    - `addByObj`: Inserts a new side edge into the database with optional metadata fields.
 
     Dependencies:
-    - `SideEdge`: The Java entity representing a side edge.
+    - `SideEdge`: The Java entity representing a side edge in the origami model.
+    - `side_edge` table: Stores side edges, including associated vertices, faces, and metadata.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.SideEdgeMapper">
 
     <!--
         Inserts a new side edge into the database.
 
-        - Stores relationships between edges and faces in the origami model.
-        - Uses conditional checks to include optional metadata fields dynamically.
+        Purpose:
+        - Adds a side edge representing the connection between two vertices in an origami face.
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`)
+          using `<if test="...">` to conditionally add fields only when they are non-null.
+
+        Parameters:
+        - `sideEdge`: The Java object representing the side edge to insert.
+
+        Fields Inserted:
+        - Required: `edge_id`, `vertex_1_id`, `vertex_2_id`, `face_id`, `id_in_face`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new side edge record and returns the generated primary key.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.SideEdge">
         INSERT INTO side_edge (
@@ -44,4 +60,20 @@
         <if test="sideEdge.updatedAt != null">, #{sideEdge.updatedAt}</if>
         )
     </insert>
+
+
+    <update id="deleteByFaceIds">
+        UPDATE edge e
+        SET deleted_step_id = #{deletedStepId}
+        FROM side_edge se
+        WHERE
+        se.edge_id = e.id
+        AND e.deleted_step_id IS NULL
+        AND se.face_id IN (
+        <foreach collection="faceIds" item="faceId" separator=",">
+            #{faceId}
+        </foreach>
+        );
+    </update>
+
 </mapper>

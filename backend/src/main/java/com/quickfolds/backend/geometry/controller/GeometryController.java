@@ -13,120 +13,109 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 /**
  * REST controller for handling geometry-related operations in the origami system.
- *
+ * <p>
+ * This controller provides endpoints for performing geometric transformations,
+ * such as folding and annotating origami structures. It ensures input validation
+ * and delegates business logic to {@link GeometryService}.
+ * <p>
  * Endpoints:
- * - `/geometry/fold` (GET): Handles origami folding operations.
- * - `/geometry/annotate` (POST): Adds annotations to an origami structure.
- * - `/geometry/get/step` (GET): Retrieves a specific step in the origami process.
+ * <ul>
+ *     <li><strong>POST /geometry/fold:</strong> Handles origami folding operations.</li>
+ *     <li><strong>POST /geometry/annotate:</strong> Adds annotations to an origami structure.</li>
+ *     <li><strong>GET /geometry/get/step:</strong> Retrieves a specific step in the origami process.</li>
+ * </ul>
+ * <p>
+ * Validation:
+ * <ul>
+ *     <li>Uses {@code @Valid} to validate incoming request bodies.</li>
+ *     <li>Performs additional null and empty checks on {@link #annotate(AnnotationRequest)} requests.</li>
+ * </ul>
  *
  * Dependencies:
- * - `GeometryService`: Service layer that processes folding and annotation requests.
- *
- * Validation:
- * - Uses `@Valid` to validate incoming request bodies.
- * - Performs additional null and empty checks on `annotate()` requests.
+ * - {@link GeometryService}: Service layer for processing folding and annotation requests.
  */
 @RestController
 @RequestMapping("/geometry")
 @RequiredArgsConstructor
 public class GeometryController {
-    // Service layer responsible for executing geometry-related operations.
+
+    /**
+     * Service layer responsible for executing geometry-related operations.
+     */
     private final GeometryService geometryService;
 
     /**
      * Handles the folding operation for an origami structure.
-     *
-     * - Expects a `FoldRequest` containing the necessary fold instructions.
-     * - Returns an error if the request body is missing.
-     * - Delegates the request to `GeometryService.fold()`.
+     * <p>
+     * This endpoint receives a {@link FoldRequest} containing the necessary fold instructions.
+     * It validates the request, ensures it is not null, and delegates the processing
+     * to the {@link GeometryService#fold(FoldRequest)} method.
      *
      * @param request The fold request containing the necessary transformations.
-     * @return ResponseEntity with a BaseResponse indicating success or failure.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success or failure.
+     * @throws IllegalArgumentException If the request body is null.
      */
-    @GetMapping("/fold")
+    @PostMapping("/fold")
     public ResponseEntity<BaseResponse<Boolean>> fold(@Valid @RequestBody FoldRequest request) {
-        // Validate that the request body is not null.
         if (request == null) {
             return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
         }
-
-        // Process the fold request using the geometry service.
         return geometryService.fold(request);
     }
 
     /**
      * Handles annotation requests for an origami structure.
-     *
-     * - Validates the request to ensure it contains necessary data.
-     * - Checks that the origami ID, step ID, and faces list are not null or empty.
-     * - Delegates annotation processing to `GeometryService.annotate()`.
+     * <p>
+     * This endpoint receives an {@link AnnotationRequest} containing face annotations.
+     * It performs comprehensive validation to ensure that the request includes:
+     * <ul>
+     *     <li>Non-null origami ID</li>
+     *     <li>Non-null step ID</li>
+     *     <li>Non-empty list of face annotations</li>
+     * </ul>
+     * If the validation passes, the request is processed by {@link GeometryService#annotate(AnnotationRequest)}.
      *
      * @param request The annotation request containing face modifications.
-     * @return ResponseEntity with a BaseResponse indicating success or failure.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success or failure.
      * @throws IllegalArgumentException If the request contains missing or invalid data.
      */
     @PostMapping("/annotate")
     public ResponseEntity<BaseResponse<Boolean>> annotate(@Valid @RequestBody AnnotationRequest request) {
-        // TODO: More checks needed
-        // Validate that the request body is not null.
         if (request == null) {
-            String errorMessage = "Request is null," +
-                    " verify if request is valid (null request)";
-            throw new IllegalArgumentException(errorMessage);
+            throw new IllegalArgumentException("Request is null, verify if request is valid (null request)");
         }
 
-        // Validate that the origami ID is provided.
         if (request.getOrigamiId() == null) {
-            String errorMessage = "Origami id is null," +
-                    " verify if request is valid (null origami id)";
-            throw new IllegalArgumentException(errorMessage);
+            throw new IllegalArgumentException("Origami ID is null, verify if request is valid (null origami ID)");
         }
 
-        // Validate that the step ID in origami is provided.
         if (request.getStepIdInOrigami() == null) {
-            String errorMessage = "Step id in origami is null," +
-                    " verify if request is valid (null step id in origami)";
-            throw new IllegalArgumentException(errorMessage);
+            throw new IllegalArgumentException("Step ID in origami is null, verify if request is valid (null step ID)");
         }
 
-        // Retrieve the list of face annotation requests.
         List<FaceAnnotateRequest> faces = request.getFaces();
-
-        // Validate that the faces list is not null.
-        if (faces == null) {
-            String errorMessage = "faces list is null," +
-                    " verify if request is valid (null faces list)";
-            throw new IllegalArgumentException(errorMessage);
+        if (faces == null || faces.isEmpty()) {
+            throw new IllegalArgumentException("Faces list is null or empty, verify if request is valid");
         }
 
-        // Validate that the faces list is not empty.
-        if (faces.isEmpty()) {
-            String errorMessage = "faces list is empty," +
-                    " verify if request is valid (empty faces list)";
-            throw new IllegalArgumentException(errorMessage);
-        }
-
-        // Process the annotation request using the geometry service.
-        return  geometryService.annotate(request);
+        return geometryService.annotate(request, null);
     }
 
     /**
      * Retrieves a specific step in the origami folding process.
-     *
-     * - Expects a long value representing the step ID.
-     * - Currently returns a success response without implementation.
+     * <p>
+     * This endpoint expects a long value representing the step ID.
+     * It currently returns a success response as a placeholder, with the actual
+     * retrieval logic to be implemented in the future.
      *
      * @param request The ID of the step to retrieve.
-     * @return ResponseEntity with a BaseResponse indicating success.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success.
      */
     @GetMapping("/get/step")
     public ResponseEntity<BaseResponse<Boolean>> getStep(@RequestBody long request) {
         // TODO: Implement logic to retrieve and return the requested step.
-
         return BaseResponse.success();
     }
-
 }
