@@ -22,6 +22,8 @@ function processVertex(face: Face2D) {
       }
     );
   }
+
+  return retList;
 }
 
 

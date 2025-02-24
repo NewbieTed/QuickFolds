@@ -29,17 +29,17 @@ export function getAdjList() {
 
 export function updateAdjListForSplitGraph(
   ogFaceId: bigint,
-  [leftFaceId, leftFaceEdgeIdThatFolds, ogEdgeIdsToLeftEdgeIds]: [bigint, bigint, Map<bigint, bigint>],
-  [rightFaceId, rightFaceEdgeIdThatFolds, ogEdgeIdsToRightEdgeIds]: [bigint, bigint, Map<bigint, bigint>],
+  [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
+  [rightFaceId, rightFaceEdgeIdThatFolds, ogPoingIdsToRightPointIds]: [bigint, bigint, Map<bigint, bigint>],
   angle: bigint
 ) {
   // create new list, since we are making new planes
   adjList.set(leftFaceId, []);
   adjList.set(rightFaceId, []);
 
-
-  const correctLeftFaceEdge: bigint | undefined = ogEdgeIdsToLeftEdgeIds.get(leftFaceEdgeIdThatFolds);
-  const correctRightFaceEdge: bigint | undefined = ogEdgeIdsToRightEdgeIds.get(rightFaceEdgeIdThatFolds);
+  console.log("heres what i thinkg", ogPointIdsToLeftPointIds);
+  const correctLeftFaceEdge: bigint | undefined =  leftFaceEdgeIdThatFolds; // ogPointIdsToLeftPointIds.get(leftFaceEdgeIdThatFolds);
+  const correctRightFaceEdge:  bigint | undefined = rightFaceEdgeIdThatFolds;// ogPoingIdsToRightPointIds.get(rightFaceEdgeIdThatFolds);
 
   if (correctLeftFaceEdge === undefined || correctRightFaceEdge === undefined) {
     throw new Error("Incorrect mapping");
@@ -106,9 +106,9 @@ export function updateAdjListForSplitGraph(
       const theOldEdgeIdOfMyFace = currentItem.edgeIdOfMyFace;
 
       // find out where the old edge when to
-      if (Array.from(ogEdgeIdsToLeftEdgeIds.keys()).includes(theOldEdgeIdOfMyFace)) {
+      if (Array.from(ogPointIdsToLeftPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
         // left face has the connection
-        const theEdgeForTheSplitFace: bigint | undefined = ogEdgeIdsToLeftEdgeIds.get(theOldEdgeIdOfMyFace);
+        const theEdgeForTheSplitFace: bigint | undefined = ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace);
         if (theEdgeForTheSplitFace === undefined) {
           throw new Error("missed edge in adj list");
         }
@@ -132,9 +132,9 @@ export function updateAdjListForSplitGraph(
         }
 
         adjList.get(currentItem.idOfOtherFace)?.push(valueForTheOutsideValue);
-      } else if (Array.from(ogEdgeIdsToRightEdgeIds.keys()).includes(theOldEdgeIdOfMyFace)) {
+      } else if (Array.from(ogPoingIdsToRightPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
         // right face has the connection
-        const theEdgeForTheSplitFace: bigint | undefined = ogEdgeIdsToRightEdgeIds.get(theOldEdgeIdOfMyFace);
+        const theEdgeForTheSplitFace: bigint | undefined = ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace);
         if (theEdgeForTheSplitFace === undefined) {
           throw new Error("missed edge in adj list");
         }
@@ -169,6 +169,7 @@ export function updateAdjListForSplitGraph(
   }
 }
 
+// todo, update merging
 
 
 function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
@@ -229,7 +230,19 @@ export function delete2dFaceToPaperGraph(faceId: bigint) {
 
 
 export function print2dGraph() {
+  console.log("------Display 2d Graph---------");
   console.log(idsToFaces);
+  for(const [faceId, faceObj] of idsToFaces) {
+    console.log("  ", faceId, ":");
+    console.log("  anno points size", faceObj.getAnnotatedPointMap().size);
+    for( const [pointId, pointObj] of faceObj.getAnnotatedPointMap()) {
+      console.log("     ", pointId);
+    }
+    console.log("  anno line size", faceObj.getAnnotatedLinesMap().size);
+  }
+
+
+  console.log("-------------------------------");
 }
 
 export function printAdjList() {

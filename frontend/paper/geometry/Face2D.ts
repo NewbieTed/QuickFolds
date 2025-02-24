@@ -81,7 +81,7 @@ export class Face2D {
      * @returns whether the point is close enough
      */
     public isPointOnCustomLine(pointToCheck: pt.Point2D, lineId: bigint) : boolean {
-        const projPoint: pt.Point2D = this.projectToEdge(pointToCheck, lineId);
+        const projPoint: pt.Point2D = this.projectToLine(pointToCheck, lineId);
         return pt.distance(projPoint, pointToCheck) <= DISTANCE_TO_FOLD_EDGE_TO_DELETE;
     }
 
@@ -587,6 +587,35 @@ export class Face2D {
 
         const edgeStart: pt.Point2D = this.getPoint(edgeID);
         const edgeEnd: pt.Point2D = this.getPoint((edgeID + 1n) % this.N);
+        const direction: pt.Point2D = pt.normalize(pt.subtract(
+            edgeEnd, edgeStart
+        ));
+        const displacement: number = pt.dotProduct(
+            direction, pt.subtract(point, edgeStart)
+        );
+        const result: pt.Point2D = pt.add(
+            edgeStart, pt.scalarMult(direction, displacement)
+        );
+        return result;
+    }
+
+
+    /**
+     * Projects the given Point2D onto the line of the given ID.
+     * @param point The point to project onto the line.
+     * @param lineId The annotationLineID of the edge to project onto.
+     * @returns The projection of the given point onto the edge.
+     * @throws Error if the given ID is not a valid edge ID.
+     */
+    public projectToLine(point: pt.Point2D, lineId: bigint): pt.Point2D {
+        if (lineId < BigInt(this.vertices.length)) {
+            throw new Error(`The LINE ID ${lineId} is not a valid annotation ilne.`);
+        }
+
+        const getAnnotationLine = this.getAnnotatedLine(lineId);
+
+        const edgeStart: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.startPointID).point;
+        const edgeEnd: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.endPointID).point;
         const direction: pt.Point2D = pt.normalize(pt.subtract(
             edgeEnd, edgeStart
         ));

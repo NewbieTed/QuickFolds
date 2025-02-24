@@ -13,12 +13,12 @@ import {addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId, print2dGraph, printAdjList} from "../model/PaperGraph"
 import { getFace3DByID, incrementStepID, print3dGraph, updateFace } from '../view/SceneManager';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
-import { graphCreateNewFoldSplit } from '../model/PaperManager';
+import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
 
 
 
 // creates a new split based on the edge, face, and what part should move
-export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vectexOfFaceStationary: bigint, angle: bigint) {
+export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
   if (angle == 180n || point1Id == point2Id) {
     return;
   }
@@ -26,6 +26,14 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     console.error("error getting face 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  let face3d: Face3D | undefined = getFace3DByID(faceId);
+  if (face3d === undefined) {
+    console.error("error getting face 3d");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;
     return msg;
@@ -51,19 +59,62 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   }
 
 
+  // need to get flattened 2d point
+  const flattedPoint3d: Point3D | null = projectPointToFace(vertexOfFaceStationary, face3d);
+  if (flattedPoint3d === null) {
+    console.error("error getting face 3d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
 
-  const resultOfUpdatingPaperGraph = graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle);
+  const flattedPoint2d: Point2D| null = translate3dTo2d(flattedPoint3d, faceId);
+  if (flattedPoint2d === null) {
+    console.error("error translating 3d to 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+
+  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
   if (resultOfUpdatingPaperGraph === false) {
     throw new Error("Error saving paper graph");
   }
   // todo: figure our the face based on the vertexOfStationary
-  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, angle, vectexOfFaceStationary);
+  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, angle, resultOfUpdatingPaperGraph[2]);
 
   if (result === false) {
     throw new Error("error with db");
   }
 
 
+  print2dGraph();
+  print3dGraph();
+  printAdjList();
+
+  incrementStepID();
+  return true;
+}
+
+
+// create a new split by merging
+export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint, vectexOfFaceStationary: bigint) {
+  if (faceId1 == faceId2) {
+    return;
+  }
+
+  let face2d1: Face2D | undefined = getFace2dFromId(faceId1);
+  if (face2d1 === undefined) {
+    console.error("error getting face 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+
+  mergeFaces(faceId1, faceId2)
+
+  console.log("MERGING");
   print2dGraph();
   print3dGraph();
   printAdjList();
