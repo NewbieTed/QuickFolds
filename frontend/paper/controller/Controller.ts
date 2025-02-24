@@ -9,12 +9,34 @@ import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point";
-import {addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
-import {getFace2dFromId, print2dGraph, printAdjList} from "../model/PaperGraph"
+import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
+import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph"
 import { getFace3DByID, incrementStepID, print3dGraph, updateFace } from '../view/SceneManager';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
 import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
 
+
+
+export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+  if (faceId1 === faceId2) {
+    return;
+  }
+
+
+
+  updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1, faceId2, relativeChange);
+  // hady do rotation math here
+  // render stuff... using stationaryFace
+
+  // backend needs a simple update angle step
+
+  // print2dGraph();
+  // print3dGraph();
+  printAdjList();
+
+  incrementStepID();
+  return true;
+}
 
 
 // creates a new split based on the edge, face, and what part should move
@@ -81,8 +103,8 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   if (resultOfUpdatingPaperGraph === false) {
     throw new Error("Error saving paper graph");
   }
-  // todo: figure our the face based on the vertexOfStationary
-  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, angle, resultOfUpdatingPaperGraph[2]);
+
+  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
 
   if (result === false) {
     throw new Error("error with db");
@@ -96,6 +118,7 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   incrementStepID();
   return true;
 }
+
 
 
 // create a new split by merging
@@ -112,11 +135,21 @@ export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint, 
     return msg;
   }
 
-  mergeFaces(faceId1, faceId2)
+  const resFrontend = mergeFaces(faceId1, faceId2);
+  if (resFrontend === false) {
+    console.error("error getting face 2d");
+    const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
 
-  console.log("MERGING");
-  print2dGraph();
-  print3dGraph();
+  const [mergedFace, leftFacePointIdsToNewIds, rightFacePointIdsToNewIds] = resFrontend;
+  updateAdjListForMergeGraph(mergedFace.ID, faceId1, faceId2, leftFacePointIdsToNewIds,rightFacePointIdsToNewIds);
+
+  let result: boolean = await addMergeFoldToDB(faceId1, faceId2, mergedFace);
+
+  // print2dGraph();
+  // print3dGraph();
   printAdjList();
 
   incrementStepID();
@@ -135,7 +168,7 @@ export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint, 
  */
 export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId: bigint = -1n) : Promise<string | true> {
   // add points to frontend
-  console.log("here is the point to add:", point.x, point.y, point.z);
+
 
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D | undefined = getFace3DByID(faceId);

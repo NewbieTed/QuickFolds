@@ -27,7 +27,7 @@ function processVertex(face: Face2D) {
 }
 
 
-function processEdges(face: Face2D, angle: bigint) {
+function processEdges(face: Face2D) {
   const adjList : Map<bigint, EdgesAdjList[]> = getAdjList();
   const list: EdgesAdjList[] | undefined = adjList.get(face.ID);
 
@@ -49,7 +49,7 @@ function processEdges(face: Face2D, angle: bigint) {
     retList[Number(curr.edgeIdOfMyFace)] = {
       "idInOtherFace": Number(curr.edgeIdOfOtherFace), // edge id
       "otherFaceIdInOrigami": Number(curr.idOfOtherFace), // other face id
-      "angle": Number(angle)
+      "angle": Number(curr.angleBetweenThem)
     };
   }
 
@@ -84,15 +84,50 @@ function processAnnoLines(face: Face2D) {
   return retList;
 }
 
+export function serializeMergeFold(leftFaceId: bigint, rightFaceId: bigint, mergedFace: Face2D) {
+  // create two new faces
+  const faces: any[] = [
+    { // face left
+      "idInOrigami": Number(mergedFace.ID),
+      "vertices": processVertex(mergedFace),
+      "edges": processEdges(mergedFace),
+      "annotations": {
+        "points": processAnnoPoints(mergedFace),
+        "lines": processAnnoLines(mergedFace)
+      }
+    }
+  ];
 
-export function serializeSplitFold(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, angle: bigint, anchoredFaceIdInOrigami: bigint) {
+
+  const oriId = getOrigamiID();
+  if (oriId === null) {
+    throw new Error("ERROR GETTING ORIGAMI ID");
+
+  }
+  const origamiID: bigint = BigInt(oriId);
+  const stepID: bigint = getStepID();
+
+  const finalHeader = {
+    "origamiId": Number(origamiID),
+    "stepIdInOrigami": Number(stepID),
+    "anchoredFaceIdInOrigami": Number(mergedFace.ID),
+    "faces": faces,
+    "deletedFaces": [Number(leftFaceId), Number(rightFaceId)]
+  }
+
+
+  return finalHeader;
+}
+
+
+export function serializeSplitFold(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, anchoredFaceIdInOrigami: bigint) {
 
   // create two new faces
   const faces: any[] = [
     { // face left
       "idInOrigami": Number(leftFace.ID),
       "vertices": processVertex(leftFace),
-      "edges": processEdges(leftFace, angle),
+      "edges": processEdges(leftFace),
       "annotations": {
         "points": processAnnoPoints(leftFace),
         "lines": processAnnoLines(leftFace)
@@ -102,7 +137,7 @@ export function serializeSplitFold(leftFace: Face2D, rightFace: Face2D, ogFaceId
     { // face right
       "idInOrigami": Number(rightFace.ID),
       "vertices": processVertex(rightFace),
-      "edges": processEdges(rightFace, angle),
+      "edges": processEdges(rightFace),
       "annotations": {
         "points": processAnnoPoints(rightFace),
         "lines": processAnnoLines(rightFace)

@@ -40,7 +40,8 @@ export function graphAddAnnotationPoint(
 
 
 
-export function mergeFaces(faceId1: bigint, faceId2: bigint) {
+export function mergeFaces(faceId1: bigint, faceId2: bigint):
+  [Face2D, Map<bigint, bigint>,Map<bigint, bigint>] | false{
   let face1Obj2d: Face2D | undefined = getFace2dFromId(faceId1);
   if (face1Obj2d === undefined) {
     return false;
@@ -54,7 +55,7 @@ export function mergeFaces(faceId1: bigint, faceId2: bigint) {
 
   // create base face
   const [mergedFace, mergedFace3d, leftFacePointIdsToNewIds, rightFacePointIdsToNewIds] = createMergedFaceSkeleton(faceId1, faceId2);
-  console.log("SKELE", mergedFace);
+
   const [face1EdgeMerge, face2EdgeMerge] = getEdgesThatAreApartOfMerging(face1Obj2d, face2Obj2d);
   // create the annotation content for the face 2d
   // now we add the annotation points for the left face
@@ -90,7 +91,7 @@ export function mergeFaces(faceId1: bigint, faceId2: bigint) {
 
     // if the original edge im on is the merging one, we need to check
     // that we should "merge points"
-    console.log("when merging points, are they on an edge", annoPointObj.edgeID, face2EdgeMerge);
+
     if (face2EdgeMerge === annoPointObj.edgeID && closestPoint(mergedFace, annoPointObj.point) !== undefined) {
       // if true, we will use this point for our merging
       const pointId: bigint | undefined = closestPoint(mergedFace, annoPointObj.point);
@@ -165,7 +166,9 @@ export function mergeFaces(faceId1: bigint, faceId2: bigint) {
   delete2dFaceToPaperGraph(faceId2);
 
   // return the created faces back to the controller so that we can send these to backend
-  [mergedFace, mergedFace3d];
+
+  return  [mergedFace, leftFacePointIdsToNewIds, rightFacePointIdsToNewIds];
+
 }
 
 
@@ -249,7 +252,6 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
   const cosSimilarity = 1.0 * dotProduct(startEdgebasis1, startEdgebasis2) /
     (distance(startEdgebasis1, createPoint2D(0, 0)) * distance(startEdgebasis2, createPoint2D(0, 0)));
 
-  console.log("TEST1", cosSimilarity);
 
   if (cosSimilarity > HOW_CLOSE_DO_EDGES_NEED_BE_DIRECTION_WISE_TO_MERGE) {
     // they aren't in the oppisite direction, so we need to add the point
@@ -427,7 +429,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
     if (!listOfDoubleOgPoints.includes(pointIdOfOg) && pointIdOfOg !== point1Id && pointIdOfOg !== point2Id) {
       if (isPointOnLeftFace(vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine, face2d.getPoint(pointIdOfOg), face2d)) {
         // add to left face
-        console.log("adding left", pointIdOfOg);
         const pointToAdd: AnnotatedPoint2D = face2d.getAnnotatedPoint(pointIdOfOg);
 
 
@@ -449,7 +450,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
         }
       } else {
         // add to right face
-        console.log("adding right", pointIdOfOg);
         const pointToAdd: AnnotatedPoint2D = face2d.getAnnotatedPoint(pointIdOfOg);
 
 
@@ -501,7 +501,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
           throw new Error("create points map for left face missed something");
         }
         leftFace.addAnnotatedLine(startPointForNewFace, endPointForNewFace);
-        console.log("ADDED TO LEFT LINES");
       }
       else if(check3 !== undefined && check4 !== undefined && rightFacePoints.includes(check3) &&
          rightFacePoints.includes(check4)) {
@@ -513,9 +512,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
           throw new Error("create points map for right face missed something");
         }
         rightFace.addAnnotatedLine(startPointForNewFace, endPointForNewFace);
-        console.log("ADDED TO RIGHT LINES");
-      } else {
-        console.error("happen");
       }
     }
 
@@ -543,6 +539,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // return the created faces back to the controller so that we can send these to backend
   return [leftFace, rightFace, whichFaceIsStationary];
 }
+
 
 
 function copyAllAnnotationsFrom2dTo3d(ogFaceID: bigint, face2d: Face2D): AnnotationUpdate3D {
