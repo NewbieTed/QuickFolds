@@ -104,27 +104,60 @@ public class GeometryController {
     }
 
     /**
-     * Retrieves a specific step in the origami folding process.
+     * Retrieves necessary data to go forward or backward one step in the origami folding process.
      * <p>
-     * This endpoint expects a long value representing the origami ID
-     * and an int value representing the step ID in the origami.
-     * It insures the parameters are not null, and then delegates the processing
-     * to the {@link GeometryService#getStep(long, int)} method.
+     * This endpoint expects a long value representing the origami ID,
+     * an int value representing the step ID in the origami of the starting step,
+     * an int value representing the step ID in the origmi of the ending step,
+     * and a boolean value indicating if the step is going forward.
+     * It verifies that:
+     * <ul>
+     *     <li>the parameters are not null</li>
+     *     <li>startStep and endStep are exactly 1 appart</li>
+     *     <li>startStep < endStep if isForward = true</li>
+     *     <li>startStep > endStep if isForward = false</li>
+     * </ul>
+     * If verification succeeds, delegates processing to {@link GeometryService#getStep(long, int, int, boolean)}.
      *
      * @param origamiId The ID of the origami the step is in.
-     * @param stepIdInOrigami The ID of the step to retrieve in the origami.
+     * @param startStep The ID in the origami of the starting step.
+     * @param endStep The ID in the origami of the ending step.
+     * @param isForward Indicates if the step is going forward or not.
      * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success.
      */
-    @GetMapping("/get/step/{origamiId}/{stepIdInOrigami}")
-    public ResponseEntity<BaseResponse<Boolean>> getStep(@PathVariable long origamiId, @PathVariable int stepIdInOrigami) {
+    @GetMapping("/getStep/{origamiId}/{startStep}/{endStep}/{isForward}")
+    public ResponseEntity<BaseResponse<Boolean>> getStep(@PathVariable long origamiId,
+                                                         @PathVariable int startStep,
+                                                         @PathVariable int endStep, @PathVariable boolean isForward) {
         if (origamiId == null) {
-            throw new IllegalArgumentException("Origami ID is null, verify if request is valid (null origami ID");
+            throw new IllegalArgumentException("Origami ID is null, this should not be possible");
         }
 
-        if (stepIdInOrigami == null) {
-            throw new IllegalArgumentException("Step ID in origami is null, verify if request is valid (null step ID in origami)");
+        if (startStep == null) {
+            throw new IllegalArgumentException("Starting step ID in origami is null, this should not be possible");
         }
 
-        return geometryService.getStep(origamiId, stepIdInOrigami);
+        if (endStep == null) {
+            throw new IllegalArgumentException("Ending step ID in origami is null, this should not be possible");
+        }
+
+        if (isForward == null) {
+            throw new IllegalArgumentException("Starting step ID in origami is null, this should not be possible");
+        }
+
+        int a = Math.abs(startStep - endStep);
+        if (a != 1) {
+            throw new IllegalArgumentException("Can only go between 1 step at a time. Tried to go between " + a + " steps");
+        }
+
+        if (startStep > endStep && isForward == true) {
+            throw new IllegalArgumentException("Start step cannot be greater than end step when going forward");
+        }
+
+        if (startStep < endStep && isForward == false) {
+            throw new IllegalArgumentException("Start step cannot be less than end step when going backward");
+        }
+
+        return geometryService.getStep(origamiId, startStep, endStep, isForward);
     }
 }
