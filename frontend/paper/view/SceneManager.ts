@@ -7,11 +7,12 @@
 
 
 import * as THREE from 'three';
-import {createPoint3D} from '../geometry/Point';
+import * as pt from '../geometry/Point';
 import {Face3D} from "../geometry/Face3D";
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { createNewGraph } from '../model/PaperGraph';
 import { Animation } from './animation/Animation';
+import { FoldAnimation } from './animation/FoldAnimation';
 
 let stepID = 1n;
 const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
@@ -58,12 +59,12 @@ export function initialize(renderer: THREE.WebGLRenderer) {
 
     // Create a Face3D to begin manipulating.
     const vertices3D = [
-        createPoint3D(-3, 0, -3, "Vertex"),
-        createPoint3D(-3, 0, 3, "Vertex"),
-        createPoint3D(3, 0, 3, "Vertex"),
-        createPoint3D(3, 0, -3, "Vertex"),
+        pt.createPoint3D(-3, 0, -3, "Vertex"),
+        pt.createPoint3D(-3, 0, 3, "Vertex"),
+        pt.createPoint3D(3, 0, 3, "Vertex"),
+        pt.createPoint3D(3, 0, -3, "Vertex"),
     ]
-    const principalNormal = createPoint3D(0, 1, 0);
+    const principalNormal = pt.createPoint3D(0, 1, 0);
     const plane = new Face3D(vertices3D, 0.05, 0, principalNormal, 0n);
     scene.add(plane.getFaceObject());
 
@@ -208,4 +209,72 @@ export function updateAnimations() {
     }
 
     animations = animRemaining;
+}
+
+ 
+/**
+ * Animates folding several faces by rotating them about the
+ * crease line specified by the ID of the anchored face and the
+ * ID of the edge in the anchored face which is being folded. The
+ * fold is by deltaAngle, opposite to the direction of the direction
+ * of the principle normal of the anchored face.
+ * @param anchoredFaceID The ID of the face that doesn't move.
+ * @param foldEdgeID The ID of the edge in the anchored face being folded.
+ * @param deltaAngle The angle w.r.t. opposite the anchored principal normal.
+ * @param faceIDs The IDs of all faces that need to rotate during the fold.
+ */
+export function animateFold(
+                anchoredFaceID: bigint,
+                foldEdgeID: bigint,
+                deltaAngle: number,
+                ...faceIDs: bigint[]
+                ): void {
+
+    const anchored: Face3D | undefined = getFace3DByID(anchoredFaceID);
+    if (anchored === undefined) {
+        throw new Error(`No Face3D with ID ${anchoredFaceID} exists.`);
+    }
+
+    // Get three points, the first two of which are on the fold edge.
+    const vertex1 = anchored.getPoint(foldEdgeID);
+    const vertex2 = anchored.getPoint((foldEdgeID + 1n) % anchored.N);
+    const vertex3 = anchored.getPoint((foldEdgeID + 2n) % anchored.N);
+
+    const dir12 = pt.normalize(pt.subtract(vertex2, vertex1));
+    const dir23 = pt.normalize(pt.subtract(vertex3, vertex2));
+    const similarity: number = pt.dotProduct(
+        anchored.getPrincipleNormal(), pt.crossProduct(dir12, dir23)
+    );
+
+    let axisPoint1: pt.Point3D;
+    let axisPoint2: pt.Point3D;
+
+    if (similarity < 0) {
+        // The correct direction for the Right-Hand-Rule is 1 to 2.
+        axisPoint1 = vertex1;
+        axisPoint2 = vertex2;
+    } else if (similarity > 0) {
+        // The correct direction for the Right-Hand-Rule is 2 to 1.
+        axisPoint1 = vertex2;
+        axisPoint2 = vertex1;
+    } else {
+        // This should never ever happen, as the principle normal and the
+        // cross product above should be mathematically both unit vectors
+        // which point exactly the same direction or opposite directions.
+        throw new Error("Could not determine which direction to animate fold!");
+    }
+
+    // Collect the faces to rotate.
+    const faces: Face3D[] = [];
+    for (const faceID of faceIDs) {
+        const face: Face3D | undefined = getFace3DByID(faceID);
+        if (face === undefined) {
+            throw new Error(`No Face3D with ID ${faceID} exists.`);
+        }
+        faces.push(face);
+    }
+
+    // Now create the animation and run it!
+    const anim = new FoldAnimation(axisPoint1, axisPoint2, deltaAngle, ...faces);
+    animations.push(anim);
 }

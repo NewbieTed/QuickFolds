@@ -274,6 +274,31 @@ export function dotProduct<T extends Point>(a: T, b: T): number {
     return result;
 }
 
+/**
+ * Computes the vector (cross) product of two 3D vectors.
+ * @param a The first vector to multiply.
+ * @param b The second vector to multiply
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns the vector product a x b.
+ */
+export function crossProduct(
+            a: Point3D,
+            b: Point3D,
+            context: PointContext = "Annotation"
+            ): Point3D {
+
+    const result: Point3D = {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x,
+        context: context,
+        dim: "3D"
+    }
+
+    return result;
+}
+
 
 /**
  * Computes scalar multiplication of a point by some real number.
@@ -440,12 +465,6 @@ export function normalize<T extends Point>(vec: T): T {
 }
 
 
-
-
-// TODO
-export function rotatePoint(point: Point3D, axis: null, angle: null) {
-
-}
 
 
   /**
