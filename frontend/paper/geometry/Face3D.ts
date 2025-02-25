@@ -39,12 +39,13 @@ export class Face3D {
      * N - the number of vertices
      * annotatedPoints - annotated points id'd at integers > the # of vertices
      * annotatedLines - annotated lines between points
-     * pointGeometry - the Three.js objects for annotation points
-     * lineGeometry - the Three.js objects for annotation lines
+     * pointObjects - the Three.js objects for annotation points
+     * lineObjects - the Three.js objects for annotation lines
      * paperThickness - how thick the paper is
      * offset - the number of half-paper-thicknesses away from the underlying
      *          plane, positive is in the direction of the principal normal
-     * mesh -  the three JS object which appears in this scene
+     * faceObject -  the three JS object which appears in this scene.
+     * pivot - the parent three JS object to all objects of this Face3D
      * nextLineID - the integer to be used as the id of the next created line
      * nextPointID - the integer to be used as the id of the next created point
      * principalNormal - a unit vector which shows the principal normal of the
@@ -56,9 +57,10 @@ export class Face3D {
     public readonly N: bigint;
     private annotatedPoints: Map<bigint, pt.AnnotatedPoint3D>;
     private annotatedLines: Map<bigint, pt.AnnotatedLine>;
-    private pointGeometry: Map<bigint, THREE.Points>;
-    private lineGeometry: Map<bigint, THREE.Mesh>;
-    private mesh: THREE.Mesh;
+    private pointObjects: Map<bigint, THREE.Points>;
+    private lineObjects: Map<bigint, THREE.Mesh>;
+    private faceObject: THREE.Mesh;
+    private pivot: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
@@ -80,13 +82,17 @@ export class Face3D {
         this.N = BigInt(vertices.length);
         this.annotatedPoints = new Map<bigint, pt.AnnotatedPoint3D>();
         this.annotatedLines = new Map<bigint, pt.AnnotatedLine>();
-        this.pointGeometry = new Map<bigint, THREE.Points>();
-        this.lineGeometry = new Map<bigint, THREE.Mesh>();
+        this.pointObjects = new Map<bigint, THREE.Points>();
+        this.lineObjects = new Map<bigint, THREE.Mesh>();
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = pt.normalize(principalNormal);
 
-        this.mesh = this.createFaceGeometry();
+        // Create the initial face object and pivot.
+        this.faceObject = this.createFaceObject();
+        this.pivot = new THREE.Object3D();
+        this.pivot.position.copy(this.faceObject.position);
+        this.pivot.attach(this.faceObject);
     }
 
     public getThickness(): number {
@@ -105,7 +111,7 @@ export class Face3D {
      * Generates the 3D polygon geometry from the initialization of vertices.
      * @returns A Three JS object mesh which displays this Face3D.
      */
-    private createFaceGeometry(): THREE.Mesh {
+    private createFaceObject(): THREE.Mesh {
 
         // In origami, all faces are actually convex polygons, provided that
         // the paper was initially a convex polygon. Therefore their centroid
@@ -197,7 +203,7 @@ export class Face3D {
      * @param point A Point3D assumed to be already on the true face plane.
      * @returns A Three JS object mesh which displays the provided point.
      */
-    private createPointGeometry(point: pt.Point3D): THREE.Points {
+    private createPointObject(point: pt.Point3D): THREE.Points {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
@@ -231,7 +237,7 @@ export class Face3D {
      * @param end A Point3D assumed to be already in the true face.
      * @returns A Three JS object mesh which displays the provided line.
      */
-    private createLineGeometry(
+    private createLineObject(
                 start: pt.Point3D,
                 end: pt.Point3D
                 ): THREE.Mesh {
@@ -266,28 +272,19 @@ export class Face3D {
     // TODO: create constructor from Face2D + 3D annotations.
 
     /**
-     * Collects and returns all of the meshes corresponding to this Face3D.
-     * @returns A list of all Three.js meshes corresponding to this Face3D.
+     * Gets the main parent object of all the geometry/meshes of this Face3D.
+     * @returns The 'pivot' or central parent Three.js object for this Face3D.
      */
-    public collectObjects(): THREE.Object3D[] {
-
-        const meshes: THREE.Object3D[] = [this.mesh];
-        for (const pointGeo of this.pointGeometry.values()) {
-            meshes.push(pointGeo);
-        }
-        for (const lineGeo of this.lineGeometry.values()) {
-            meshes.push(lineGeo);
-        }
-
-        return meshes;
+    public getPivot(): THREE.Object3D {
+        return this.pivot;
     }
 
     /**
      * Gets the main mesh corresponding to the face geometry of this Face3D.
      * @returns The face geometry mesh for this Face3D.
      */
-    public getFaceMesh(): THREE.Object3D {
-        return this.mesh;
+    public getFaceObject(): THREE.Object3D {
+        return this.faceObject;
     }
 
     /**
@@ -299,21 +296,25 @@ export class Face3D {
      * need to be deleted and added to the scene.
      * @throws Error when referring to IDs of non-existent points/lines.
      */
-    public updateAnnotations(update: AnnotationUpdate3D): FaceUpdate3D {
-
-        const objectsToAdd: THREE.Object3D[] = [];
-        const objectsToDelete: THREE.Object3D[] = [];
+    public updateAnnotations(update: AnnotationUpdate3D): void {
 
         // Delete the lines that need to be deleted.
         for (const lineID of update.linesDeleted) {
             if (!this.annotatedLines.delete(lineID)) {
                 throw new Error(`No line with id ${lineID} exists.`);
             }
-            const lineObject = this.lineGeometry.get(lineID);
+            const lineObject = this.lineObjects.get(lineID);
             if (lineObject !== undefined) {
-                objectsToDelete.push(lineObject);
+                // Dispose of the object.
+                this.pivot.remove(lineObject);
+                lineObject.geometry.dispose();
+                if (Array.isArray(lineObject.material)) {
+                    lineObject.material.forEach(mat => mat.dispose());
+                } else {
+                    lineObject.material.dispose();
+                }
             }
-            this.lineGeometry.delete(lineID);
+            this.lineObjects.delete(lineID);
         }
 
         // Delete the points that need to be deleted.
@@ -321,15 +322,18 @@ export class Face3D {
             if (!this.annotatedPoints.delete(pointID)) {
                 throw new Error(`No point with id ${pointID} exists.`);
             }
-            const pointObject = this.pointGeometry.get(pointID);
+            const pointObject = this.pointObjects.get(pointID);
             if (pointObject !== undefined) {
-                if (!Array.isArray(pointObject.material)) {
+                // Dispose of the object.
+                this.pivot.remove(pointObject);
+                pointObject.geometry.dispose();
+                if (Array.isArray(pointObject.material)) {
+                    pointObject.material.forEach(mat => mat.dispose());
+                } else {
                     pointObject.material.dispose();
                 }
-                objectsToDelete.push(pointObject);
             }
-
-            this.pointGeometry.delete(pointID);
+            this.pointObjects.delete(pointID);
         }
 
         // Add the points that need to be added.
@@ -337,9 +341,9 @@ export class Face3D {
             const point = update.pointsAdded.get(pointID);
             if (point !== undefined) {
                 this.annotatedPoints.set(pointID, point);
-                const pointObject = this.createPointGeometry(point.point);
-                this.pointGeometry.set(pointID, pointObject);
-                objectsToAdd.push(pointObject);
+                const pointObject = this.createPointObject(point.point);
+                this.pointObjects.set(pointID, pointObject);
+                this.pivot.attach(pointObject);
             }
         }
 
@@ -350,19 +354,12 @@ export class Face3D {
                 const startPoint = this.getPoint(line.startPointID);
                 const endPoint = this.getPoint(line.endPointID);
                 this.annotatedLines.set(lineID, line);
-                const lineObject = this.createLineGeometry(startPoint, endPoint);
-                this.lineGeometry.set(lineID, lineObject);
-                objectsToAdd.push(lineObject);
+                const lineObject = this.createLineObject(startPoint, endPoint);
+                this.lineObjects.set(lineID, lineObject);
+                this.pivot.attach(lineObject);
             }
         }
-
-        // Construct and return the face update object.
-        const faceUpdate: FaceUpdate3D = {
-            objectsToAdd: objectsToAdd,
-            objectsToDelete: objectsToDelete
-        }
-
-        return faceUpdate;
+        
     }
 
     /**
@@ -519,24 +516,36 @@ export class Face3D {
     public dispose() {
 
         // Clean up point materials.
-        for (const point of this.pointGeometry.values()) {
-            if (!Array.isArray(point.material)) {
-                point.material.dispose();
+        for (const pointObject of this.pointObjects.values()) {
+            // Dispose of the object.
+            this.pivot.remove(pointObject);
+            pointObject.geometry.dispose();
+            if (Array.isArray(pointObject.material)) {
+                pointObject.material.forEach(mat => mat.dispose());
+            } else {
+                pointObject.material.dispose();
             }
         }
 
         // Clean up line materials and geometry.
-        for (const line of this.lineGeometry.values()) {
-            line.geometry.dispose();
-            if (!Array.isArray(line.material)) {
-                line.material.dispose();
+        for (const lineObject of this.lineObjects.values()) {
+            // Dispose of the object.
+            this.pivot.remove(lineObject);
+            lineObject.geometry.dispose();
+            if (Array.isArray(lineObject.material)) {
+                lineObject.material.forEach(mat => mat.dispose());
+            } else {
+                lineObject.material.dispose();
             }
         }
 
         // Clean up face mesh material and geometry.
-        this.mesh.geometry.dispose();
-        if (!Array.isArray(this.mesh.material)) {
-            this.mesh.material.dispose();
+        this.pivot.remove(this.faceObject);
+        this.faceObject.geometry.dispose();
+        if (Array.isArray(this.faceObject.material)) {
+            this.faceObject.material.forEach(mat => mat.dispose());
+        } else {
+            this.faceObject.material.dispose();
         }
 
     }
@@ -562,28 +571,28 @@ export class Face3D {
     public rotateX(deltaAngle: number) {
 
         // Compute the main object's x-axis in world space:
-        const mainXAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(this.mesh.quaternion);
+        const mainXAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(this.faceObject.quaternion);
 
         // Rotate the main face mesh.
-        this.mesh.position.sub(this.mesh.position);
-        this.mesh.position.applyAxisAngle(mainXAxis, deltaAngle);
-        this.mesh.position.add(this.mesh.position);
+        this.faceObject.position.sub(this.faceObject.position);
+        this.faceObject.position.applyAxisAngle(mainXAxis, deltaAngle);
+        this.faceObject.position.add(this.faceObject.position);
         const q = new THREE.Quaternion().setFromAxisAngle(mainXAxis, deltaAngle);
-        this.mesh.quaternion.premultiply(q);
+        this.faceObject.quaternion.premultiply(q);
 
         // Iterate over all points and lines, do the same thing.
-        for (const obj of this.pointGeometry.values()) {
+        for (const obj of this.pointObjects.values()) {
             // Rotate the point about the axis.
-            obj.position.sub(this.mesh.position);
+            obj.position.sub(this.faceObject.position);
             obj.position.applyAxisAngle(mainXAxis, deltaAngle);
-            obj.position.add(this.mesh.position);
+            obj.position.add(this.faceObject.position);
             obj.quaternion.premultiply(q);
         }
-        for (const obj of this.lineGeometry.values()) {
+        for (const obj of this.lineObjects.values()) {
             // Rotate the line about the axis.
-            obj.position.sub(this.mesh.position);
+            obj.position.sub(this.faceObject.position);
             obj.position.applyAxisAngle(mainXAxis, deltaAngle);
-            obj.position.add(this.mesh.position);
+            obj.position.add(this.faceObject.position);
             obj.quaternion.premultiply(q);
         }
 

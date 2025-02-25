@@ -17,7 +17,7 @@ import { FlipAnimation } from './animation/FlipAnimation';
 let stepID = 1n;
 const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
 if (origamiID === null) {
-    throw new Error();
+    throw new Error("The ID of the current origami is null.");
 }
 
 let nextFaceId: bigint = 0n;
@@ -66,11 +66,11 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     ]
     const principalNormal = createPoint3D(0, 1, 0);
     const plane = new Face3D(vertices3D, 0.05, 0, principalNormal, 0n);
-    scene.add(plane.getFaceMesh());
+    scene.add(plane.getFaceObject());
 
     idsToFace3D.set(plane.ID, plane);
-    idsToFaceObj.set(plane.ID, plane.getFaceMesh());
-    threeIDtoFaceID.set(plane.getFaceMesh().id, plane.ID);
+    idsToFaceObj.set(plane.ID, plane.getFaceObject());
+    threeIDtoFaceID.set(plane.getFaceObject().id, plane.ID);
     createNewGraph(0n);
 }
 
@@ -191,12 +191,12 @@ export function updateFace(update: FaceUpdate3D) {
 export function addFace(face: Face3D) {
 
     // Add the face to the scene.
-    scene.add(...face.collectObjects());
+    scene.add(face.getPivot());
 
     // Add it to the id maps.
     idsToFace3D.set(face.ID, face);
-    idsToFaceObj.set(face.ID, face.getFaceMesh());
-    threeIDtoFaceID.set(face.getFaceMesh().id, face.ID);
+    idsToFaceObj.set(face.ID, face.getFaceObject());
+    threeIDtoFaceID.set(face.getFaceObject().id, face.ID);
 }
 
 /**
@@ -212,13 +212,16 @@ export function deleteFace(faceID: bigint) {
     }
 
     // Remove the face from the scene.
-    scene.remove(...face.collectObjects());
+    const faceMeshID = face.getFaceObject().id;
+    scene.remove(face.getPivot());
 
     // Clean up the face properly.
     face.dispose();
 
+    // Remove from maps.
     idsToFace3D.delete(faceID);
-
+    idsToFaceObj.delete(faceID);
+    threeIDtoFaceID.delete(faceMeshID);
 }
 
 // Test animation function.

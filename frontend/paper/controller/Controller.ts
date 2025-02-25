@@ -243,8 +243,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
 
   // create manual new update change, since we already know the 3d point
   let pointId: bigint = getaddPointFromResultMap(addPointResult);
-  const renderUpdateResult = face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
-  updateFace(renderUpdateResult);
+  face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
 
   let result: boolean = await addUpdatedAnnoationToDB(addPointResult, faceId);
 
@@ -292,10 +291,7 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
     return "Error: couldn't generated 3d updated object";
   }
 
-
-  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
-  updateFace(renderingUpdateObjectResult);
-
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -350,9 +346,7 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
     return "Error: couldn't generated 3d updated object";
   }
 
-  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
-  updateFace(renderingUpdateObjectResult);
-
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -393,8 +387,7 @@ export async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Pro
     return "Error: couldn't generated 3d updated object";
   }
 
-  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
-  updateFace(renderingUpdateObjectResult);
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
