@@ -41,9 +41,9 @@ export class Face3D {
      * principalNormal - a unit vector which shows the principal normal of the
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
-     * isRotating - whether this Face3D object is undergoing a rotation
      * startPosition - caches the position of this object if a rotation starts
      * startRotation - caches the rotation of this object if a rotation starts
+     * startNormal - caches the principal normal vector if a rotation starts
      */
     public readonly ID: bigint;
     public readonly vertices: pt.Point3D[];
@@ -57,9 +57,9 @@ export class Face3D {
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
-    private isRotating: boolean
     private startPosition: THREE.Vector3;
     private startRotation: THREE.Quaternion;
+    private startNormal: pt.Point3D;
 
     public constructor(
                 vertices: pt.Point3D[],
@@ -95,10 +95,12 @@ export class Face3D {
         ));
         this.pivot.attach(this.faceObject);
 
-        // Set initial rotation/position to nothing, irrelevant.
-        this.isRotating = false;
+        // Set initial rotation/position.
         this.startPosition = new THREE.Vector3();
+        this.startPosition.copy(this.pivot.position);
         this.startRotation = new THREE.Quaternion();
+        this.startRotation.copy(this.pivot.quaternion);
+        this.startNormal = pt.copyPoint(this.principalNormal);
     }
 
     public getThickness(): number {
@@ -575,6 +577,17 @@ export class Face3D {
 
 
     /**
+     * Saves the position and rotation of this Face3D so that the next call
+     * to rotateFromPreviousPosition() will rotate from the saved position.
+     */
+    public savePosition() {
+        this.startPosition = new THREE.Vector3();
+        this.startPosition.copy(this.pivot.position);
+        this.startRotation = new THREE.Quaternion();
+        this.startRotation.copy(this.pivot.quaternion);
+    }
+
+    /**
      * Rotates the underlying objects in this Face3D without changing the
      * vertices of the Face3D yet. Useful for animation. Rotates this Face3D's
      * object about the specified axis CCW (right-hand rule) by deltaAngle.
@@ -587,15 +600,6 @@ export class Face3D {
                 axisPoint2: pt.Point3D,
                 deltaAngle: number
                 ): void {
-
-        // Save position and rotation if beginning rotation.
-        if (!this.isRotating) {
-            this.isRotating = true;
-            this.startPosition = new THREE.Vector3();
-            this.startPosition.copy(this.pivot.position);
-            this.startRotation = new THREE.Quaternion();
-            this.startRotation.copy(this.pivot.quaternion);
-        }
 
         // Compute the normalized direction vector of the axis.
         const axis: pt.Point3D = pt.normalize(
@@ -632,7 +636,79 @@ export class Face3D {
 
     }
 
-    
+    /**
+     * Rotates the whole face 3D including both vertices and mesh objects
+     * starting from the last position saved by savePosition().
+     * Rotates this Face3D about the specified axis CCW 
+     * (right-hand rule) by deltaAngle.
+     * @param axisPoint1 The start of the rotation axis
+     * @param axisPoint2 The end of the rotation axis.
+     * @param deltaAngle The change in angle
+     */
+    public rotateFace(
+                axisPoint1: pt.Point3D, 
+                axisPoint2: pt.Point3D,
+                deltaAngle: number
+                ): void {
+
+        // Revert to the previous position.
+        this.pivot.position.copy(this.startPosition);
+        this.pivot.quaternion.copy(this.startRotation);
+        this.principalNormal = this.startNormal;
+
+        // Compute the normalized direction vector of the axis.
+        const axis: pt.Point3D = pt.normalize(
+            pt.subtract(axisPoint2, axisPoint1)
+        );
+
+        // Create the translation and quaternion to be applied.
+        const shift: THREE.Vector3 = new THREE.Vector3(
+            axisPoint1.x, axisPoint1.y, axisPoint1.z
+        );
+        const q: THREE.Quaternion = new THREE.Quaternion();
+        q.setFromAxisAngle(
+            new THREE.Vector3(axis.x, axis.y, axis.z), deltaAngle
+        );
+
+        // Apply the rotation to the parent three js object.
+        this.pivot.position.sub(shift);
+        this.pivot.position.applyQuaternion(q);
+        this.pivot.position.add(shift);
+        this.pivot.quaternion.premultiply(q);
+
+        // Adjust the principle normal vector.
+        const principVec: THREE.Vector3 = new THREE.Vector3(
+            this.principalNormal.x, 
+            this.principalNormal.y, 
+            this.principalNormal.z
+        );
+        principVec.applyQuaternion(q);
+        this.principalNormal = pt.createPoint3D(
+            principVec.x, principVec.y, principVec.z
+        );
+
+        // Rotate the vertices similarly.
+        for (let i = 0n; i < this.N; i++) {
+
+            const vertexVec = new THREE.Vector3(
+                this.vertices[Number(i)].x,
+                this.vertices[Number(i)].y,
+                this.vertices[Number(i)].z,
+            )
+
+            vertexVec.sub(shift);
+            vertexVec.applyQuaternion(q);
+            vertexVec.add(shift);
+
+            this.vertices[Number(i)] = pt.createPoint3D(
+                vertexVec.x, vertexVec.y, vertexVec.z
+            );
+
+        }
+        
+    }
+
+
 
     // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
