@@ -21,16 +21,6 @@ export type AnnotationUpdate3D = {
     readonly linesDeleted: bigint[]
 }
 
-/**
- * Encodes lists of Three JS objects to be added from the scene,
- * or removed from the scene and also deleted from memory.
- */
-export type FaceUpdate3D = {
-    readonly objectsToAdd: THREE.Object3D[]
-    readonly objectsToDelete: THREE.Object3D[]
-}
-
-
 export class Face3D {
 
     /**
@@ -51,6 +41,9 @@ export class Face3D {
      * principalNormal - a unit vector which shows the principal normal of the
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
+     * isRotating - whether this Face3D object is undergoing a rotation
+     * startPosition - caches the position of this object if a rotation starts
+     * startRotation - caches the rotation of this object if a rotation starts
      */
     public readonly ID: bigint;
     public readonly vertices: pt.Point3D[];
@@ -64,6 +57,9 @@ export class Face3D {
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
+    private isRotating: boolean
+    private startPosition: THREE.Vector3;
+    private startRotation: THREE.Quaternion;
 
     public constructor(
                 vertices: pt.Point3D[],
@@ -91,8 +87,18 @@ export class Face3D {
         // Create the initial face object and pivot.
         this.faceObject = this.createFaceObject();
         this.pivot = new THREE.Object3D();
-        this.pivot.position.copy(this.faceObject.position);
+        const center: pt.Point3D = pt.average(this.vertices);
+        // Crucially: the pivot lies in the true plane, not with the
+        // face object mesh which could be offset from the true plane.
+        this.pivot.position.copy(new THREE.Vector3(
+            center.x, center.y, center.z
+        ));
         this.pivot.attach(this.faceObject);
+
+        // Set initial rotation/position to nothing, irrelevant.
+        this.isRotating = false;
+        this.startPosition = new THREE.Vector3();
+        this.startRotation = new THREE.Quaternion();
     }
 
     public getThickness(): number {
@@ -359,7 +365,7 @@ export class Face3D {
                 this.pivot.attach(lineObject);
             }
         }
-        
+
     }
 
     /**
@@ -427,7 +433,7 @@ export class Face3D {
         return result;
     }
 
-        /**
+    /**
      * Projects the given Point3D onto the edge of the given ID.
      * @param point The point to project onto the edge.
      * @param edgeID The ID of the edge to project onto.
@@ -551,7 +557,7 @@ export class Face3D {
     }
 
     /**
-     * returns the line id based on the provided points
+     * Returns the line id based on the provided points
      * @param pointId1 - the first point in the line
      * @param pointId2 - second point in the line
      * @returns the line id, or -1 if there is no line
@@ -567,38 +573,67 @@ export class Face3D {
         return -1n;
     }
 
-    // Rotates this Face3D about its X axis by a certain angle.
-    public rotateX(deltaAngle: number) {
 
-        // Compute the main object's x-axis in world space:
-        const mainXAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(this.faceObject.quaternion);
+    /**
+     * Rotates the underlying objects in this Face3D without changing the
+     * vertices of the Face3D yet. Useful for animation. Rotates this Face3D's
+     * object about the specified axis CCW (right-hand rule) by deltaAngle.
+     * @param axisPoint1 The start of the rotation axis
+     * @param axisPoint2 The end of the rotation axis.
+     * @param deltaAngle The change in angle
+     */
+    public rotateObjects(
+                axisPoint1: pt.Point3D, 
+                axisPoint2: pt.Point3D,
+                deltaAngle: number
+                ): void {
 
-        // Rotate the main face mesh.
-        this.faceObject.position.sub(this.faceObject.position);
-        this.faceObject.position.applyAxisAngle(mainXAxis, deltaAngle);
-        this.faceObject.position.add(this.faceObject.position);
-        const q = new THREE.Quaternion().setFromAxisAngle(mainXAxis, deltaAngle);
-        this.faceObject.quaternion.premultiply(q);
-
-        // Iterate over all points and lines, do the same thing.
-        for (const obj of this.pointObjects.values()) {
-            // Rotate the point about the axis.
-            obj.position.sub(this.faceObject.position);
-            obj.position.applyAxisAngle(mainXAxis, deltaAngle);
-            obj.position.add(this.faceObject.position);
-            obj.quaternion.premultiply(q);
+        // Save position and rotation if beginning rotation.
+        if (!this.isRotating) {
+            this.isRotating = true;
+            this.startPosition = new THREE.Vector3();
+            this.startPosition.copy(this.pivot.position);
+            this.startRotation = new THREE.Quaternion();
+            this.startRotation.copy(this.pivot.quaternion);
         }
-        for (const obj of this.lineObjects.values()) {
-            // Rotate the line about the axis.
-            obj.position.sub(this.faceObject.position);
-            obj.position.applyAxisAngle(mainXAxis, deltaAngle);
-            obj.position.add(this.faceObject.position);
-            obj.quaternion.premultiply(q);
-        }
+
+        // Compute the normalized direction vector of the axis.
+        const axis: pt.Point3D = pt.normalize(
+            pt.subtract(axisPoint2, axisPoint1)
+        );
+
+        // Create the translation and quaternion to be applied.
+        const shift: THREE.Vector3 = new THREE.Vector3(
+            axisPoint1.x, axisPoint1.y, axisPoint1.z
+        );
+        const q: THREE.Quaternion = new THREE.Quaternion();
+        q.setFromAxisAngle(
+            new THREE.Vector3(axis.x, axis.y, axis.z), deltaAngle
+        );
+        
+        // Apply the rotation to the parent object.
+        this.pivot.position.sub(shift);
+        this.pivot.position.applyQuaternion(q);
+        this.pivot.position.add(shift);
+        this.pivot.quaternion.premultiply(q);
+
+        // Adjust the principle normal vector.
+        const principVec: THREE.Vector3 = new THREE.Vector3(
+            this.principalNormal.x, 
+            this.principalNormal.y, 
+            this.principalNormal.z
+        );
+        principVec.applyQuaternion(q);
+        this.principalNormal = pt.createPoint3D(
+            principVec.x,
+            principVec.y,
+            principVec.z
+        );
 
     }
 
-    // TODO: rotate the three js geometry method, vs rotate the true face.
+    
+
     // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
 }
