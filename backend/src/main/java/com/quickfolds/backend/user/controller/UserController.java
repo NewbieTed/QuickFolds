@@ -2,10 +2,10 @@ package com.quickfolds.backend.user.controller;
 
 
 import com.quickfolds.backend.dto.BaseResponse;
+import com.quickfolds.backend.user.mapper.UserMapper;
 import com.quickfolds.backend.user.model.User;
 import com.quickfolds.backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,6 +35,9 @@ public class UserController {
 
     // Service layer handling user authentication and registration logic.
     private final UserService userService;
+
+    // Mapper for handling database operations related to users.
+    private final UserMapper userMapper;
 
     /**
      * Retrieves the currently authenticated user.
@@ -73,7 +76,7 @@ public class UserController {
 
         // If successful, return confirmation.
         if (success) {
-            return ResponseEntity.ok("Signup success");
+            return ResponseEntity.ok(Collections.singletonMap("message", "User registered successfully"));
         } else {
             // Return conflict status if the username is already taken.
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
@@ -102,7 +105,10 @@ public class UserController {
 
         // If authentication is successful, return the token.
         if (token != null) {
-            return ResponseEntity.ok(Collections.singletonMap("token", token));
+            // Retrieve the full user object based on the username
+            User user = userMapper.findByUsername(username);
+            // Return both the token and the user ID
+            return ResponseEntity.ok(Map.of("token", token, "userId", user.getId()));
         }
 
         // Return unauthorized response if authentication fails.

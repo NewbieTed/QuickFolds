@@ -127,7 +127,7 @@ public class OrigamiService {
         Origami origami = new Origami();
         origami.setUserId(userId);
         origami.setOrigamiName(origamiName == null ? "Untitled" : origamiName);
-        origami.setPublic(false);
+        origami.setPublic(true);
         origami.setRatings(0.0);
 
         return origami;
