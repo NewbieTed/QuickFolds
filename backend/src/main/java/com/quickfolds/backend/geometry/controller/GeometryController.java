@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.controller;
 
 import com.quickfolds.backend.dto.BaseResponse;
+import com.quickfolds.backend.geometry.model.dto.response.StepResponse;
 import com.quickfolds.backend.geometry.model.dto.AnnotationRequest;
 import com.quickfolds.backend.geometry.model.dto.FaceAnnotateRequest;
 import com.quickfolds.backend.geometry.model.dto.FoldRequest;
@@ -123,10 +124,11 @@ public class GeometryController {
      * @param startStep The ID in the origami of the starting step.
      * @param endStep The ID in the origami of the ending step.
      * @param isForward Indicates if the step is going forward or not.
-     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} containing the step details,
+     *      wrapped in a {@link StepResponse}.
      */
     @GetMapping("/getStep/{origamiId}/{startStep}/{endStep}/{isForward}")
-    public ResponseEntity<BaseResponse<Boolean>> getStep(@PathVariable long origamiId,
+    public ResponseEntity<BaseResponse<StepResponse>> getStep(@PathVariable long origamiId,
                                                          @PathVariable int startStep,
                                                          @PathVariable int endStep, @PathVariable boolean isForward) {
         if (origamiId == null) {

@@ -18,6 +18,13 @@ import lombok.NoArgsConstructor;
 public class LineAnnotationResponse {
 
     /**
+     * The face the annotated line is on.
+     * <p>
+     * This ID serves to identify the face the line is in within the origami model.
+     */
+    private Integer faceIdInOrigami;
+
+    /**
      * The identifier of the annotated line within the face.
      * <p>
      * This ID serves to identify the annotated line within a specific face.

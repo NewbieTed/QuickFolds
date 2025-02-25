@@ -1,7 +1,7 @@
 package com.quickfolds.backend.geometry.service;
 
 import com.quickfolds.backend.dto.BaseResponse;
-import com.quickfolds.backend.geometry.model.dto.response.StepResponse;
+import com.quickfolds.backend.geometry.model.dto.response.*;
 import com.quickfolds.backend.exception.DbException;
 import com.quickfolds.backend.geometry.constants.EdgeType;
 import com.quickfolds.backend.geometry.constants.PointType;
@@ -154,6 +154,104 @@ public class GeometryService {
     /* -----------------------------------------------------------------------------------------------
      *  Utils
      * ---------------------------------------------------------------------------------------------*/
+    /**
+     * Handles the retrieval of data needed to go forward one annotate step.
+     *
+     * @param stepId the specific step to retrieve
+     * @return a list of face annotation responses that comprises the step.
+     * @throws
+     */
+    private List<FaceAnnotateResponse> annotateStepForward(long stepId) {
+        ArrayList<PointAnnotationResponse> pointAnnotations = getAnnotatedPoints(stepId, true);
+        //TODO: get list of annotated lines, deleted lines, deleted points, then make and add to
+        //corresponding face annotate response objects
+    }
+
+    /**
+     * Handles the retrieval of annotated points needed in an annotate step.
+     *
+     * @param stepId the specific step to retrieve
+     * @param isForward indicates whether to retrieve details for the created points or deleted ones.
+     * @return a list of point annotation responses in that step.
+     * @throws DbException if an error occurs while retrieving data from the database.
+     */
+    private List<PointAnnotationResponse> getAnnotatedPoints(long stepId, boolean isForward) {
+        ArrayList<AnotatePoint> annotatedPoints;
+        ArrayList<PointAnnotationResponse> pointAnnotations = new ArrayList<>();
+
+        if (isForward == true) {
+            annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdForward(stepId);
+        } else {
+            //TODO: implement mapper method
+            //annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdBackward(stepId);
+        }
+
+        // If retrieval fails, throw an exception indicating a database issue.
+        if (annotatedPoints == null) {
+            throw new DbException("Error in DB, cannot get annotated point data from DB");
+        }
+
+        // loop through the annotatedPoints list to create PointAnnotationResponse objects and populate the return list
+        for (AnnotatePoint annotatePoint : annotatedPoints) {
+            PointAnnotationResponse pointAnnotation = new PointAnnotationResponse();
+
+            // error checks to ensure required fields are not null
+            if (annotatePoint.getFaceId() == null) {
+                throw new DbException("Error in DB, cannot get annotate point face ID data from DB");
+            }
+            if (annotatePoint.getFaceIdInOrigami() == null) {
+                throw new DbException("Error in DB, cannot get annotate point face ID in origami data from DB");
+            }
+            if (annotatePoint.getIdInFace() == null) {
+                throw new DbException("Error in DB, cannot get annotate point ID in face data from DB");
+            }
+            if (annotatePoint.getX() == null) {
+                throw new DbException("Error in DB, cannot get annotate point x coordinate data from DB");
+            }
+            if (annotatePoint.getY() == null) {
+                throw new DbException("Error in DB, cannot get annotate point y coordinate data from DB");
+            }
+
+            // determines the onEdgeIdInFace of the point if it's on an edge and sets the field
+            if (annotatePoint.getEdgeId() != null) {
+                Integer onEdgeIdInFace;
+                String edgeType = annotatePoint.getEdgeType();
+                if (edgeType == null) {
+                    throw new DbException("Error in data from DB, on edge id of point was not null but edge type is");
+                }
+                if (edgeType.equals("side")) {
+                    onEdgeIdInFace = annotatePointMapper.getOnSideEdgeIdInFace(annotatePoint.getEdgeId());
+                    if (onEdgeIdInFace == null) {
+                        throw new DbException("Error in DB, cannot get onEdgeIdInFace from DB");
+                    }
+
+                } else if (edgeType.equals("fold")) {
+                    onEdgeIdInFace = annotatePointMapper.getOnFoldEdgeIdInFace(
+                            annotatePoint.getEdgeId(), annotatePoint.getFaceId());
+                    if (onEdgeIdInFace == null) {
+                        throw new DbException("Error in DB, cannot get onEdgeIdInFace from DB");
+                    }
+
+                } else {
+                    throw new DbException("Error in DB, unknown edge type " + edgeType);
+                }
+
+                pointAnnotation.setOnEdgeIdInFace(onEdgeIdInFace);
+            }
+
+            // sets fields of PointAnnotationResponse object
+            pointAnnotation.setFaceIdInOrigami(annotatePoint.getFaceIdInOrigami());
+            pointAnnotation.setIdInFace(annotatePoint.getIdInFace());
+            pointAnnotation.setX(annotatePoint.getX());
+            pointAnnotation.setY(annotatePoint.getY());
+
+            // adds response object to list
+            pointAnnotations.add(pointAnnotation);
+        }
+
+        return pointAnnotations;
+    }
+
     /**
      * Processes the creation of new faces during a fold operation.
      * This includes adding vertices and edges for each new face.
