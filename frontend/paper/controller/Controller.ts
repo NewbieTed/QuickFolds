@@ -11,7 +11,7 @@ import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph"
-import { getFace3DByID, incrementStepID, print3dGraph } from '../view/SceneManager';
+import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
 import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
 
@@ -31,17 +31,21 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
     return "Faces are the same";
   }
 
-
-
-  updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1, faceId2, relativeChange);
-  // hady do rotation math here
-  // render stuff... using stationaryFace
+  // Animate the fold.
+  const edgeIDs = updateRelativePositionBetweenFacesIndependentOfRelativeChange(
+    faceId1, faceId2, relativeChange
+  );
+  if (stationaryFace === faceId1) {
+    animateFold(stationaryFace, edgeIDs[0], Number(relativeChange), faceId1, faceId2);
+  } else if (stationaryFace === faceId2) {
+    animateFold(stationaryFace, edgeIDs[1], Number(relativeChange), faceId1, faceId2);
+  }
 
   // backend needs a simple update angle step
 
   // print2dGraph();
   // print3dGraph();
-  printAdjList();
+  // printAdjList();
 
   incrementStepID();
   return true;

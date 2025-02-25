@@ -124,7 +124,6 @@ COMMENT ON COLUMN step.updated_at IS 'Timestamp when this step record was last u
 -- Create Face Table
 CREATE TABLE face (
     id BIGSERIAL PRIMARY KEY,
-    origami_id BIGINT NOT NULL REFERENCES origami(id) ON DELETE CASCADE,
     step_id BIGINT REFERENCES step(id) ON DELETE CASCADE ON UPDATE CASCADE,
     id_in_origami INTEGER NOT NULL,
     deleted_step_id BIGINT REFERENCES step(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -138,7 +137,6 @@ CREATE TABLE face (
 COMMENT ON TABLE face IS 'Represents faces of an origami, typically created during a specific step in the process.';
 
 COMMENT ON COLUMN face.id IS 'Unique identifier for the face.';
-COMMENT ON COLUMN face.origami_id IS 'Foreign key referencing the origami this face belongs to.';
 COMMENT ON COLUMN face.step_id IS 'Foreign key referencing the step during which this face was created.';
 COMMENT ON COLUMN face.id_in_origami IS 'Face number within the origami.';
 COMMENT ON COLUMN face.deleted_step_id IS 'Foreign key referencing the step where this face is deleted.';
@@ -429,7 +427,6 @@ CREATE INDEX idx_step_step_type_id ON step(step_type_id);
 CREATE INDEX idx_step_id_in_origami ON step(id_in_origami);
 
 -- Face table
-CREATE INDEX idx_face_origami_id ON face(origami_id);
 CREATE INDEX idx_face_step_id ON face(step_id);
 CREATE INDEX idx_face_deleted_step_id ON face(deleted_step_id);
 CREATE INDEX idx_face_id_in_origami ON face(id_in_origami);
@@ -467,7 +464,6 @@ CREATE INDEX idx_side_edge_vertex_1_id ON side_edge(vertex_1_id);
 CREATE INDEX idx_side_edge_vertex_2_id ON side_edge(vertex_2_id);
 CREATE INDEX idx_side_edge_face_id ON side_edge(face_id);
 
-COMMIT;
 COMMIT;
 
 -- frontend make button to hook up to editor if sucessful api call
