@@ -37,3 +37,17 @@ html, body {
   display: flex;
   flex-direction: column;
 }
+
+.action-button {
+  margin: 5px;
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background-color: #45a049;
+}
