@@ -628,4 +628,48 @@ export class Face2D {
         return result;
     }
 
+
+/**
+     * Update the annotations in this Face2D according to an annotations
+     * update object, which tells this Face2D which points and lines to
+     * create and delete.
+     * @param update The annotations update object.
+     * @throws Error when referring to IDs of non-existent points/lines.
+     */
+    public updateAnnotations(update: AnnotationUpdate2D): void {
+
+        // Delete the lines that need to be deleted.
+        for (const lineID of update.linesDeleted) {
+            if (!this.annotatedLines.delete(lineID)) {
+                throw new Error(`No line with id ${lineID} exists.`);
+            }
+        }
+
+        // Delete the points that need to be deleted.
+        for (const pointID of update.pointsDeleted) {
+            if (!this.annotatedPoints.delete(pointID)) {
+                throw new Error(`No point with id ${pointID} exists.`);
+            }
+        }
+
+        // Add the points that need to be added.
+        for (const pointID of update.pointsAdded.keys()) {
+            const point = update.pointsAdded.get(pointID);
+            if (point !== undefined) {
+                this.annotatedPoints.set(pointID, point);
+            }
+        }
+
+        // Add the lines that need to be added.
+        for (const lineID of update.linesAdded.keys()) {
+            const line = update.linesAdded.get(lineID);
+            if (line !== undefined) {
+                const startPoint = this.getPoint(line.startPointID);
+                const endPoint = this.getPoint(line.endPointID);
+                this.annotatedLines.set(lineID, line);
+            }
+        }
+        
+    }
+
 }
