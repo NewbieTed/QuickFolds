@@ -12,6 +12,141 @@ with programs such as Blender and Maya. QuickFolds allows user to edit
 their origami through Mountain and Valley Folds, and creating step-by-step actions
 to showcase their creations with others.
 
+### How to install the software
+
+This project requires the following prerequisites:
++ Env Files
++ Node.js
++ JDK 17
++ Docker Desktop: Personal Edition
++ Maven
++ Windows Subsystem for Linux [Windows Users Only]
++ Homebrew [Mac Users Only]
+
+
+### Where to download Prereqs:
+
+#### Env files
+
+This project contains enviroment variables that store sensetive information from password info. Please email a member on the team for a copy of these files.
+
+The folder, once gotten, is in the following structure:
+
+```
+/env
+  L _MACOSX
+  L local.env
+  L dev.env
+  L test.env
+  L prod.env
+```
+
+Please replace the current `backend/env` folder with this new content. It should look like
+
+```
+/backend
+  L/env
+    L _MACOSX
+    L local.env
+    L dev.env
+    L test.env
+    L prod.env
+```
+
+
+#### Node.js
+
+Download for correct OS from this website `https://nodejs.org/en/download`. Follow the installer.
+
+#### JDK 17
+
+Download JDK 17 for the correct OS from this website `https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html`. Follow the installer.
+
+#### Docker Desktop
+
+Download for correct OS from this website `https://www.docker.com/products/docker-desktop/`. The free version, "Personal", is fine. Follow the installer.
+
+#### Maven
+Download for correct OS from this website
+`https://maven.apache.org/download.cgi`.
+Not thate
+
+
+For mac users, the DMG installer should set up for you.
+
+For windows user, you have to set it up manually. After uncompressing the downloaded zip file:
+
+1) Add the bin directory of the created directory `apache-maven\bin` to the MAVEN_HOME system environment variable. It should look something like `MAVEN_HOME=C:\Program Files\Apache\Maven\apache-maven-<version>\bin` (or more generally, wherever you put your Maven folder at)
+
+2) Confirm that mvn is set up with `mvn -version` in your powershell terminal
+
+
+#### Windows Subsystem for Linux
+
+If you are a windows user, you will need access to specific maven commands only found on linux and mac terminals. We will user Windows Subsystem for Linux (WSL) to do this.
+
+1) Go to your powershell terminal, and type `wsl --install`
+
+2) WSL is set up, but we need the other tools to be aware WSL was made. Open the Docker Desktop.
+
+3) Click on the settings on the top right of your screen
+
+4) Click on `Resources`, then `WSL Integration`
+
+5) Click on `Enable integration with my default WSL distro`, if not already active
+
+5) Enable the `Ubuntu` distro, if not already active
+
+6) Click apply and restart. You may have to open a new WSL termial to apply the changes.
+ ---
+### How to Run QuickFolds
+
+We need to activate both frontend server and backend server to use the editor/community board.
+#### Frontend - Being able to go to the HTML webpages with Rendering
+
+1. Go to your terminal, __from the root project directory__, and type  `npx vite`, this creates a local host server that renders any Three.js code
+
+2. If sucessful, you should see `VITE vX.X.XX ready...`
+
+3. Below the message in 2., you should see text saying `Local: http:/localhost:PORT_NUMBER_HERE/`, this is where your localhost is running (usually 5173)
+
+4. Pressing this url should result in `This localhost page can’t be found`. _THIS IS INTENDED_. Vite is looking for a index.html file (the "base file" in any web server). However, with multiple people working on this at once, we won't do this [and it's also good practice]. Instead, you can access the file you want putting the directory path`http:/localhost:PORT_NUMBER_HERE/PATH.html`
+
+5. To open the editor, type in `http:/localhost:PORT_NUMBER_HERE/frontend/community/communityboard.html`.
+
+6. The editor should appear and you should be good to go, although you can't create any new orgiami, as we have to start up backend now.
+
+7. To stop frontend, type `ctrl + c`
+
+ ---
+#### Backend - Being able to create the database and set up support for saving creations
+
+
+To Start up backend, we have unique steps for the different OS:
+
+#### Windows:
+
+__NOTE: If at any point you have trouble, there is a manual step by step guide at the very bottom on this README on how to activate backend. However, these steps should work.__
+
+
+1) Open up a __WSL__ terminal, and go to the current project directory. Most IDEs should do this automatically for you if you click of the plus button in the terminal sections (VScode does for example).
+
+2) Go to the `backend/setup` directory. You should see a bunch of bash scripts you can run.
+
+3) If there has been an update, you want to do a "clean reset" of the entire backend setup, or you are opening a new WSL terminal session, run `bash startupbackendwindows.sh`
+
+4) If sucessful, this creates the database on Docker, and fills it with the startup information, and preps Maven to be able to be launched.
+
+5) Now, from your terminal, run `mvn spring-boot:run`. It may take a while to run. However, you will know it's sucessful if it doesn't stop running [note: maven also displays the message `ACCEPTING INCOMING TRAFFIC` at the very end if sucessful].
+
+6) Backend is now set up. You will have to refresh the frontend webpage (just refresh your browser, no need to restart Vite)
+
+7) If you every want to reset the contents of the data (ie clear all the saved origami), run the bash script `resetdatabase.sh`
+
+7) Once you're done with backend, stop the running script by goint `ctrl + c`. Then run the script `stopallbackendactions.sh`. This should deactivate any running docker and maven processess.
+
+ ---
+
 ### Repository Structure
 
 There are Three main folders in our repository: Frontend, Backend, and Status reports
@@ -42,21 +177,7 @@ We currently are using these modules:
 
 + _Vite_ - a local development server that compiles well with Three.js [you can think of this as npm run dev]
 
-Once `npm install` finishes, you can run the editor:
-
-#### Running The Editor
-
-1. Go to your terminal and type  `npx vite`, this creates a local host server that renders any Three.js code
-
-2. If sucessfull, you should see `VITE vX.X.XX ready...`
-
-3. Below the message in 2., you should see text saying `Local: http:/localhost:PORT_NUMBER_HERE/`, this is where your localhost is running (usually 5173)
-
-4. Pressing this should result in `This localhost page can’t be found`. _THIS IS INTENDED_. Vite is looking for a index.html file (the "base file" in any web server). However, with multiple people working on this at once, we won't do this [and it's also good practice]. Instead, you can access the file you want putting the directory path`http:/localhost:PORT_NUMBER_HERE/PATH.html`
-
-5. To open the editor, type in `http:/localhost:PORT_NUMBER_HERE/Frontend/public/editor.html`. Normally, you can just do `/editor.html` without the directories in front, but because we have both front-end and back-end at the same time, Vite doesn't see the `public/` directory inside frontend, so we have to manually list it.
-
-6. The editor should appear and you should be good to go
++ _Mocha_ - a library used for Unit testing
 
 
 #### Editor Settings
@@ -78,12 +199,12 @@ Ensure you have the following installed:
 
 1. Java Development Kit (JDK 21+)
 
-2. Maven (If not using the provided `mvnw` script; any `mvn` and `mvnw` comands are interchangable) 
+2. Maven (If not using the provided `mvnw` script; any `mvn` and `mvnw` comands are interchangable)
 
 3. PostgreSQL (if using a local database)
 
-4. Docker (if using `docker-compose` for database setup)  
-   Download and install Docker Desktop from:  
+4. Docker (if using `docker-compose` for database setup)
+   Download and install Docker Desktop from:
    [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ### Setup
@@ -96,7 +217,7 @@ Unzip the file and put the resulting folder into the backend root folder Quickfo
 
 #### Loading environment variables:
 
-Mac: 
+Mac:
 Copy the sample environment variables and configure them:
    ```sh
    cp env/.env.example env/.env
@@ -109,9 +230,9 @@ Load the environment variables:
 
 Windows: run the following script in the terminal:
 ```
-Get-ChildItem -Path "path\to\env" -Filter "*.env" | ForEach-Object { 
-    $filePath = $_.FullName  
-    Get-Content $filePath | ForEach-Object { 
+Get-ChildItem -Path "path\to\env" -Filter "*.env" | ForEach-Object {
+    $filePath = $_.FullName
+    Get-Content $filePath | ForEach-Object {
         if ($_ -notmatch "^\s*#|^\s*$") {
             $parts = $_ -split '=', 2
             [System.Environment]::SetEnvironmentVariable($parts[0].Trim(), $parts[1].Trim(), "Process")
