@@ -17,7 +17,7 @@ to showcase their creations with others.
 This project requires the following prerequisites:
 + Env Files
 + Node.js
-+ JDK 17
++ JDK 21
 + Docker Desktop: Personal Edition
 + Maven
 + Windows Subsystem for Linux [Windows Users Only]
@@ -58,9 +58,9 @@ Please replace the current `backend/env` folder with this new content. It should
 
 Download for correct OS from this website `https://nodejs.org/en/download`. Follow the installer.
 
-#### JDK 17
+#### JDK 21
 
-Download JDK 17 for the correct OS from this website `https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html`. Follow the installer.
+Download JDK 21 for the correct OS from this website `https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html`. Follow the installer.
 
 #### Docker Desktop
 
@@ -133,7 +133,7 @@ __NOTE: If at any point you have trouble, there is a manual step by step guide a
 
 2) Go to the `backend/setup` directory. You should see a bunch of bash scripts you can run.
 
-3) If there has been an update, you want to do a "clean reset" of the entire backend setup, or you are opening a new WSL terminal session, run `bash startupbackendwindows.sh`
+3) If there has been an update, you want to do a "clean reset" of the entire backend setup, or you are opening a new WSL terminal session, run `source startupbackendwindows.sh`
 
 4) If sucessful, this creates the database on Docker, and fills it with the startup information, and preps Maven to be able to be launched.
 
@@ -141,7 +141,7 @@ __NOTE: If at any point you have trouble, there is a manual step by step guide a
 
 6) Backend is now set up. You will have to refresh the frontend webpage (just refresh your browser, no need to restart Vite)
 
-7) If you every want to reset the contents of the data (ie clear all the saved origami), run the bash script `resetdatabase.sh`
+7) If you every want to reset the contents of the data (ie clear all the saved origami), run the bash script `source resetdatabase.sh`
 
 7) Once you're done with backend, stop the running script by goint `ctrl + c`. Then run the script `stopallbackendactions.sh`. This should deactivate any running docker and maven processess.
 
