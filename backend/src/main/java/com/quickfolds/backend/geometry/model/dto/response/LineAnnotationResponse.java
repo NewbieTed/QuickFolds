@@ -32,16 +32,16 @@ public class LineAnnotationResponse {
     private Integer idInFace;
 
     /**
-     * The ID of the first point in the origami model that defines the line.
+     * The ID of the first point in the face that defines the line.
      * <p>
      * Identifies the first endpoint of the annotated line.
      */
-    private Integer point1IdInOrigami;
+    private Integer point1IdInFace;
 
     /**
-     * The ID of the second point in the origami model that defines the line.
+     * The ID of the second point in the face that defines the line.
      * <p>
      * Identifies the second endpoint of the annotated line.
      */
-    private Integer point2IdInOrigami;
+    private Integer point2IdInFace;
 }

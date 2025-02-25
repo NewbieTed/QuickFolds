@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PointAnnotationResponse {
+public class AnnotatePoint {
 
     /**
      * The face the annotated point is on.

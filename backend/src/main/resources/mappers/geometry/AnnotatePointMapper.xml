@@ -103,6 +103,30 @@
     </select>
 
     <!--
+        Retrieves a list of annotated points deleted in a specific step
+
+        Purpose:
+        - Fetches all annotated points deleted in a specific step.
+
+        Parameters:
+        - `stepId`: The ID of the step being queried.
+
+        Result:
+        - List of `AnnotatePoint` objects containing the point ID in face, coordinates,
+            face ID in origami of the face the point is in, and type of edge and edge id if on an edge.
+    -->
+    <select id="getAnnotatedPointsByStepIdBackward" resultMap="AnnotatePointMap">
+        SELECT o.id_in_face, o.x_pos AS x, o.y_pos AS y, o.face_id, f.id_in_origami, a.on_edge_id, e.edge_type_name
+        FROM origami_point o
+                 INNER JOIN face f ON o.face_id = f.id
+                 INNER JOIN annotated_point a ON o.id = a.point_id
+                 LEFT JOIN edge ON a.on_edge_id = edge.id
+                 LEFT JOIN edge_type e ON edge.edge_type_id = e.id
+        WHERE o.deleted_step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
+
+    <!--
        Retrieves the id in face of a specified edge.
 
        Purpose:

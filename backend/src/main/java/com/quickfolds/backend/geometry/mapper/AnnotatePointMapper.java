@@ -44,6 +44,18 @@ public interface AnnotatePointMapper {
     List<AnnotatePoint> getAnnotatedPointsByStepIdForward(@Param("stepId") long stepId);
 
     /**
+     * Retreives a list of annotated points deleted in a specific step
+     * <p>
+     * This method returns the details of each annotated point deleted in the given step,
+     * formated as an {@link AnnotatePoint} object.
+     *
+     * @param stepId The specific step to get the annotated points of.
+     * @return A list of {@link AnnotatePoint} objects representing an annotated point,
+     * or an empty list if no annotated points were deleted in the given step.
+     */
+    List<AnnotatePoint> getAnnotatedPointsByStepIdBackward(@Param("stepId") long stepId);
+
+    /**
      * Retreives the onEdgeIdInFace of an annotated point on a side edge
      *
      * @param edgeId the specifc edge to get the id in face of.

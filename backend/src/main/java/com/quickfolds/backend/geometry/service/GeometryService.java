@@ -155,16 +155,42 @@ public class GeometryService {
      *  Utils
      * ---------------------------------------------------------------------------------------------*/
     /**
-     * Handles the retrieval of data needed to go forward one annotate step.
+     * Handles the retrieval of data needed to go forward or backward one annotate step.
      *
      * @param stepId the specific step to retrieve
+     * @param isForward indicates which direction the step is going
      * @return a list of face annotation responses that comprises the step.
      * @throws
      */
-    private List<FaceAnnotateResponse> annotateStepForward(long stepId) {
-        ArrayList<PointAnnotationResponse> pointAnnotations = getAnnotatedPoints(stepId, true);
-        //TODO: get list of annotated lines, deleted lines, deleted points, then make and add to
+    private List<FaceAnnotateResponse> annotateStep(long stepId, boolean isForward) {
+        List<PointAnnotationResponse> pointAnnotations = getAnnotatedPoints(stepId, isForward);
+        List<LineAnnotationResponse> lineAnnotations = getAnnotatedLines(stepId, isForward);
+        //TODO: get list of deleted lines, deleted points, then make and add to
         //corresponding face annotate response objects
+    }
+
+    /**
+     * Handles the retrieval of annotated lines needed in an annotate step.
+     *
+     * @param stepId the specific step to retrieve
+     * @param isForward indicates whether to retrieve details for the created lines or deleted ones.
+     * @return a list of line annotation responses in that step
+     * @throws DbException if an error occurs while retrieving data from the database.
+     */
+    private List<LineAnnotationResponse> getAnnotatedLines(long stepId, boolean isForward) {
+        List<LineAnnotationResponse> lineAnnotations;
+
+        if (isForward) {
+            lineAnnotations = annotateLineMapper.getAnnotatedLinesByStepIdForward(stepId);
+        } else {
+            lineAnnotations = annotateLineMapper.getAnnotatedLinesByStepIdBackward(stepId);
+        }
+
+        if (lineAnnotations == null) {
+            throw new DbException("Error in DB, cannot get annotated line data from DB");
+        }
+
+        return lineAnnotations;
     }
 
     /**
@@ -176,14 +202,13 @@ public class GeometryService {
      * @throws DbException if an error occurs while retrieving data from the database.
      */
     private List<PointAnnotationResponse> getAnnotatedPoints(long stepId, boolean isForward) {
-        ArrayList<AnotatePoint> annotatedPoints;
+        List<AnnotatePoint> annotatedPoints;
         ArrayList<PointAnnotationResponse> pointAnnotations = new ArrayList<>();
 
-        if (isForward == true) {
+        if (isForward) {
             annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdForward(stepId);
         } else {
-            //TODO: implement mapper method
-            //annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdBackward(stepId);
+            annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdBackward(stepId);
         }
 
         // If retrieval fails, throw an exception indicating a database issue.

@@ -131,21 +131,6 @@ public class GeometryController {
     public ResponseEntity<BaseResponse<StepResponse>> getStep(@PathVariable long origamiId,
                                                          @PathVariable int startStep,
                                                          @PathVariable int endStep, @PathVariable boolean isForward) {
-        if (origamiId == null) {
-            throw new IllegalArgumentException("Origami ID is null, this should not be possible");
-        }
-
-        if (startStep == null) {
-            throw new IllegalArgumentException("Starting step ID in origami is null, this should not be possible");
-        }
-
-        if (endStep == null) {
-            throw new IllegalArgumentException("Ending step ID in origami is null, this should not be possible");
-        }
-
-        if (isForward == null) {
-            throw new IllegalArgumentException("Starting step ID in origami is null, this should not be possible");
-        }
 
         int a = Math.abs(startStep - endStep);
         if (a != 1) {

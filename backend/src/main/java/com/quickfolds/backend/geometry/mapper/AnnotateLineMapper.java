@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.AnnotatedLine;
+import com.quickfolds.backend.geometry.model.dto.response.LineAnnotationResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -101,4 +102,28 @@ public interface AnnotateLineMapper {
 
     int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
                         @Param("deletedStepId") long deletedStepId);
+
+    /**
+     * Retreives a list of annotated lines created in a specific step
+     * <p>
+     * This method returns the details of each annotated line created in the given step,
+     * formated as an {@link LineAnnotationResponse} object.
+     *
+     * @param stepId The specific step to get the annotated points of.
+     * @return A list of {@link LineAnnotationResponse} objects representing an annotated point,
+     * or an empty list if no annotated points were created in the given step.
+     */
+    List<LineAnnotationResponse> getAnnotatedLinesByStepIdForward(@Param("stepId") long stepId);
+
+    /**
+     * Retreives a list of annotated lines deleted in a specific step
+     * <p>
+     * This method returns the details of each annotated line deleted in the given step,
+     * formated as an {@link LineAnnotationResponse} object.
+     *
+     * @param stepId The specific step to get the annotated points of.
+     * @return A list of {@link LineAnnotationResponse} objects representing an annotated point,
+     * or an empty list if no annotated points were deleted in the given step.
+     */
+    List<LineAnnotationResponse> getAnnotatedLinesByStepIdBackward(@Param("stepId") long stepId);
 }
