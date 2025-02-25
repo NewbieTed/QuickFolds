@@ -85,14 +85,19 @@ async function onMouseDown(event : MouseEvent) {
 
 			const intersect = intersects[0];
 			const object3dHit = intersect.object;
-			const point = intersect.point;
+			const point = createPoint3D(
+				intersect.point.x,
+				intersect.point.y,
+				intersect.point.z
+			);
 			raySphere.position.set(point.x, point.y, point.z);
 
 			let face3d = SceneManager.getFace3D(object3dHit);
 			if (face3d === undefined) {
 				return;
 			}
-			const result: string | true = await addAnnotationPoint(createPoint3D(point.x, point.y, point.z), face3d.ID);
+			const projectedPoint = face3d.projectToFace(point);
+			const result: string | true = await addAnnotationPoint(projectedPoint, face3d.ID);
 			if (result !== true) {
 				addlogfeedMessage("red", "Error: ", result);
 			}
@@ -140,7 +145,7 @@ async function onMouseDown(event : MouseEvent) {
 					return;
 				}
 
-				if (closestPoint1 && closestPoint2) {
+				if (closestPoint1 !== -1n && closestPoint2 !== -1n) {
 						// create line
 						console.log("points ids: ", closestPoint1, closestPoint2);
 
@@ -182,7 +187,7 @@ async function onMouseDown(event : MouseEvent) {
 					return;
 				}
 
-				if (closestPoint1 && closestPoint2) {
+				if (closestPoint1 !== -1n && closestPoint2 !== -1n) {
 						// create line
 						console.log("points ids: ", closestPoint1, closestPoint2);
 						const face3d : Face3D | undefined = SceneManager.getFace3DByID(faceId1);

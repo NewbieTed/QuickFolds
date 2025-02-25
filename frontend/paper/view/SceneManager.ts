@@ -66,7 +66,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     ]
     const principalNormal = pt.createPoint3D(0, 1, 0);
     const plane = new Face3D(vertices3D, 0.05, 0, principalNormal, 0n);
-    scene.add(plane.getFaceObject());
+    scene.add(plane.getPivot());
 
     idsToFace3D.set(plane.ID, plane);
     idsToFaceObj.set(plane.ID, plane.getFaceObject());
