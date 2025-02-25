@@ -12,7 +12,6 @@ import {Face3D} from "../geometry/Face3D";
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { createNewGraph } from '../model/PaperGraph';
 import { Animation } from './animation/Animation';
-import { FlipAnimation } from './animation/FlipAnimation';
 
 let stepID = 1n;
 const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
@@ -192,19 +191,11 @@ export function deleteFace(faceID: bigint) {
     threeIDtoFaceID.delete(faceMeshID);
 }
 
-// Test animation function.
-export function spinFace() {
 
-    // Spin the only face in the scene.
-    const face: Face3D | undefined = getFace3DByID(0n);
-    if (face === undefined) {
-        return;
-    }
-    const anim = new FlipAnimation(face);
-    animations.push(anim);
-}
-
-// Test animation function.
+/**
+ * Updates the current animations. To be called in every iteration
+ * of the animation loop handled by the Three.js renderer.
+ */
 export function updateAnimations() {
 
     const animRemaining: Animation[] = [];
