@@ -339,9 +339,13 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
   }
 
   // check that we don't add an annotation line to the edge of the plane
-  if (point1Id < face3d.vertices.length && point2Id < face3d.vertices.length) {
-    return "Deleting a vertex";
+  // annotation line between two adjacent vertices disallowed.
+  if (point1Id < face3d.N && point2Id < face3d.N) {
+    if (point1Id === (point2Id + 1n) % face3d.N || point2Id === (point1Id + 1n) % face3d.N) {
+      return "Cannot draw an annotated line along an edge!";
+    }
   }
+
 
   // frontend changes
   let updateState2dResults: AnnotationUpdate2D = face2D.addAnnotatedLine(point1Id, point2Id);

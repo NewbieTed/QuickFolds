@@ -73,8 +73,9 @@ let [closestPoint2, faceId2]: [bigint, bigint] = [-1n, -1n];
 // dom function that activates when a mouse button is pressed
 async function onMouseDown(event : MouseEvent) {
 	if (input.getIsPickPointButtonPressed()) {
-		mouse.x = (event.clientX / window.innerWidth) * 2 - 1.015;
-		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.02;
+		
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
 		raycaster.setFromCamera(mouse, cameraManager.getCamera());
 		const intersects = raycaster.intersectObjects(SceneManager.getFaceObjects());
@@ -106,8 +107,8 @@ async function onMouseDown(event : MouseEvent) {
 		}
 	} else if (input.getIsDeletePointButtonPressed()) {
 
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         const [closestPoint, faceId] = getClosestPointViaRaycast();
 				console.log("RESUL OF CLOSES POINT ID: " + closestPoint);
@@ -124,9 +125,8 @@ async function onMouseDown(event : MouseEvent) {
         input.resetIsDeletePointButtonPressed(); // Reset the delete button state
     } else if(input.doubleButtonPressed1st() && input.getAddLineButton()) {
 
-
-			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-			mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
 			if (!input.doubleButtonPressed2nd()) {
 				// first point select
@@ -166,9 +166,8 @@ async function onMouseDown(event : MouseEvent) {
 			}
 		} else if(input.doubleButtonPressed1st() && input.getDeleteLineButton()) {
 
-
 			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-			mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+			mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
 			if (!input.doubleButtonPressed2nd()) {
 				// first point select
