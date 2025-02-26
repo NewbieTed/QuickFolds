@@ -608,9 +608,6 @@ export class Face2D {
      * @throws Error if the given ID is not a valid edge ID.
      */
     public projectToLine(point: pt.Point2D, lineId: bigint): pt.Point2D {
-        if (lineId < BigInt(this.vertices.length)) {
-            throw new Error(`The LINE ID ${lineId} is not a valid annotation ilne.`);
-        }
 
         const getAnnotationLine = this.getAnnotatedLine(lineId);
 

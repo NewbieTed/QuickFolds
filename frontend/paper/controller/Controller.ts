@@ -36,9 +36,9 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
     faceId1, faceId2, relativeChange
   );
   if (stationaryFace === faceId1) {
-    animateFold(stationaryFace, edgeIDs[0], Number(relativeChange), faceId1, faceId2);
+    animateFold(stationaryFace, edgeIDs[0], Number(relativeChange), faceId2);
   } else if (stationaryFace === faceId2) {
-    animateFold(stationaryFace, edgeIDs[1], Number(relativeChange), faceId1, faceId2);
+    animateFold(stationaryFace, edgeIDs[1], Number(relativeChange), faceId1);
   }
 
   // backend needs a simple update angle step

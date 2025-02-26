@@ -8,7 +8,7 @@ import * as input from './editorInputCapture';
 import * as settings from "./globalSettings";
 import * as SceneManager from "../SceneManager"
 import {CameraManager} from "../CameraManager"
-import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine} from "../../controller/Controller"
+import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine, createANewFoldBySplitting, updateAnExistingFold} from "../../controller/Controller"
 import { createPoint3D } from '../../geometry/Point';
 import { Face3D } from '../../geometry/Face3D';
 import { addlogfeedMessage } from './errordisplay/usererror';
@@ -44,9 +44,9 @@ window.addEventListener('resize', () => {
 
 
 // raycast test pt
-const raycastSphere = new THREE.SphereGeometry(0.05);
-const blueMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
-const raySphere = new THREE.Mesh(raycastSphere, blueMaterial);
+const raycastSphere = new THREE.SphereGeometry(0.1);
+const redMaterial = new THREE.MeshBasicMaterial( { color: 0xdb0000 } );
+const raySphere = new THREE.Mesh(raycastSphere, redMaterial);
 raySphere.visible = true;
 SceneManager.getScene().add(raySphere);
 
@@ -60,6 +60,27 @@ function onKeyDown(event: KeyboardEvent) {
     	cameraManager.swapCameraType();
   	} else if (event.key === settings.TOGGLE_FOCAL_PT_KEY) {
 		cameraManager.toggleFocalPointVisible();
+	} else if (event.key === "s") {
+		// Temporary key to fold the paper in half.
+		addAnnotationPoint(
+			createPoint3D(-3, 0, 0),
+			0n, //face ID
+			0n // edge 0
+		);
+		addAnnotationPoint(
+			createPoint3D(3, 0, 0),
+			0n, // face ID
+			2n  // edge 2
+		);
+		createANewFoldBySplitting(
+			4n, // first point ID
+			5n, // second point ID
+			0n, // face ID
+			createPoint3D(-3, 0, -3), // vertex of anchored face
+			90n // angle between the faces.
+		)
+		updateAnExistingFold(1n, 2n, 1n, 90n);
+
 	}
 
 }
@@ -105,6 +126,7 @@ async function onMouseDown(event : MouseEvent) {
 
 			input.resetIsPickPointButtonPressed(); // Reset after picking
 		}
+
 	} else if (input.getIsDeletePointButtonPressed()) {
 
 		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;

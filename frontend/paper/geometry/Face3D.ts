@@ -593,7 +593,7 @@ export class Face3D {
      * object about the specified axis CCW (right-hand rule) by deltaAngle.
      * @param axisPoint1 The start of the rotation axis
      * @param axisPoint2 The end of the rotation axis.
-     * @param deltaAngle The change in angle
+     * @param deltaAngle The change in angle (radians)
      */
     public rotateObjects(
                 axisPoint1: pt.Point3D, 
@@ -643,7 +643,7 @@ export class Face3D {
      * (right-hand rule) by deltaAngle.
      * @param axisPoint1 The start of the rotation axis
      * @param axisPoint2 The end of the rotation axis.
-     * @param deltaAngle The change in angle
+     * @param deltaAngle The change in angle (radians)
      */
     public rotateFace(
                 axisPoint1: pt.Point3D, 

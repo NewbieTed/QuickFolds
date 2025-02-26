@@ -25,7 +25,7 @@ export class FoldAnimation implements Animation {
 
         this.axisPoint1 = axisPoint1;
         this.axisPoint2 = axisPoint2;
-        this.deltaAngle = deltaAngle;
+        this.deltaAngle = deltaAngle * Math.PI / 180; // convert to radians
         this.faces = faces;
         this.time = 0;
         this.totalTime = 2; // (In roughly seconds)
@@ -75,7 +75,7 @@ export class FoldAnimation implements Animation {
     private getAngle(time: number) {
         // A nice formula that gives slow speed of rotation at the
         // start, high speed in the middle, and slow at the end.
-        const denom = Math.exp(-10 * time / this.totalTime + 5);
+        const denom = 1 + Math.exp(-10 * time / this.totalTime + 5);
         return this.deltaAngle / denom;
     }
 
