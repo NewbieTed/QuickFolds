@@ -2,7 +2,6 @@ package com.quickfolds.backend.user.controller;
 
 
 import com.quickfolds.backend.dto.BaseResponse;
-import com.quickfolds.backend.user.mapper.UserMapper;
 import com.quickfolds.backend.user.model.User;
 import com.quickfolds.backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +34,6 @@ public class UserController {
 
     // Service layer handling user authentication and registration logic.
     private final UserService userService;
-
-    // Mapper for handling database operations related to users.
-    private final UserMapper userMapper;
 
     /**
      * Retrieves the currently authenticated user.
@@ -79,7 +75,7 @@ public class UserController {
             return ResponseEntity.ok(Collections.singletonMap("message", "User registered successfully"));
         } else {
             // Return conflict status if the username is already taken.
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Collections.singletonMap("message", "Username already exists"));
         }
     }
 
@@ -106,7 +102,7 @@ public class UserController {
         // If authentication is successful, return the token.
         if (token != null) {
             // Retrieve the full user object based on the username
-            User user = userMapper.findByUsername(username);
+            User user = userService.findByUsername(username);
             // Return both the token and the user ID
             return ResponseEntity.ok(Map.of("token", token, "userId", user.getId()));
         }
