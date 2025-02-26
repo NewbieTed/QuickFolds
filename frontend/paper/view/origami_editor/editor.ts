@@ -8,7 +8,7 @@ import * as input from './editorInputCapture';
 import * as settings from "./globalSettings";
 import * as SceneManager from "../SceneManager"
 import {CameraManager} from "../CameraManager"
-import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine} from "../../controller/Controller"
+import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine, createANewFoldBySplitting, updateAnExistingFold} from "../../controller/Controller"
 import { createPoint3D } from '../../geometry/Point';
 import { Face3D } from '../../geometry/Face3D';
 import { addlogfeedMessage } from './errordisplay/usererror';
@@ -44,9 +44,9 @@ window.addEventListener('resize', () => {
 
 
 // raycast test pt
-const raycastSphere = new THREE.SphereGeometry(0.05);
-const blueMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
-const raySphere = new THREE.Mesh(raycastSphere, blueMaterial);
+const raycastSphere = new THREE.SphereGeometry(0.1);
+const redMaterial = new THREE.MeshBasicMaterial( { color: 0xdb0000 } );
+const raySphere = new THREE.Mesh(raycastSphere, redMaterial);
 raySphere.visible = true;
 SceneManager.getScene().add(raySphere);
 
@@ -60,8 +60,27 @@ function onKeyDown(event: KeyboardEvent) {
     	cameraManager.swapCameraType();
   	} else if (event.key === settings.TOGGLE_FOCAL_PT_KEY) {
 		cameraManager.toggleFocalPointVisible();
-	} else if (event.key === 's') {
-		SceneManager.spinFace();
+	} else if (event.key === "s") {
+		// Temporary key to fold the paper in half.
+		addAnnotationPoint(
+			createPoint3D(-3, 0, 0),
+			0n, //face ID
+			0n // edge 0
+		);
+		addAnnotationPoint(
+			createPoint3D(3, 0, 0),
+			0n, // face ID
+			2n  // edge 2
+		);
+		createANewFoldBySplitting(
+			4n, // first point ID
+			5n, // second point ID
+			0n, // face ID
+			createPoint3D(-3, 0, -3), // vertex of anchored face
+			90n // angle between the faces.
+		)
+		updateAnExistingFold(1n, 2n, 1n, 90n);
+
 	}
 
 }
@@ -75,8 +94,9 @@ let [closestPoint2, faceId2]: [bigint, bigint] = [-1n, -1n];
 // dom function that activates when a mouse button is pressed
 async function onMouseDown(event : MouseEvent) {
 	if (input.getIsPickPointButtonPressed()) {
-		mouse.x = (event.clientX / window.innerWidth) * 2 - 1.015;
-		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.02;
+		
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
 		raycaster.setFromCamera(mouse, cameraManager.getCamera());
 		const intersects = raycaster.intersectObjects(SceneManager.getFaceObjects());
@@ -87,24 +107,30 @@ async function onMouseDown(event : MouseEvent) {
 
 			const intersect = intersects[0];
 			const object3dHit = intersect.object;
-			const point = intersect.point;
+			const point = createPoint3D(
+				intersect.point.x,
+				intersect.point.y,
+				intersect.point.z
+			);
 			raySphere.position.set(point.x, point.y, point.z);
 
 			let face3d = SceneManager.getFace3D(object3dHit);
 			if (face3d === undefined) {
 				return;
 			}
-			const result: string | true = await addAnnotationPoint(createPoint3D(point.x, point.y, point.z), face3d.ID);
+			const projectedPoint = face3d.projectToFace(point);
+			const result: string | true = await addAnnotationPoint(projectedPoint, face3d.ID);
 			if (result !== true) {
 				addlogfeedMessage("red", "Error: ", result);
 			}
 
 			input.resetIsPickPointButtonPressed(); // Reset after picking
 		}
+
 	} else if (input.getIsDeletePointButtonPressed()) {
 
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         const [closestPoint, faceId] = getClosestPointViaRaycast();
 				console.log("RESUL OF CLOSES POINT ID: " + closestPoint);
@@ -121,9 +147,8 @@ async function onMouseDown(event : MouseEvent) {
         input.resetIsDeletePointButtonPressed(); // Reset the delete button state
     } else if(input.doubleButtonPressed1st() && input.getAddLineButton()) {
 
-
-			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-			mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
 			if (!input.doubleButtonPressed2nd()) {
 				// first point select
@@ -142,7 +167,7 @@ async function onMouseDown(event : MouseEvent) {
 					return;
 				}
 
-				if (closestPoint1 && closestPoint2) {
+				if (closestPoint1 !== -1n && closestPoint2 !== -1n) {
 						// create line
 						console.log("points ids: ", closestPoint1, closestPoint2);
 
@@ -163,9 +188,8 @@ async function onMouseDown(event : MouseEvent) {
 			}
 		} else if(input.doubleButtonPressed1st() && input.getDeleteLineButton()) {
 
-
 			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-			mouse.y = -(event.clientY / window.innerHeight) * 2 + 0.97;
+			mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
 			if (!input.doubleButtonPressed2nd()) {
 				// first point select
@@ -184,7 +208,7 @@ async function onMouseDown(event : MouseEvent) {
 					return;
 				}
 
-				if (closestPoint1 && closestPoint2) {
+				if (closestPoint1 !== -1n && closestPoint2 !== -1n) {
 						// create line
 						console.log("points ids: ", closestPoint1, closestPoint2);
 						const face3d : Face3D | undefined = SceneManager.getFace3DByID(faceId1);

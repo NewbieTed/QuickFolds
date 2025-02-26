@@ -11,7 +11,7 @@ import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
 import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph"
-import { getFace3DByID, incrementStepID, print3dGraph, updateFace } from '../view/SceneManager';
+import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
 import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
 
@@ -31,17 +31,21 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
     return "Faces are the same";
   }
 
-
-
-  updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1, faceId2, relativeChange);
-  // hady do rotation math here
-  // render stuff... using stationaryFace
+  // Animate the fold.
+  const edgeIDs = updateRelativePositionBetweenFacesIndependentOfRelativeChange(
+    faceId1, faceId2, relativeChange
+  );
+  if (stationaryFace === faceId1) {
+    animateFold(stationaryFace, edgeIDs[0], Number(relativeChange), faceId2);
+  } else if (stationaryFace === faceId2) {
+    animateFold(stationaryFace, edgeIDs[1], Number(relativeChange), faceId1);
+  }
 
   // backend needs a simple update angle step
 
   // print2dGraph();
   // print3dGraph();
-  printAdjList();
+  // printAdjList();
 
   incrementStepID();
   return true;
@@ -243,8 +247,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
 
   // create manual new update change, since we already know the 3d point
   let pointId: bigint = getaddPointFromResultMap(addPointResult);
-  const renderUpdateResult = face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
-  updateFace(renderUpdateResult);
+  face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
 
   let result: boolean = await addUpdatedAnnoationToDB(addPointResult, faceId);
 
@@ -292,10 +295,7 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
     return "Error: couldn't generated 3d updated object";
   }
 
-
-  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
-  updateFace(renderingUpdateObjectResult);
-
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -339,9 +339,13 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
   }
 
   // check that we don't add an annotation line to the edge of the plane
-  if (point1Id < face3d.vertices.length && point2Id < face3d.vertices.length) {
-    return "Deleting a vertex";
+  // annotation line between two adjacent vertices disallowed.
+  if (point1Id < face3d.N && point2Id < face3d.N) {
+    if (point1Id === (point2Id + 1n) % face3d.N || point2Id === (point1Id + 1n) % face3d.N) {
+      return "Cannot draw an annotated line along an edge!";
+    }
   }
+
 
   // frontend changes
   let updateState2dResults: AnnotationUpdate2D = face2D.addAnnotatedLine(point1Id, point2Id);
@@ -350,9 +354,7 @@ export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, face
     return "Error: couldn't generated 3d updated object";
   }
 
-  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
-  updateFace(renderingUpdateObjectResult);
-
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);
@@ -393,8 +395,7 @@ export async function deleteAnnotationLine(lineId: bigint, faceId: bigint) : Pro
     return "Error: couldn't generated 3d updated object";
   }
 
-  const renderingUpdateObjectResult = face3d.updateAnnotations(update3dObjectResults);
-  updateFace(renderingUpdateObjectResult);
+  face3d.updateAnnotations(update3dObjectResults);
 
   // backend chagnes
   let result: boolean = await addUpdatedAnnoationToDB(updateState2dResults, faceId);

@@ -41,11 +41,6 @@ export const EditorStatus = {
 export type EditorStatusType = keyof typeof EditorStatus;
 
 
-
-
-console.log("");
-
-
 // Usage example:
 // const myStatus: EditorStatusType = "BAD_LINE_ADD";
 // const msg = EditorStatus[myStatus].msg;
