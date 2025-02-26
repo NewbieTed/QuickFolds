@@ -184,9 +184,9 @@ We need to activate both frontend server and backend server to use the editor/co
 
 4. Pressing this url should result in `This localhost page can’t be found`. _THIS IS INTENDED_. Vite is looking for a index.html file (the "base file" in any web server). However, with multiple people working on this at once, we won't do this [and it's also good practice]. Instead, you can access the file you want putting the directory path`http:/localhost:PORT_NUMBER_HERE/PATH.html`
 
-5. To open the editor, type in `http:/localhost:PORT_NUMBER_HERE/frontend/community/communityboard.html`.
+5. To open the editor, type in `http://localhost:PORT_NUMBER_HERE/frontend/user/login.html`.
 
-6. The editor should appear and you should be good to go, although you can't create any new orgiami, as we have to start up backend now.
+6. The editor should appear and you should be good to go. Create an account and log in, then you will be taken to the community board and can create your own origami.
 
 7. To stop frontend, type `ctrl + c`
 
@@ -238,6 +238,10 @@ __NOTE: If at any point you have trouble, there is a manual step by step guide a
 
 ### How to use the software
 
+#### Login
+
+You are able to create accounts and sign in. This must be done before creating a new origami.
+
 #### Community board
 
 The community board is a place where user can see created origami, and can opt to create their own origmai.
@@ -283,7 +287,7 @@ User can create points and lines. Annotation points are a point on the piece of 
 
 + Delete Annotation Line: Click the "delete annotation line" button, the click the 2 nearest point, or vertex, you want to remove the annotation line from.
 
-+ [Not Available] Fold Button: You can either create a new fold, or edit an existing fold. To create a new fold, click the two closest points on seperate edges to cause a line to form. Then click the part of the face that should not move during a rotation, then provide the amount in degrees that should rotate. To edit an existing fold, click the two faces, with the first one that shouldn't move.
++ [Not Available] Fold Button: You can either create a new fold, or edit an existing fold. To create a new fold, click the two closest points on seperate edges to cause a line to form. Then click the part of the face that should not move during a rotation, then provide the amount in degrees that should rotate. To edit an existing fold, click the two faces, with the first one that shouldn't move. We currently have a minitest of this working though. If you press 's' on the editor in the first thing, it will split the face, although nothing else beyond that works for splitting.
 
 ### Known bugs
 
