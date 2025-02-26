@@ -19,32 +19,30 @@ fi
 # Loop through each .env file and set variables
 for file in $env_files; do
     echo "Processing: $file"
-
-    while IFS='=' read -r key value; do
-        # Ignore empty lines and comments
-        if [[ -n "$key" && "$key" != \#* ]]; then
-            export "$key=$value"
-        fi
-    done < "$file"
-
+    export $(grep -v '^#' "$file" | xargs)
     echo "Loaded environment variables from: $file"
 done
 
-# run docker in background
+# Run Docker in background
 docker compose up -d
 
+# Build and run Spring Boot app
 mvn clean install
 
-mvn spring-boot:run -d
+mvn spring-boot:run -D
 
-# id of container
+# Get container ID for the PostgreSQL container
 CONTAINER_ID=$(docker ps --filter "name=quickfolds-db-local" --format "{{.ID}}")
 
-docker cp Reset_Dummy_Data.sql $CONTAINER_ID:/file.sql
+# Copy SQL file to container
+docker cp Reset_Dummy_Data.sql "$CONTAINER_ID":/file.sql
 
-docker exec -i $CONTAINER_ID psql -U local_user -d quickfolds_local -f /file.sql
+# Execute SQL file inside the container
+docker exec -i "$CONTAINER_ID" psql -U local_user -d quickfolds_local -f /file.sql
 
-#docker stop $(docker ps -q)
-#pkill -f "mvn"
+# Uncomment to stop Docker containers and Maven if needed
+# docker stop $(docker ps -q)
+# pkill -f "mvn"
 
-cd windowssetup
+# Navigate to setup equivalent folder
+cd setup
