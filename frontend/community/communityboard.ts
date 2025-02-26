@@ -3,6 +3,7 @@
  *  + create new origami
  *  + look at public origami
  */
+const USER_ID = 1;
 
 // Global variable to store the list of origami profiles
 let origamiProfiles: OrigamiProfile[] = [];
@@ -41,9 +42,11 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
     }
     const newOrigamiName = popupInput.value;
     const url = 'http://localhost:8080/origami/new';
+
     const token = localStorage.getItem('userToken');
     const userId = localStorage.getItem('userId');
     const data = { userId, origamiName: newOrigamiName };
+
 
     const response = await fetch(url, {
       method: 'POST',

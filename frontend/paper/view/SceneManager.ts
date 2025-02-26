@@ -16,9 +16,11 @@ import { FoldAnimation } from './animation/FoldAnimation';
 
 let stepID = 1n;
 const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
+
 if (origamiID === null) {
     throw new Error("The ID of the current origami is null.");
 }
+
 
 let nextFaceId: bigint = 0n;
 const scene = new THREE.Scene();
@@ -211,7 +213,7 @@ export function updateAnimations() {
     animations = animRemaining;
 }
 
- 
+
 /**
  * Animates folding several faces by rotating them about the
  * crease line specified by the ID of the anchored face and the
