@@ -211,8 +211,6 @@ export class CameraManager {
      * based on the current distance and aspect ratio.
      */
     private updateOrthographic() {
-
-        console.log("ZOOM ORTHO");
         const distance = this.focalPoint.distanceTo(this.camera.position);
         const zoomFactor: number = distance / this.initialDistance;
         this.ORTHOGRAPHIC_CAMERA.left =  (-10 * this.aspect / 2) * zoomFactor;
