@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 
 /**
@@ -160,13 +164,88 @@ public class GeometryService {
      * @param stepId the specific step to retrieve
      * @param isForward indicates which direction the step is going
      * @return a list of face annotation responses that comprises the step.
-     * @throws
+     * @throws DbException if an error occurs while retrieving data from the database.
      */
     private List<FaceAnnotateResponse> annotateStep(long stepId, boolean isForward) {
+        ArrayList<FaceAnnotateResponse> annotationStep = new ArrayList<>();
+
+        // get all relevant data for the step
         List<PointAnnotationResponse> pointAnnotations = getAnnotatedPoints(stepId, isForward);
         List<LineAnnotationResponse> lineAnnotations = getAnnotatedLines(stepId, isForward);
-        //TODO: get list of deleted lines, deleted points, then make and add to
-        //corresponding face annotate response objects
+        List<DeletedIdInFace> pointDeletions = getDeletedAnnotatedPoints(stepId, isForward);
+        List<DeletedIdInFace> lineDeletions = getDeletedAnnotatedLines(stepId, isForward);
+
+        // determine IDs of faces annotated in this step
+        List<Integer> faceIds = Stream.concat(Stream.concat(Stream.concat(
+                pointAnnotations.stream().map(PointAnnotationResponse::getFaceIdInOrigami),
+                        lineAnnotations.stream().map(LineAnnotationResponse::getFaceIdInOrigami)),
+                pointDeletions.stream().map(DeletedIdInFace::getFaceIdInOrigami)),
+                lineDeletions.stream().map(DeletedIdInFace::getFaceIdInOrigami))
+                .distinct().collect(Collectors.toList());
+
+        // create a FaceAnnotateResponse for each face ID and populate
+        for (Integer id : faceIds) {
+            if (id = null) {
+                throw new DbException("Error in faceIds retrieved from database");
+            }
+
+            FaceAnnotateResponse faceAnnotation = new FaceAnnotateResponse();
+            faceAnnotation.setIdInOrigami(id);
+
+            //collects the annotations that match the face
+            List<PointAnnotationResponse> pointsInFace = pointAnnotations.stream()
+                    .filter(point -> point.getFaceIdInOrigami().equals(id))
+                    .collect(Collectors.toList());
+            List<L>
+        }
+    }
+
+    /**
+     * Handles the retrieval of annotated points needed to delete in an annotate step.
+     *
+     * @param stepId the specific step to retrieve
+     * @param isForward indicates whether to retrieve details for the deleted points or created ones.
+     * @return a list of deleted IDs in that step
+     * @throws DbException if an error occurs while retrieving data from the database.
+     */
+    private List<DeletedIdInFace> getDeletedAnnotatedPoints(long stepId, boolean isForward) {
+        List<DeletedIdInFace> deletedPoints;
+
+        if (isForward) {
+            deletedPointss = annotatePointMapper.getDeleteAnnotatedPointsByStepIdForward(stepId);
+        } else {
+            deletedPoints = annotatePointMapper.getDeleteAnnotatedPointsByStepIdBackward(stepId);
+        }
+
+        if (deletedPoints == null) {
+            throw new DbException("Error in DB, cannot get annotated points to delete data from DB");
+        }
+
+        return deletedPoints;
+    }
+
+    /**
+     * Handles the retrieval of annotated lines needed to delete in an annotate step.
+     *
+     * @param stepId the specific step to retrieve
+     * @param isForward indicates whether to retrieve details for the deleted lines or created ones.
+     * @return a list of deleted IDs in that step
+     * @throws DbException if an error occurs while retrieving data from the database.
+     */
+    private List<DeletedIdInFace> getDeletedAnnotatedLines(long stepId, boolean isForward) {
+        List<DeletedIdInFace> deletedLines;
+
+        if (isForward) {
+            deletedLines = annotateLineMapper.getDeleteAnnotatedLinesByStepIdForward(stepId);
+        } else {
+            deletedLines = annotateLineMapper.getDeleteAnnotatedLinesByStepIdBackward(stepId);
+        }
+
+        if (deletedLines == null) {
+            throw new DbException("Error in DB, cannot get annotated lines to delete data from DB");
+        }
+
+        return deletedLines;
     }
 
     /**
@@ -190,6 +269,7 @@ public class GeometryService {
             throw new DbException("Error in DB, cannot get annotated line data from DB");
         }
 
+        //comprehensive error checking for list elements?
         return lineAnnotations;
     }
 

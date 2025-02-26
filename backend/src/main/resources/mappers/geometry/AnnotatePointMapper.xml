@@ -168,4 +168,64 @@
         WHERE edge_id = #{edgeId}
     </select>
 
+    <!--
+        Result Map for mapping database columns to the `DeletedIdInFace` DTO fields.
+
+        Purpose:
+        - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to the corresponding Java property.
+
+        Mapped Fields:
+        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
+        - `id_in_face`: Maps to `idInFace` in the DTO.
+    -->
+    <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
+        <result property="faceIdInOrigami" column="f.id_in_origami"/>
+        <result property="idInFace" column="o.id_in_face"/>
+    </resultMap>
+
+    <!--
+        Retrieves a list of annotated points deleted in a specific step
+
+        Purpose:
+        - Fetches the IDs of all annotated points deleted in a specific step.
+
+        Parameters:
+        - `stepId`: The ID of the step being queried.
+
+        Result:
+        - List of `DeletedIdInFace` objects containing the ID in the face of the deleted point
+            and face ID in origami of the face the point is in.
+    -->
+    <select id="getDeleteAnnotatedPointsByStepIdForward" resultMap="DeletedIdInFaceMap">
+        SELECT o.id_in_face, f.id_in_origami
+        FROM origami_point o
+        INNER JOIN annotated_point a ON o.id = a.point_id
+        INNER JOIN face f ON o.face_id = f.id
+        WHERE o.deleted_step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
+
+    <!--
+        Retrieves a list of annotated points created in a specific step.
+
+        Purpose:
+        - Fetches the IDs of all annotated points created in a specific step.
+
+        Parameters:
+        - `stepId`: The ID of the step being queried.
+
+        Result:
+        - List of `DeletedIdInFace` objects containing the ID in the face of the created point
+            and face ID in origami of the face the point is in.
+    -->
+    <select id="getDeleteAnnotatedPointsByStepIdBackward" resultMap="DeletedIdInFaceMap">
+        SELECT o.id_in_face, f.id_in_origami
+        FROM origami_point o
+        INNER JOIN annotated_point a ON o.id = a.point_id
+        INNER JOIN face f ON o.face_id = f.id
+        WHERE o.step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
+
 </mapper>

@@ -71,4 +71,22 @@ public interface AnnotatePointMapper {
      * @return the Integer value of the edge's id in face, or Null if could not be found.
      */
     Integer getOnFoldEdgeIdInFace(@Param("edgeId") long edgeId, @Param("faceId") long faceId);
+
+    /**
+     * Retreives a list of IDs corresponding to annotated points deleted in a specific step.
+     *
+     * @param stepId the specific step to get the deleted points of.
+     * @return a list of {@link DeletedIdInFace} objects representing a deleted ID,
+     * or an empty list if no annotated points were deleted in the given step
+     */
+    List<DeletedIdInFace> getDeleteAnnotatedPointsByStepIdForward(@Param("stepId") long stepId);
+
+    /**
+     * Retreives a list of IDs corresponding to annotated points created in a specific step.
+     *
+     * @param stepId the specific step to get the created points of.
+     * @return a list of {@link DeletedIdInFace} objects representing a created ID,
+     * or an empty list if no annotated points were created in the given step
+     */
+    List<DeletedIdInFace> getDeleteAnnotatedPointsByStepIdBackward(@Param("stepId") long stepId);
 }
