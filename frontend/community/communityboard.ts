@@ -16,54 +16,6 @@ type OrigamiProfile = {
 };
 
 /**
- * Verifies the token and user ID stored in localStorage.
- * It calls the backend endpoint (e.g. /user/getUserId) which returns the current user.
- * If the token is invalid or the user ID doesn't match, the user is redirected to the login page.
- */
-const verifyUser = async (): Promise<boolean> => {
-  const token = localStorage.getItem('authToken');
-  const storedUserId = localStorage.getItem('userId');
-
-  if (!token || !storedUserId) {
-    alert("You are not logged in.");
-    redirectTo("http://localhost:5173/frontend/user/login");
-    return false;
-  }
-
-  try {
-    const response = await fetch('http://localhost:8080/user/getUserId', {
-      method: 'GET',
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    // If the token is invalid or expired, the backend should return an error status.
-    if (!response.ok) {
-      alert("Your login session has expired. Please log in again.");
-      redirectTo("http://localhost:5173/frontend/user/login");
-      return false;
-    }
-
-    const result = await response.json();
-    // Assuming your backend returns an object with user details, for example: { id: 123, username: "foo", ... }
-    if (result.id.toString() !== storedUserId) {
-      alert("User information does not match. Please log in again.");
-      redirectTo("http://localhost:5173/frontend/user/login");
-      return false;
-    }
-  } catch (error) {
-    console.error("Verification error:", error);
-    alert("An error occurred during verification. Please log in again.");
-    redirectTo("http://localhost:5173/frontend/user/login");
-    return false;
-  }
-
-  return true;
-};
-
-/**
  * Redirects the user to the specified URL
  * @param url
  */
@@ -89,17 +41,9 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
     }
     const newOrigamiName = popupInput.value;
     const url = 'http://localhost:8080/origami/new';
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('userToken');
     const userId = localStorage.getItem('userId');
     const data = { userId, origamiName: newOrigamiName };
-
-    const verified = await verifyUser();
-    if (!verified) {
-      console.error("User verification failed.");
-      alert("Profile mismatch detected. Please log in again.");
-      redirectTo("http://localhost:5173/frontend/user/login.html");
-      return;
-    }
 
     const response = await fetch(url, {
       method: 'POST',
@@ -140,7 +84,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
 const getAllPublicOrigami = async () => {
   try {
     const url = 'http://localhost:8080/origami/list';
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('userToken');
 
     const response = await fetch(url, {
       method: 'GET',
