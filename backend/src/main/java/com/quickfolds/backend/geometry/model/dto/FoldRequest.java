@@ -13,71 +13,69 @@ import java.util.List;
 
 /**
  * DTO (Data Transfer Object) representing a request to perform a fold operation on an origami model.
- *
- * - Specifies which faces should be added and which should be removed during the fold.
- * - Ensures validation constraints to maintain data integrity.
- *
+ * <p>
+ * This class defines the input parameters required for a fold operation, including the faces to be added,
+ * the faces to be removed, and the anchor face used as the pivot during the fold.
+ * <p>
  * Validation:
- * - `origamiId`: Must not be null and must be non-negative.
- * - `stepIdInOrigami`: Must not be null and must be non-negative.
- * - `anchoredIdInOrigami`: Must not be null and must be non-negative.
- * - `faces`: Must not be null and must contain at least one face.
- * - `deletedFaces`: Must not be null and must contain at least one face ID to be deleted.
+ * - `origamiId`: Must not be null and must be positive.
+ * - `stepIdInOrigami`: Must not be null and must be positive.
+ * - `anchoredFaceIdInOrigami`: Must not be null and must be non-negative.
+ * - `faces`: Must not be null and must contain at least one valid face.
+ * - `deletedFaces`: Must not contain negative values if provided.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FoldRequest {
+
     /**
      * The ID of the origami model where the fold is applied.
-     *
+     * <p>
      * - Must be non-null.
-     * - Must be zero or positive (no negative values allowed).
+     * - Must be positive.
      */
-    @NotNull(message = "Field 'origamiId' in Fold must not be null")
-    @PositiveOrZero(message = "Field 'origamiId' in Fold must be non-negative")
+    @NotNull(message = "Field 'origamiId' in FoldRequest must not be null")
+    @Positive(message = "Field 'origamiId' in FoldRequest must be positive")
     private Long origamiId;
 
     /**
      * The step identifier within the origami model where the fold is applied.
-     *
+     * <p>
      * - Must be non-null.
-     * - Must be zero or positive (no negative values allowed).
+     * - Must be positive.
      */
-    @NotNull(message = "Field 'stepIdInOrigami' in Fold must not be null")
-    @PositiveOrZero(message = "Field 'stepIdInOrigami' in Fold must be non-negative")
+    @NotNull(message = "Field 'stepIdInOrigami' in FoldRequest must not be null")
+    @Positive(message = "Field 'stepIdInOrigami' in FoldRequest must be positive")
     private Integer stepIdInOrigami;
 
     /**
-     * The ID of the anchor point in the origami model that serves as the pivot for folding.
-     *
+     * The ID of the anchor face in the origami model that serves as the pivot for folding.
+     * <p>
      * - Must be non-null.
      * - Must be zero or positive (no negative values allowed).
      */
-    @NotNull(message = "Field 'anchoredIdInOrigami' in Fold must not be null")
-    @PositiveOrZero(message = "Field 'anchoredIdInOrigami' in Fold must be non-negative")
-    private Integer anchoredIdInOrigami;
+    @NotNull(message = "Field 'anchoredFaceIdInOrigami' in FoldRequest must not be null")
+    @PositiveOrZero(message = "Field 'anchoredFaceIdInOrigami' in FoldRequest must be non-negative")
+    private Integer anchoredFaceIdInOrigami;
 
     /**
      * List of new faces to be added as part of the fold operation.
-     *
+     * <p>
      * - Must not be null.
      * - Must contain at least one face.
      * - Each face is validated using `FaceFoldRequest`.
      */
     @Valid
-    @NotNull(message = "Field 'faces' in Fold must not be null")
-    @Size(min = 1, message = "Faces list in Fold cannot be empty")
-    private List<FaceFoldRequest> faces;
+    @NotNull(message = "Field 'faces' in FoldRequest must not be null")
+    @Size(min = 1, message = "Faces list in FoldRequest cannot be empty")
+    private List<@Valid FaceFoldRequest> faces;
 
     /**
      * List of face IDs that should be deleted as part of the fold operation.
-     *
-     * - Must not be null.
-     * - Must contain at least one entry.
+     * <p>
+     * - Each ID must be zero or positive (no negative values allowed).
+     * - Null indicates no deletions; an empty list deletes nothing.
      */
-    @NotNull(message = "Field 'deletedFaces' in Fold must not be null")
-    @Size(min = 1, message = "Deleted faces list in Fold cannot be empty")
-    private List<Integer> deletedFaces;
-
+    private List<@PositiveOrZero(message = "Items in 'deletedFaces' in FoldRequest must be non-negative") Integer> deletedFaces;
 }

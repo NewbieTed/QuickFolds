@@ -1,7 +1,7 @@
 package com.quickfolds.backend.geometry.model.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,49 +11,54 @@ import java.util.List;
 
 /**
  * DTO (Data Transfer Object) representing annotations applied to an origami face.
- *
- * - Contains lists of added and deleted points and lines.
- * - Ensures validation constraints for maintaining data integrity.
- *
+ * <p>
+ * This class contains lists of added and deleted points and lines, ensuring proper
+ * validation constraints for maintaining data integrity during annotation operations.
+ * <p>
  * Validation:
- * - `points` and `lines`: Lists of annotation requests, validated separately.
- * - `deletedPoints` and `deletedLines`: Lists of non-negative integers representing deleted elements.
+ * - `points` and `lines`: Lists of annotation requests, validated individually.
+ * - `deletedPoints` and `deletedLines`: Lists of non-negative integers representing IDs of deleted elements.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Annotation {
+
     /**
      * List of points to be added as annotations.
-     *
+     * <p>
      * - Each point is validated separately using `PointAnnotationRequest`.
+     * - Cannot be null; empty list indicates no points to add.
      */
     @Valid
-    private List<PointAnnotationRequest> points;
+    private List<@Valid @NotNull PointAnnotationRequest> points;
 
     /**
      * List of lines to be added as annotations.
-     *
+     * <p>
      * - Each line is validated separately using `LineAnnotationRequest`.
+     * - Cannot be null; empty list indicates no lines to add.
      */
     @Valid
-    private List<LineAnnotationRequest> lines;
+    private List<@Valid @NotNull LineAnnotationRequest> lines;
 
     /**
-     * List of point IDs that should be deleted.
-     *
+     * List of point IDs to be deleted from the origami face.
+     * <p>
      * - All values must be non-negative.
-     * - Ensures no negative indices are referenced.
+     * - Ensures no invalid indices are referenced for deletion.
+     * - Null indicates no deletions; empty list deletes nothing.
      */
     @Valid
-    private List<@PositiveOrZero(message = "All elements in deletedPoints in Annotate must be non-negative.") Integer> deletedPoints;
+    private List<@NotNull @PositiveOrZero(message = "All elements in deletedPoints must be non-negative.") Integer> deletedPoints;
 
     /**
-     * List of line IDs that should be deleted.
-     *
+     * List of line IDs to be deleted from the origami face.
+     * <p>
      * - All values must be non-negative.
-     * - Prevents invalid deletions by enforcing positive indices.
+     * - Ensures only valid line IDs are referenced for deletion.
+     * - Null indicates no deletions; empty list deletes nothing.
      */
     @Valid
-    private List<@PositiveOrZero(message = "All elements in deletedLines in Annotate must be non-negative.") Integer> deletedLines;
+    private List<@NotNull @PositiveOrZero(message = "All elements in deletedLines must be non-negative.") Integer> deletedLines;
 }

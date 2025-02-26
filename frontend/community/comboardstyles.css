@@ -1,3 +1,4 @@
+
 /* General reset */
 * {
   margin: 0;
@@ -72,6 +73,16 @@ body {
   margin: auto;
 }
 
+/* Origami Image Styling */
+.origami-image {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  object-fit: cover;
+  max-height: 200px;
+}
+
 /* Card styles */
 .card {
   background-color: #ffffff;
@@ -96,6 +107,7 @@ body {
   background-color: #f8f8f8; /* Slight contrast for title background */
   border-radius: 10px;
   margin-bottom: 15px;
+  font-weight: bold; /* Make the text bold */
 }
 
 .card p {

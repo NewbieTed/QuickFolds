@@ -8,58 +8,97 @@ import java.time.Instant;
 
 /**
  * A generic response wrapper for API responses.
+ * <p>
+ * This class provides a standardized structure for API responses, ensuring consistent
+ * formatting across all endpoints. It includes fields for status, status code, message,
+ * timestamp, and optional response data.
+ * <p>
+ * Key Features:
+ * - Simplifies API responses by enforcing a common structure.
+ * - Supports success and failure responses with appropriate status codes.
+ * - Automatically includes a timestamp for easier tracking and debugging.
  *
- * - Standardizes API responses with a consistent structure.
- * - Includes success status, HTTP status code, message, timestamp, and data.
- * - Provides utility methods for creating standardized success and failure responses.
- *
- * @param <T> The type of data included in the response.
+ * @param <T> The type of the data included in the response.
  */
 @Data
 public class BaseResponse<T> {
-    // Indicates whether the response represents a successful operation (true) or a failure (false).
+
+    /**
+     * Indicates whether the response represents a successful operation.
+     * <p>
+     * - `true` for success responses.
+     * - `false` for failure responses.
+     */
     private boolean status;
 
-    // The HTTP status code of the response (e.g., 200 for OK, 404 for Not Found, 500 for Internal Server Error).
+    /**
+     * The HTTP status code associated with the response.
+     * <p>
+     * Examples:
+     * - 200 for OK
+     * - 400 for Bad Request
+     * - 404 for Not Found
+     * - 500 for Internal Server Error
+     */
     private int statusCode;
 
-    // A user-friendly message describing the result of the request.
+    /**
+     * A user-friendly message describing the outcome of the request.
+     * <p>
+     * This message provides additional context about the result, such as
+     * "Operation successful" or "Resource not found."
+     */
     private String message;
 
-    // The actual response data being returned, or null in case of errors.
+    /**
+     * The actual data being returned in the response.
+     * <p>
+     * This field holds the result of the operation if successful. It is set to `null`
+     * in case of an error or when there is no specific data to return.
+     */
     private T data;
 
-    // The timestamp at which the response was created.
+    /**
+     * The timestamp indicating when the response was created.
+     * <p>
+     * This value is automatically set to the current time when the response is generated,
+     * allowing consumers to trace when the response was produced.
+     */
     private Instant timestamp;
 
     /**
      * Default constructor that initializes the response with the current timestamp.
      */
     public BaseResponse() {
-        this.timestamp = Instant.now(); // Set the current timestamp
+        this.timestamp = Instant.now();
     }
 
     /**
      * Constructs a `BaseResponse` with specified parameters.
+     * <p>
+     * This constructor allows full customization of the response, including its status,
+     * HTTP code, message, and data.
      *
-     * @param status    The success status of the response (true for success, false for failure).
-     * @param statusCode The HTTP status code of the response.
-     * @param message   A descriptive message for the response.
-     * @param data      The data included in the response (can be null).
+     * @param status     The success status of the response (true for success, false for failure).
+     * @param statusCode The HTTP status code associated with the response.
+     * @param message    A descriptive message explaining the result.
+     * @param data       The data included in the response, if applicable.
      */
     public BaseResponse(boolean status, int statusCode, String message, T data) {
         this.status = status;
         this.statusCode = statusCode;
         this.message = message;
         this.data = data;
-        this.timestamp = Instant.now(); // Automatically set timestamp
+        this.timestamp = Instant.now();
     }
 
-
     /**
-     * Wraps this `BaseResponse` inside a `ResponseEntity` with the appropriate HTTP status code.
+     * Converts this `BaseResponse` into a `ResponseEntity` with the appropriate HTTP status.
+     * <p>
+     * This method wraps the `BaseResponse` instance in a `ResponseEntity` object,
+     * allowing it to be returned directly from controller endpoints.
      *
-     * @return A `ResponseEntity` containing this `BaseResponse`.
+     * @return A `ResponseEntity` containing this `BaseResponse` object.
      */
     public ResponseEntity<BaseResponse<T>> toResponseEntity() {
         return ResponseEntity.status(this.statusCode).body(this);
@@ -67,20 +106,25 @@ public class BaseResponse<T> {
 
     /**
      * Creates a `ResponseEntity` representing a successful response with data.
+     * <p>
+     * This utility method simplifies the creation of a success response by automatically
+     * setting the HTTP status to 200 (OK) and including the provided data.
      *
-     * @param data The response data to include.
-     * @param <T>  The type of the response data.
-     * @return A `ResponseEntity` wrapping a success `BaseResponse`.
+     * @param data The data to include in the success response.
+     * @param <T>  The type of the data being returned.
+     * @return A `ResponseEntity` wrapping a success `BaseResponse` object.
      */
     public static <T> ResponseEntity<BaseResponse<T>> success(T data) {
         return ResponseEntity.ok(new BaseResponse<>(true, HttpStatus.OK.value(), "success", data));
     }
 
-
     /**
      * Creates a `ResponseEntity` representing a successful response without data.
+     * <p>
+     * This method generates a success response with a 200 (OK) status and a "success" message,
+     * but without any specific data payload.
      *
-     * @param <T> The type of the response data.
+     * @param <T> The type of the expected response data.
      * @return A `ResponseEntity` wrapping a success `BaseResponse` with null data.
      */
     public static <T> ResponseEntity<BaseResponse<T>> success() {
@@ -89,10 +133,13 @@ public class BaseResponse<T> {
 
     /**
      * Creates a `ResponseEntity` representing a failure response with a custom status code and message.
+     * <p>
+     * This method simplifies error handling by generating a standardized error response,
+     * including an appropriate HTTP status code and a descriptive error message.
      *
-     * @param statusCode The HTTP status code to use for the error response.
-     * @param message    A descriptive error message.
-     * @param <T>        The type of the response data.
+     * @param statusCode The HTTP status code to use for the failure response.
+     * @param message    A descriptive message explaining the reason for the failure.
+     * @param <T>        The type of the expected response data.
      * @return A `ResponseEntity` wrapping a failure `BaseResponse` with null data.
      */
     public static <T> ResponseEntity<BaseResponse<T>> failure(int statusCode, String message) {

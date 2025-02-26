@@ -2,13 +2,15 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <!--
     MyBatis XML Mapper for handling database operations related to annotated points in an origami model.
 
-    - Defines SQL mappings for inserting annotated points.
-    - Uses conditional checks to include optional fields dynamically.
+    Purpose:
+    - This mapper provides SQL operations for managing annotated points, including insertion.
+    - It conditionally includes non-null fields for flexible data insertion.
 
-    SQL Operations:
+    Key SQL Operations:
     - `addByObj`: Inserts a new annotated point into the database.
 
     Dependencies:
@@ -17,10 +19,19 @@
 <mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotatePointMapper">
 
     <!--
-    Inserts a new annotated point into the database.
+        Inserts a new annotated point into the database.
 
-    - Ensures flexible field insertion by conditionally including non-null fields.
-    - Stores relationships between points and edges in the origami model.
+        Purpose:
+        - Adds an annotated point associated with a specific origami face and edge.
+        - Uses conditional checks to include non-null fields (e.g., created_by, updated_by).
+
+        Parameters:
+        - `annotatedPoint`: The Java object representing the annotated point.
+
+        Fields Inserted:
+        - `point_id`: The primary key referencing the origami point.
+        - `on_edge_id`: The edge ID associated with the annotated point.
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.AnnotatedPoint">
         INSERT INTO annotated_point (
@@ -30,7 +41,8 @@
         <if test="annotatedPoint.updatedBy != null">, updated_by</if>
         <if test="annotatedPoint.createdAt != null">, created_at</if>
         <if test="annotatedPoint.updatedAt != null">, updated_at</if>
-        ) VALUES (
+        )
+        VALUES (
         #{annotatedPoint.pointId},
         #{annotatedPoint.onEdgeId}
         <if test="annotatedPoint.createdBy != null">, #{annotatedPoint.createdBy}</if>
@@ -39,6 +51,5 @@
         <if test="annotatedPoint.updatedAt != null">, #{annotatedPoint.updatedAt}</if>
         );
     </insert>
-
 
 </mapper>

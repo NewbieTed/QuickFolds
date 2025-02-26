@@ -14,7 +14,10 @@ import java.time.OffsetDateTime;
 
 /**
  * Represents an origami model created by a user.
- * Maps to the "origami" table in the database.
+ * <p>
+ * This entity maps to the "origami" table in the database and stores information
+ * about each origami model, including its creator, name, visibility, and ratings.
+ * It also tracks timestamps for record creation and updates.
  */
 @Data
 @NoArgsConstructor
@@ -25,7 +28,9 @@ public class Origami {
 
     /**
      * Primary key for the Origami table.
-     * Auto-generated value for each Origami record.
+     * <p>
+     * This field is auto-generated for each origami record using the IDENTITY strategy,
+     * ensuring unique identification of each record.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,56 +39,68 @@ public class Origami {
 
     /**
      * Foreign key referencing the user who created the origami.
-     * Links this record to a specific user in the "users" table.
+     * <p>
+     * This field links the origami record to a specific user in the "users" table,
+     * ensuring traceability of ownership.
      */
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
     /**
      * Name of the origami model.
-     * This is a required field and must not be null.
+     * <p>
+     * This is a required field that stores the name assigned to the origami model
+     * by the user. It must not be null.
      */
     @Column(name = "origami_name", nullable = false)
     private String origamiName;
 
     /**
      * Indicates whether the origami is public or private.
-     * Defaults to false (private).
+     * <p>
+     * This boolean flag determines the visibility of the origami model.
+     * It defaults to {@code false}, meaning the origami is private unless explicitly set to public.
      */
     @Column(name = "is_public", nullable = false)
     private boolean isPublic;
 
     /**
      * Average rating for the origami model.
-     * The value is between 0.0 and 5.0.
+     * <p>
+     * This field stores the average rating given to the origami by users.
+     * The value typically ranges from 0.0 to 5.0 and is updated based on user feedback.
      */
     @Column(name = "ratings", nullable = false)
     private double ratings;
 
     /**
      * Identifier of the user who created this origami record.
-     * May be null if not explicitly set.
+     * <p>
+     * This field may be null if the record was created without explicitly specifying the creator.
      */
     @Column(name = "created_by")
     private String createdBy;
 
     /**
      * Identifier of the user who last updated this origami record.
-     * May be null if not explicitly set.
+     * <p>
+     * This field may be null if the record has not been updated since its creation.
      */
     @Column(name = "updated_by")
     private String updatedBy;
 
     /**
      * Timestamp when this origami record was created.
-     * Automatically set at the time of creation and not updatable.
+     * <p>
+     * This field is automatically set at the time of creation and cannot be updated afterward.
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     /**
      * Timestamp when this origami record was last updated.
-     * Updated automatically when the record is modified.
+     * <p>
+     * This field is updated automatically whenever the record is modified.
      */
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;

@@ -8,7 +8,10 @@ import java.time.OffsetDateTime;
 
 /**
  * Represents a point annotated on an origami face during a specific step.
- * Stores the coordinates and associations of the point within the origami process.
+ * <p>
+ * This entity stores metadata about the annotated point, including its position
+ * within an edge (if applicable) and lifecycle timestamps.
+ * <p>
  * Maps to the "annotated_point" table in the database.
  */
 @Data
@@ -20,7 +23,9 @@ public class AnnotatedPoint {
 
     /**
      * Primary key for the AnnotatedPoint table.
-     * References the associated origami point.
+     * <p>
+     * - References the associated origami point.
+     * - Cannot be null and cannot be updated after creation.
      */
     @Id
     @Column(name = "point_id", nullable = false, updatable = false)
@@ -28,35 +33,43 @@ public class AnnotatedPoint {
 
     /**
      * Foreign key referencing the edge where this point lies, if applicable.
-     * Links to a specific edge in the "edge" table.
+     * <p>
+     * - Links to a specific edge in the "edge" table.
+     * - Can be null if the point is not associated with any edge.
      */
     @Column(name = "on_edge_id")
     private Long onEdgeId;
 
     /**
      * Identifier of the user who created this annotated point record.
-     * May be null if not explicitly set.
+     * <p>
+     * - Can be null if not explicitly set during creation.
      */
     @Column(name = "created_by")
     private String createdBy;
 
     /**
      * Identifier of the user who last updated this annotated point record.
-     * May be null if not explicitly set.
+     * <p>
+     * - Can be null if the record has not been updated.
      */
     @Column(name = "updated_by")
     private String updatedBy;
 
     /**
-     * Timestamp when this annotated point record was created.
-     * Automatically set at the time of creation and not updatable.
+     * Timestamp indicating when this annotated point record was created.
+     * <p>
+     * - Automatically set at the time of creation.
+     * - Cannot be updated once the record is created.
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     /**
-     * Timestamp when this annotated point record was last updated.
-     * Updated automatically when the record is modified.
+     * Timestamp indicating when this annotated point record was last updated.
+     * <p>
+     * - Updated automatically when the record is modified.
+     * - Can be null if no updates have occurred.
      */
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;

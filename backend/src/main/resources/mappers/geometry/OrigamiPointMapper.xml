@@ -2,44 +2,66 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <!--
     MyBatis XML Mapper for handling database operations related to origami points.
 
-    - Defines SQL mappings for retrieving, inserting, and soft deleting points within an origami face.
+    Purpose:
+    - This mapper provides SQL operations for managing origami points, including retrieval, insertion, and soft deletion.
+    - Ensures points are correctly associated with origami faces and point types.
 
-    SQL Operations:
+    Key SQL Operations:
     - `getIdByIdInFace`: Retrieves a single origami point ID within a face.
-    - `getIdsByIdInFace`: Retrieves multiple origami point IDs within a face.
+    - `getIdsByIdsInFace`: Retrieves multiple origami point IDs within a face.
+    - `getIdsOfPointTypeByIds`: Retrieves point IDs based on type and given IDs.
     - `addByObj`: Inserts a new origami point into the database.
-    - `deleteMultipleByIdInFace`: Marks multiple origami points as deleted.
+    - `deleteByIdsInFace`: Marks multiple origami points as deleted.
 
     Dependencies:
     - `OrigamiPoint`: The Java entity representing an origami point.
+    - `origami_point` table: Stores point data including coordinates, type, and associated metadata.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.OrigamiPointMapper">
+
     <!--
         Retrieves the database ID of a point using its position within a specific face.
 
+        Purpose:
         - Ensures that the queried point belongs to the specified face.
         - Uses `LIMIT 1` to return only a single result.
+
+        Parameters:
+        - `faceId`: The ID of the origami face containing the point.
+        - `idInFace`: The identifier of the point within the face.
+
+        Result:
+        - Returns the ID of the matching origami point, or null if not found.
     -->
-    <select id="getIdByIdInFace">
-        SELECT id FROM origami_point
-        WHERE
-        face_id = #{faceId}
-        AND
-        id_in_face = #{idInFace}
+    <select id="getIdByIdInFace" resultType="java.lang.Long">
+        SELECT id
+        FROM origami_point
+        WHERE face_id = #{faceId}
+        AND id_in_face = #{idInFace}
         LIMIT 1
     </select>
 
     <!--
-        Retrieves multiple database IDs of points within a face.
+        Retrieves multiple database IDs of points within a specific face.
 
-        - Uses `IN` to fetch all matching points efficiently.
+        Purpose:
+        - Fetches all matching point IDs efficiently using an `IN` clause.
         - Utilizes `<foreach>` to dynamically build the list of point IDs.
+
+        Parameters:
+        - `faceId`: The ID of the origami face containing the points.
+        - `idsInFace`: A list of point identifiers within the face.
+
+        Result:
+        - Returns a list of point IDs matching the given identifiers.
     -->
-    <select id="getIdsByIdInFace" resultType="java.lang.Long">
-        SELECT id FROM origami_point
+    <select id="getIdsByIdsInFace" resultType="java.lang.Long">
+        SELECT id
+        FROM origami_point
         WHERE face_id = #{faceId}
         AND id_in_face IN (
         <foreach collection="idsInFace" item="idInFace" separator=",">
@@ -49,46 +71,104 @@
     </select>
 
     <!--
-    Inserts a new origami point into the database.
+        Retrieves IDs of origami points based on their type and specific IDs.
 
-    - Dynamically includes optional metadata fields (`deleted_step_id`, `created_by`, `updated_by`, `created_at`, `updated_at`).
-    - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+        Purpose:
+        - Finds point IDs that match the given point type and ID list.
+        - Ensures only points of the specified type are returned.
+
+        Parameters:
+        - `pointTypeId`: The type of the point (e.g., vertex, annotation).
+        - `ids`: A list of point IDs to filter by.
+
+        Result:
+        - Returns IDs of points matching the specified type and ID list.
+    -->
+    <select id="getIdsOfPointTypeByIds" resultType="java.lang.Long">
+        SELECT id
+        FROM origami_point
+        WHERE point_type_id = #{pointTypeId}
+        AND id IN (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </select>
+
+    <!--
+        Inserts a new origami point into the database.
+
+        Purpose:
+        - Adds a new point record associated with a specific face and step.
+        - Dynamically includes optional metadata fields (`deleted_step_id`, `created_by`, `updated_by`, `created_at`, `updated_at`)
+          using `<if test="...">` to conditionally include non-null fields.
+
+        Parameters:
+        - `origamiPoint`: The Java object representing the origami point.
+
+        Fields Inserted:
+        - Required: `step_id`, `face_id`, `point_type_id`, `x_pos`, `y_pos`, `id_in_face`
+        - Optional: `deleted_step_id`, `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new point record and returns the generated primary key.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.OrigamiPoint">
         INSERT INTO origami_point (
-            step_id,
-            face_id,
-            point_type_id,
-            x_pos,
-            y_pos,
-            id_in_face
-            <if test="origamiPoint.deletedStepId != null">, deleted_step_id</if>
-            <if test="origamiPoint.createdBy != null">, created_by</if>
-            <if test="origamiPoint.updatedBy != null">, updated_by</if>
-            <if test="origamiPoint.createdAt != null">, created_at</if>
-            <if test="origamiPoint.updatedAt != null">, updated_at</if>
-        ) VALUES (
-            #{origamiPoint.stepId},
-            #{origamiPoint.faceId},
-            #{origamiPoint.pointTypeId},
-            #{origamiPoint.xPos},
-            #{origamiPoint.yPos},
-            #{origamiPoint.idInFace}
-            <if test="origamiPoint.deletedStepId != null">, #{origamiPoint.deletedStepId}</if>
-            <if test="origamiPoint.createdBy != null">, #{origamiPoint.createdBy}</if>
-            <if test="origamiPoint.updatedBy != null">, #{origamiPoint.updatedBy}</if>
-            <if test="origamiPoint.createdAt != null">, #{origamiPoint.createdAt}</if>
-            <if test="origamiPoint.updatedAt != null">, #{origamiPoint.updatedAt}</if>
+        step_id,
+        face_id,
+        point_type_id,
+        x_pos,
+        y_pos,
+        id_in_face
+        <if test="origamiPoint.deletedStepId != null">, deleted_step_id</if>
+        <if test="origamiPoint.createdBy != null">, created_by</if>
+        <if test="origamiPoint.updatedBy != null">, updated_by</if>
+        <if test="origamiPoint.createdAt != null">, created_at</if>
+        <if test="origamiPoint.updatedAt != null">, updated_at</if>
+        )
+        VALUES (
+        #{origamiPoint.stepId},
+        #{origamiPoint.faceId},
+        #{origamiPoint.pointTypeId},
+        #{origamiPoint.xPos},
+        #{origamiPoint.yPos},
+        #{origamiPoint.idInFace}
+        <if test="origamiPoint.deletedStepId != null">, #{origamiPoint.deletedStepId}</if>
+        <if test="origamiPoint.createdBy != null">, #{origamiPoint.createdBy}</if>
+        <if test="origamiPoint.updatedBy != null">, #{origamiPoint.updatedBy}</if>
+        <if test="origamiPoint.createdAt != null">, #{origamiPoint.createdAt}</if>
+        <if test="origamiPoint.updatedAt != null">, #{origamiPoint.updatedAt}</if>
         )
     </insert>
+
+    <update id="deleteByFaceIds">
+        UPDATE origami_point
+        SET deleted_step_id = #{deletedStepId}
+        WHERE deleted_step_id IS NULL
+        AND face_id IN (
+        <foreach collection="faceIds" item="faceId" separator=",">
+            #{faceId}
+        </foreach>
+        )
+    </update>
 
     <!--
         Marks multiple origami points as deleted by setting `deleted_step_id`.
 
-        - Updates points that have not already been deleted (`deleted_step_id IS NULL`).
-        - Uses `<foreach>` to handle batch deletions.
+        Purpose:
+        - Performs a soft delete by marking points as deleted rather than removing them.
+        - Updates only points that have not already been deleted (`deleted_step_id IS NULL`).
+
+        Parameters:
+        - `faceId`: The ID of the face containing the points.
+        - `idsInFace`: List of point IDs to mark as deleted.
+        - `deletedStepId`: The step ID representing the deletion event.
+
+        Effect:
+        - Updates the `deleted_step_id` field for matching point records.
     -->
-    <update id="deleteMultipleByIdInFace">
+    <update id="deleteByIdsInFace">
         UPDATE origami_point
         SET deleted_step_id = #{deletedStepId}
         WHERE face_id = #{faceId}

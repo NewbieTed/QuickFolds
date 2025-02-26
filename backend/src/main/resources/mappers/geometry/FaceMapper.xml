@@ -6,55 +6,128 @@
 <!--
     MyBatis XML Mapper for handling database operations related to faces in an origami model.
 
-    - Defines SQL mappings for retrieving and inserting face records.
+    Purpose:
+    - This mapper provides SQL operations for managing faces, including retrieval, insertion, and deletion.
+    - It ensures that face records are correctly associated with origami steps and maintains referential integrity.
 
-    SQL Operations:
+    Key SQL Operations:
     - `getIdByFaceIdInOrigami`: Retrieves a face ID using its origami model and internal identifier.
-    - `addByObj`: Inserts a new face into the database.
+    - `getIdsByIdsInFace`: Retrieves face IDs based on their identifiers within a specific origami model.
+    - `addByObj`: Inserts a new face into the database with optional metadata.
+    - `deleteByIds`: Marks multiple faces as deleted by setting the `deleted_step_id`.
 
     Dependencies:
     - `Face`: The Java entity representing a face in the origami model.
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.FaceMapper">
+
     <!--
         Retrieves the database ID of a face using its identifier within a specific origami model.
 
+        Purpose:
         - Ensures that the queried face belongs to the specified origami model.
         - Uses both `origami_id` and `id_in_origami` for precise matching.
+
+        Parameters:
+        - `origamiId`: The ID of the origami model containing the face.
+        - `faceIdInOrigami`: The unique identifier of the face within the origami model.
+
+        Result:
+        - Returns the ID of the matching face, or null if not found.
     -->
-    <select id="getIdByFaceIdInOrigami">
-        SELECT id FROM face
-        WHERE
-        origami_id = #{origamiId}
-        AND
-        id_in_origami = #{faceIdInOrigami}
+    <select id="getIdByFaceIdInOrigami" resultType="java.lang.Long">
+        SELECT f.id
+        FROM face f
+        INNER JOIN step s ON f.step_id = s.id
+        WHERE s.origami_id = #{origamiId}
+        AND f.id_in_origami = #{faceIdInOrigami};
+    </select>
+
+    <!--
+        Retrieves the IDs of faces for a given origami.
+
+        Purpose:
+        - Finds the database IDs of faces based on their logical identifiers (`id_in_origami`)
+          within a specific origami model.
+
+        Parameters:
+        - `origamiId`: The ID of the origami model containing the faces.
+        - `idsInOrigami`: A list of face identifiers within the origami model.
+
+        Result:
+        - Returns a list of face IDs matching the provided identifiers.
+    -->
+    <select id="getIdsByIdsInFace" resultType="java.lang.Long">
+        SELECT f.id
+        FROM face f
+        INNER JOIN step s ON f.step_id = s.id
+        WHERE s.origami_id = #{origamiId}
+        AND f.id_in_origami IN (
+        <foreach collection="idsInOrigami" item="idInOrigami" separator=",">
+            #{idInOrigami}
+        </foreach>
+        )
     </select>
 
     <!--
         Inserts a new face into the database.
 
-        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`).
-        - Uses `<if test="...">` to conditionally add fields only when they are non-null.
+        Purpose:
+        - Adds a face record associated with a specific origami step.
+        - Dynamically includes optional metadata fields (`created_by`, `updated_by`, `created_at`, `updated_at`)
+          if they are provided in the input object.
+
+        Parameters:
+        - `face`: The Java object representing the face to insert.
+
+        Fields Inserted:
+        - Required: `step_id`, `id_in_origami`
+        - Optional: `created_by`, `updated_by`, `created_at`, `updated_at`
+
+        Result:
+        - Inserts a new face record and returns the generated primary key.
     -->
     <insert id="addByObj" parameterType="com.quickfolds.backend.geometry.model.database.Face">
         INSERT INTO face (
-            origami_id,
-            step_id,
-            id_in_origami
-            <if test="face.createdBy != null">, created_by</if>
-            <if test="face.updatedBy != null">, updated_by</if>
-            <if test="face.createdAt != null">, created_at</if>
-            <if test="face.updatedAt != null">, updated_at</if>
+        step_id,
+        id_in_origami
+        <if test="face.createdBy != null">, created_by</if>
+        <if test="face.updatedBy != null">, updated_by</if>
+        <if test="face.createdAt != null">, created_at</if>
+        <if test="face.updatedAt != null">, updated_at</if>
         ) VALUES (
-            #{face.origamiId},
-            #{face.stepId},
-            #{face.idInOrigami}
-            <if test="face.createdBy != null">, #{face.createdBy}</if>
-            <if test="face.updatedBy != null">, #{face.updatedBy}</if>
-            <if test="face.createdAt != null">, #{face.createdAt}</if>
-            <if test="face.updatedAt != null">, #{face.updatedAt}</if>
+        #{face.stepId},
+        #{face.idInOrigami}
+        <if test="face.createdBy != null">, #{face.createdBy}</if>
+        <if test="face.updatedBy != null">, #{face.updatedBy}</if>
+        <if test="face.createdAt != null">, #{face.createdAt}</if>
+        <if test="face.updatedAt != null">, #{face.updatedAt}</if>
         );
     </insert>
 
+    <!--
+        Marks multiple faces as deleted by setting `deleted_step_id`.
+
+        Purpose:
+        - Performs a soft delete by marking the specified faces with the ID of the step
+          associated with their deletion (`deleted_step_id`).
+        - Only updates faces that are not already marked as deleted (`deleted_step_id IS NULL`).
+
+        Parameters:
+        - `ids`: List of face IDs to be marked as deleted.
+        - `deletedStepId`: The step ID representing the deletion event.
+
+        Effect:
+        - Updates the `deleted_step_id` field for matching face records.
+    -->
+    <update id="deleteByIds">
+        UPDATE face
+        SET deleted_step_id = #{deletedStepId}
+        WHERE id IN (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
 
 </mapper>

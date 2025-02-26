@@ -19,15 +19,26 @@ export const EditorStatus = {
     BAD_POINT_DELETE: {
         code: 2,
         msg: "Deleting that point would cause an annotated line to be deleted."
-    }
+    },
+
+    FRONTEND_SYSTEM_ERROR: {
+        code: 3,
+        msg: "An error occured trying to create your request"
+    },
+
+    BACKEND_500_ERROR: {
+        code: 4,
+        msg: "An error occured trying save your action to our servers"
+    },
+
+    POINT_NOT_ON_EDGE_ERROR: {
+        code: 5,
+        msg: "The point must be on the edge of a face"
+    },
 
 } as const;
 
 export type EditorStatusType = keyof typeof EditorStatus;
-
-
-
-console.log("");
 
 
 // Usage example:

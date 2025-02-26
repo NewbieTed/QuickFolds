@@ -2,25 +2,36 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <!--
     MyBatis XML Mapper for handling database operations related to edge types in an origami model.
 
-    - Defines SQL mappings for retrieving edge type IDs based on their names.
+    Purpose:
+    - This mapper provides SQL operations for retrieving edge type IDs based on their names.
+    - Ensures that edges reference valid, predefined types stored in the `edge_type` table.
 
-    SQL Operations:
-    - `getEdgeTypeByName`: Retrieves the database ID of an edge type by name.
+    Key SQL Operations:
+    - `getEdgeTypeByName`: Retrieves the database ID of an edge type by its name.
 
     Dependencies:
-    - The `edge_type` table, which stores predefined edge types.
+    - `edge_type` table: Stores system-defined edge types (e.g., "side", "fold").
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.EdgeTypeMapper">
+
     <!--
         Retrieves the database ID of an edge type based on its name.
 
+        Purpose:
         - Ensures that edges reference valid types stored in the `edge_type` table.
-        - Uses `LIMIT 1` to guarantee a single result.
+        - Uses `LIMIT 1` to guarantee a single result, preventing multiple matches.
+
+        Parameters:
+        - `edgeTypeName`: The name of the edge type to retrieve.
+
+        Result:
+        - Returns the ID of the matching edge type, or null if not found.
     -->
-    <select id="getEdgeTypeByName">
+    <select id="getEdgeTypeByName" resultType="java.lang.Long" parameterType="string">
         SELECT id
         FROM edge_type
         WHERE edge_type_name = #{edgeTypeName}
