@@ -15,6 +15,7 @@ export class FoldAnimation implements Animation {
     private faces: Face3D[];
     private time: number;
     private totalTime: number;
+    private steepness: number;
 
     constructor(
                 axisPoint1: pt.Point3D, 
@@ -29,6 +30,8 @@ export class FoldAnimation implements Animation {
         this.faces = faces;
         this.time = 0;
         this.totalTime = 2; // (In roughly seconds)
+        this.steepness = 15; // A measure of how fast the speed
+        // of the paper is near the middle of the animation.
 
         // Save initial positions.
         for (const face of this.faces) {
@@ -75,7 +78,7 @@ export class FoldAnimation implements Animation {
     private getAngle(time: number) {
         // A nice formula that gives slow speed of rotation at the
         // start, high speed in the middle, and slow at the end.
-        const denom = 1 + Math.exp(-10 * time / this.totalTime + 5);
+        const denom = 1 + Math.exp(-this.steepness * time/this.totalTime + this.steepness/2);
         return this.deltaAngle / denom;
     }
 
