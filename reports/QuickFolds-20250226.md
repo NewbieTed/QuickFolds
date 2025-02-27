@@ -23,11 +23,15 @@ Assignee: Yixuan Wang
 
 Is it Finished: Yes
 
-#### Task: Example 2
-Assignee: Jane Adam
+#### Task: Complete signup/login feature on frontend
+Assignee: Hinyeung Lam
 
 Is it Finished: Yes
 
+#### Task: Complete searching origami by author on frontend
+Assignee: Hinyeung Lam
+
+Is it Finished: Yes
 
 ---
 # Progress and issues:
@@ -45,17 +49,17 @@ Any Current Issues: N/A
 Team Discussion if still having issues: N/A
 
 
-#### Team Member 2:
+#### Team Member 2: Hinyeung Lam
 
-Action Items/What you did:
+Action Items/What you did: Implemented the signup/login feature on frontend, refine the token-based signup/login APIs on backend, add searching feature of origami by author on frontend
 
-Result (What worked/What didn’t):
+Result (What worked/What didn’t): All tasks are complete.
 
-What did you learn:
+What did you learn: More familiar with the connection between frontend and backend, and how to manage the security of token-based session authentication using springboot framework.
 
-Any Current Issues:
+Any Current Issues: N/A
 
-Team Discussion if still having issues:
+Team Discussion if still having issues: N/A
 
 ---
 # Goals for next week:
