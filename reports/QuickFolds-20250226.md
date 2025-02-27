@@ -60,6 +60,19 @@ Assignee: Weizi
 
 Is it Finished: Yes
 
+#### Task : Given a new fold, update the renderer so that the animation is smooth.
+
+Assignee: Hady Fawal
+
+Is it Finished: Yes
+
+
+#### Task : Start progress on rendering multiple layers. We won't use the code this week, but try to get some set up to make it easier next week.
+
+Assignee: Hady Fawal
+
+Is it Finished: Partially
+
 ---
 # Progress and issues:
 
@@ -127,13 +140,13 @@ Team Discussion if still having issues: N/A
 
 #### Team Member 6: Hady
 
-Action Items/What you did: 
+Action Items/What you did: I worked on animating folds. This included code to rotate meshes of Face3D objects properly according to the edge being folded, and a fair amount of math to calculate the correct direction and calculate the rotation itself. I added the proper functions to the SceneManager and then updated the Controller to call these animation methods so that animation actually happens.
 
-Result (What worked/What didn’t): 
+Result (What worked/What didn’t): We have an interface for animating any fold now, provided that the fold does not result in two faces overlapping. On paper, I worked on but did not complete a stacking algorithm which tries to determine how to offset layers of paper to make them appear thicker when they overlap.
 
-What did you learn: 
+What did you learn: What quaternions are, the math involving rotations and how to do them in Three.js.
 
-Any Current Issues: 
+Any Current Issues: Not particularly. Still thinking about stacking algorithm and may need to brainstorm with other team members more.
 
 Team Discussion if still having issues: N/A
 
