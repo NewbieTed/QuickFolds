@@ -33,6 +33,11 @@ Assignee: Hinyeung Lam
 
 Is it Finished: Yes
 
+#### Task: Complete the /getStep API for annotations on backend
+Assignee: Bernice Tian
+
+Is it Finished: Still needs to be tested, but otherwise yes
+
 ---
 # Progress and issues:
 
@@ -56,6 +61,19 @@ Action Items/What you did: Implemented the signup/login feature on frontend, ref
 Result (What worked/What didn’t): All tasks are complete.
 
 What did you learn: More familiar with the connection between frontend and backend, and how to manage the security of token-based session authentication using springboot framework.
+
+Any Current Issues: N/A
+
+Team Discussion if still having issues: N/A
+
+
+#### Team Member 3: Bernice Tian
+
+Action Items/What you did: Implemented the /getStep API for annotate steps
+
+Result (What worked/What didn't): We assumed that the /getStep API would be able to reuse some already created methods to implement its logic, but this was actually not the case since this API focuses on retrieving data from the DB while other APIs focus more on inserting data into the DB. As a result implementation took longer than expected and no tests have been written yet.
+
+What did you learn: How to use MyBatis result maps, Java streams, a lot more familiar with SQL queries now.
 
 Any Current Issues: N/A
 
