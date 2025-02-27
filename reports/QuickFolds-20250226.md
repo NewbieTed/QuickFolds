@@ -1,20 +1,26 @@
 # TA Report [Section 1]
 
+
 ## Goals for the Weeks:
-+ Bullet Point 1
-+ Bullet Point 2
++ Add robustness to user input for points/lines creation
++ Add basic rotations (basic as in we don't collapse a plane, that's the final task week after)
++ Create user accounts and integrate fully into DB, so we don't have to run the dummy alice SQL code anymore
 
 ## Issues
-+ High level Summary of current issue and attempts to resolve it
-+ High level Summary of current issue and attempts to resolve it
++ No glaring issues. Just a lot of work
++ small debate about mocha issue (see discussion topics)
 
 ## Plan for Next Week
-+ Quick Level Description of Plans for Next week
-+ Quick Level Description of Plans for Next week
++ Create multifolds on frontend
++ Create viewer for annotations and get halfway on folds
 
 ## Discussion Topics With TA
-+ Common Ideas are: Any advice on current issues?
-+ How does this look grade wise for 403?
++ Debating the remaining timeframe of tasks. We want your input on all the tasks we have to complete in two weeks.
+  + Create multiline fold on frontend
+  + Create viewer (both annotations and folds)
+  + Set up aws
++ Frontend is dealing with a bit of trouble with Mocha. When we do include ts files in our unit tests, however, from what we can tell, Mocha has issues with deal with the extension. We are trying to debug this, but not sure how to fix at the moment. An example of this is trying to test `createSplitFace` in paper manager
+
 
 # Details Report [Section 2]
 # Goals for the week:
@@ -37,6 +43,12 @@ Is it Finished: Yes
 Assignee: Bernice Tian
 
 Is it Finished: Still needs to be tested, but otherwise yes
+
+
+#### Task: Complete single line fold on frontend for controller module
+Assignee: Ryan Rozsnyai
+
+Is it Finished: Yes
 
 ---
 # Progress and issues:
@@ -79,13 +91,41 @@ Any Current Issues: N/A
 
 Team Discussion if still having issues: N/A
 
+#### Team Member 4: Ryan Rozsnyai
+
+Action Items/What you did: Implemented the fold calculations for the controller class.
+
+Result (What worked/What didn’t): I had a pretty good idea of how to do it. It was just a lot of math. Ended up moving a lot of code to the paper graph module since there was a lot of plane calculations involving basis in R3
+
+What did you learn: How to refactor code.
+
+Any Current Issues: Mocha testing
+
+Team Discussion if still having issues: N/A
+
+
 ---
 # Goals for next week:
 ### Overall Plan For This Week:
+Goal is to:
++ Finish all of the editor for frontend
++ Finsih the first half of the viewer
 ### Overall Plan For Future Weeks (big picture):
++ Finish this week, then have the viewer team finish up multiline stuff next week, while those not on that team will do aws + other clean up
+#### Task: Finish the annotations part of viewer and start the first part of folding
 
-#### Task:
+Assignee: Bernice/Dennis
 
-Assignee:
+Time Estimate: 1 week
 
-Time Estimate:
+#### Task: Finish multiline folding
+
+Assignee: Ryan/Hady/Weizi
+
+Time Estimate: 1 week
+
+#### Task: Help viewer backend if needed, and start looking at AWS integration
+
+Assignee: Yixuan
+
+Time Estimate: 1 week
