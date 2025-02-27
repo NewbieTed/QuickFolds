@@ -50,6 +50,16 @@ Assignee: Ryan Rozsnyai
 
 Is it Finished: Yes
 
+#### Task: Improve the UI for editor
+Assignee: Weizi
+
+Is it Finished: Yes
+
+#### Task: Complete single line fold on frontend for editor module
+Assignee: Weizi
+
+Is it Finished: Yes
+
 ---
 # Progress and issues:
 
@@ -100,6 +110,30 @@ Result (What worked/What didn’t): I had a pretty good idea of how to do it. It
 What did you learn: How to refactor code.
 
 Any Current Issues: Mocha testing
+
+Team Discussion if still having issues: N/A
+
+#### Team Member 5: Weizi
+
+Action Items/What you did: Implemented the basic front-end setup for make a fold
+
+Result (What worked/What didn’t): I have the barebones of the structure of making a fold working, but I need to fix some bugs for better performance. I have a big problem with setting up the back-end environment on my laptop, and I currently have no idea what to do with that.
+
+What did you learn: How to read the documentation and code written by other contributors and try to use them.
+
+Any Current Issues: Setting up the backend
+
+Team Discussion if still having issues: N/A
+
+#### Team Member 6: Hady
+
+Action Items/What you did: 
+
+Result (What worked/What didn’t): 
+
+What did you learn: 
+
+Any Current Issues: 
 
 Team Discussion if still having issues: N/A
 
