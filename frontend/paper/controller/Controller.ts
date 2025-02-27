@@ -47,7 +47,16 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
   // print3dGraph();
   // printAdjList();
 
-  incrementStepID();
+  if (edgeIDs[2] !== 180n) {
+    // update didn't make them flat, so stop here
+    incrementStepID();
+  } else {
+    // update make them flat, so merge
+    let result = await createANewFoldByMerging(faceId1, faceId2);
+    return result;
+  }
+
+
   return true;
 }
 
@@ -139,7 +148,14 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   print3dGraph();
   printAdjList();
 
-  incrementStepID();
+  let resultOfRot: true | string = await updateAnExistingFold(resultOfUpdatingPaperGraph[0].ID, resultOfUpdatingPaperGraph[1].ID, resultOfUpdatingPaperGraph[2], angle);
+
+  if (resultOfRot !== true) {
+    throw new Error(resultOfRot);
+  }
+
+
+
   return true;
 }
 

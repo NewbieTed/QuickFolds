@@ -357,7 +357,8 @@ function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
 export function updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1: bigint, faceId2: bigint, relativeChange: bigint) {
   let theEdgeIdOfFoldInFaceId1 = -1n;
   let theEdgeIdOfFoldInFaceId2 = -1n;
-  
+  let newAngleBetweenThem = 0n;
+
   const lookingAtFace1Connections = adjList.get(faceId1);
   if (lookingAtFace1Connections === undefined) {
     throw new Error();
@@ -395,14 +396,16 @@ export function updateRelativePositionBetweenFacesIndependentOfRelativeChange(fa
         edgeIdOfMyFace: lookingAtFace2Connections[i].edgeIdOfMyFace,
         edgeIdOfOtherFace: lookingAtFace2Connections[i].edgeIdOfOtherFace
       }
+
       adjList.get(faceId2)?.splice(i, 1);
       adjList.get(faceId2)?.push(updatedAngles);
       theEdgeIdOfFoldInFaceId2 = updatedAngles.edgeIdOfMyFace;
+      newAngleBetweenThem = updatedAngles.angleBetweenThem;
       break;
     }
   }
 
-  return [theEdgeIdOfFoldInFaceId1, theEdgeIdOfFoldInFaceId2];
+  return [theEdgeIdOfFoldInFaceId1, theEdgeIdOfFoldInFaceId2, newAngleBetweenThem];
 
 }
 
