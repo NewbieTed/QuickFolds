@@ -46,3 +46,4 @@ docker exec -i "$CONTAINER_ID" psql -U local_user -d quickfolds_local -f /file.s
 
 # Navigate to setup equivalent folder
 cd setup
+
