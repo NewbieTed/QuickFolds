@@ -216,6 +216,22 @@
     </resultMap>
 
     <!--
+        Result Map for mapping database columns to the `DeletedIdInFace` DTO fields.
+
+        Purpose:
+        - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to the corresponding Java property.
+
+        Mapped Fields:
+        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
+        - `id_in_face`: Maps to `idInFace` in the DTO.
+    -->
+    <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
+        <result property="faceIdInOrigami" column="f.id_in_origami"/>
+        <result property="idInFace" column="l.id_in_face"/>
+    </resultMap>
+
+    <!--
         Retrieves a list of annotated lines created in a specific step
 
         Purpose:
@@ -260,22 +276,6 @@
         WHERE l.deleted_step_id = #{stepId}
         ORDER BY f.id_in_origami ASC
     </select>
-
-    <!--
-        Result Map for mapping database columns to the `DeletedIdInFace` DTO fields.
-
-        Purpose:
-        - Ensures MyBatis correctly maps query results to Java objects.
-        - Maps each database column to the corresponding Java property.
-
-        Mapped Fields:
-        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
-        - `id_in_face`: Maps to `idInFace` in the DTO.
-    -->
-    <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
-        <result property="idInFace" column="l.id_in_face"/>
-    </resultMap>
 
     <!--
         Retrieves a list of annotated lines deleted in a specific step

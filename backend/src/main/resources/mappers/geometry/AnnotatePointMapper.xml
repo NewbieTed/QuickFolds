@@ -19,6 +19,48 @@
 <mapper namespace="com.quickfolds.backend.geometry.mapper.AnnotatePointMapper">
 
     <!--
+       Result Map for mapping database columns to the `AnnotatePoint` DTO fields.
+
+       Purpose:
+       - Ensures MyBatis correctly maps query results to Java objects.
+       - Maps each database column to the corresponding Java property.
+
+       Mapped Fields:
+       - `face_id`: Maps to `faceId` in the DTO.
+       - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
+       - `id_in_face`: Maps to `idInFace` in the DTO.
+       - `x`: Maps to the annotated points x coordinate.
+       - `y`: Maps to the annotated points y coordinate.
+       - `on_edge_id`: Maps to `edgeId` in the DTO.
+       - `edge_type_name`: Maps to `edgeType` in the DTO.
+   -->
+    <resultMap id="AnnotatePointMap" type="com.quickfolds.backend.geometry.model.dto.AnnotatePoint">
+        <result property="faceId" column="face_id"/>
+        <result property="faceIdInOrigami" column="f.id_in_origami"/>
+        <result property="idInFace" column="id_in_face"/>
+        <result property="x" column="x"/>
+        <result property="y" column="y"/>
+        <result property="edgeId" column="on_edge_id"/>
+        <result property="edgeType" column="edge_type_name"/>
+    </resultMap>
+
+    <!--
+        Result Map for mapping database columns to the `DeletedIdInFace` DTO fields.
+
+        Purpose:
+        - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to the corresponding Java property.
+
+        Mapped Fields:
+        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
+        - `id_in_face`: Maps to `idInFace` in the DTO.
+    -->
+    <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
+        <result property="faceIdInOrigami" column="f.id_in_origami"/>
+        <result property="idInFace" column="o.id_in_face"/>
+    </resultMap>
+
+    <!--
         Inserts a new annotated point into the database.
 
         Purpose:
@@ -51,32 +93,6 @@
         <if test="annotatedPoint.updatedAt != null">, #{annotatedPoint.updatedAt}</if>
         );
     </insert>
-
-    <!--
-        Result Map for mapping database columns to the `AnnotatePoint` DTO fields.
-
-        Purpose:
-        - Ensures MyBatis correctly maps query results to Java objects.
-        - Maps each database column to the corresponding Java property.
-
-        Mapped Fields:
-        - `face_id`: Maps to `faceId` in the DTO.
-        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
-        - `id_in_face`: Maps to `idInFace` in the DTO.
-        - `x`: Maps to the annotated points x coordinate.
-        - `y`: Maps to the annotated points y coordinate.
-        - `on_edge_id`: Maps to `edgeId` in the DTO.
-        - `edge_type_name`: Maps to `edgeType` in the DTO.
-    -->
-    <resultMap id="AnnotatePointMap" type="com.quickfolds.backend.geometry.model.dto.AnnotatePoint">
-        <result property="faceId" column="face_id"/>
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
-        <result property="idInFace" column="id_in_face"/>
-        <result property="x" column="x"/>
-        <result property="y" column="y"/>
-        <result property="edgeId" column="on_edge_id"/>
-        <result property="edgeType" column="edge_type_name"/>
-    </resultMap>
 
     <!--
         Retrieves a list of annotated points created in a specific step
@@ -125,64 +141,6 @@
         WHERE o.deleted_step_id = #{stepId}
         ORDER BY f.id_in_origami ASC
     </select>
-
-    <!--
-       Retrieves the id in face of a specified edge.
-
-       Purpose:
-       - Retrieve the onEdgeIdInFace field of an annotated point
-
-       Parameters:
-       - `edgeId`: The ID of the edge being queried.
-
-       Result:
-       - The ID (`Integer`) of the edge in the face its on.
-   -->
-    <select id="getOnSideEdgeIdInFace" resultType="java.lang.Integer">
-        SELECT id_in_face
-        FROM side_edge
-        WHERE edge_id = #{edgeId}
-    </select>
-
-    <!--
-       Retrieves the id in a specified face of a specified edge.
-
-       Purpose:
-       - Retrieve the onEdgeIdInFace field of an annotated point
-
-       Parameters:
-       - `edgeId`: The ID of the edge being queried.
-       - `faceId`: the ID of the face the edge is in.
-
-       Result:
-       - The ID (`Integer`) of the edge in the face its on.
-   -->
-    <select id="getOnFoldEdgeIdInFace" resultType="java.lang.Integer">
-        SELECT
-            CASE
-                WHEN face_1_id = #{faceId} THEN id_in_face_1
-                WHEN face_2_id = #{faceId} THEN id_in_face_2
-                ELSE NULL
-                END as id_in_face
-        FROM fold_edge
-        WHERE edge_id = #{edgeId}
-    </select>
-
-    <!--
-        Result Map for mapping database columns to the `DeletedIdInFace` DTO fields.
-
-        Purpose:
-        - Ensures MyBatis correctly maps query results to Java objects.
-        - Maps each database column to the corresponding Java property.
-
-        Mapped Fields:
-        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
-        - `id_in_face`: Maps to `idInFace` in the DTO.
-    -->
-    <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
-        <result property="idInFace" column="o.id_in_face"/>
-    </resultMap>
 
     <!--
         Retrieves a list of annotated points deleted in a specific step

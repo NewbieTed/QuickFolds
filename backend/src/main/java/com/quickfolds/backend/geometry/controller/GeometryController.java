@@ -120,7 +120,7 @@ public class GeometryController {
      * </ul>
      * If verification succeeds, delegates processing to {@link GeometryService#getStep(long, int, int, boolean)}.
      *
-     * @param origamiId The ID of the origami the step is in.
+     * @param origamiId The ID in the database of the origami the step is in.
      * @param startStep The ID in the origami of the starting step.
      * @param endStep The ID in the origami of the ending step.
      * @param isForward Indicates if the step is going forward or not.

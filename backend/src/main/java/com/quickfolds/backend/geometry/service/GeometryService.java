@@ -147,11 +147,57 @@ public class GeometryService {
     /**
      * Handles the retrieval of data needed to go forward or backward
      * one step in the origami folding process.
-     * TODO: add function logic description, params, and return
+     * <p>
+     * Currently only supports querying for annotate steps.
+     *
+     * @param origamiId the ID in the database of the origami model the step is in.
+     * @param startStep The ID in the origami of the starting step.
+     * @param endStep The ID in the origami of the ending step.
+     * @param isForward Indicates if the step is going forward or not.
+     * @return ResponseEntity containing a {@link BaseResponse} with an {@link StepResponse}.
+     *         This response includes the detailed information of the requested step.
+     * @throws DbException if an error occurs while retrieving data from the database.
      */
     @Transactional
     public ResponseEntity<BaseResponse<StepResponse>> getStep(long origamiId, int startStep, int endStep, boolean isForward) {
-        //TODO: implement logic
+        // response object to return
+        StepResponse step = new StepResponse();
+        // ID in database of step to query
+        Long stepId;
+        // string representation of step direction to reduce redundant conditionals
+        String direction;
+
+        //sets the step ID to query based on step direction
+        if (isForward) {
+            direction = "forward";
+            stepId = stepMapper.getIdByIdInOrigami(origamiId, endStep);
+        } else {
+            direction = "backward";
+            stepId = stepMapper.getIdByIdInOrigami(origamiId, startStep);
+        }
+        if (stepId == null) {
+            throw new DbException("Error in DB, could not find the requested step");
+        }
+
+        // determines the type of step being queried
+        String stepType = stepMapper.getTypeByStepId(stepId);
+        if (stepType == null) {
+            throw new DbException("Error in DB, could not determine the requested step type");
+        }
+
+        // based on step type, retrieve the relevant data and add to the response object
+        if(stepType.equals("annotate")) {
+            List<FaceAnnotateResponse> annotations = annotateStep(stepId, isForward);
+
+            if (annotations.isEmpty()) {
+                throw new DbException("Error in DB, no annotations found for annotate step");
+            }
+
+            step.setStepType("annotate " + direction);
+            step.setAnnotations(annotations);
+        }
+
+        return BaseResponse.success(step);
     }
 
 
@@ -175,7 +221,7 @@ public class GeometryService {
         List<DeletedIdInFace> pointDeletions = getDeletedAnnotatedPoints(stepId, isForward);
         List<DeletedIdInFace> lineDeletions = getDeletedAnnotatedLines(stepId, isForward);
 
-        // determine IDs of faces annotated in this step
+        // determine unique IDs of faces annotated in this step
         List<Integer> faceIds = Stream.concat(Stream.concat(Stream.concat(
                 pointAnnotations.stream().map(PointAnnotationResponse::getFaceIdInOrigami),
                         lineAnnotations.stream().map(LineAnnotationResponse::getFaceIdInOrigami)),
@@ -183,21 +229,42 @@ public class GeometryService {
                 lineDeletions.stream().map(DeletedIdInFace::getFaceIdInOrigami))
                 .distinct().collect(Collectors.toList());
 
-        // create a FaceAnnotateResponse for each face ID and populate
+        // create a FaceAnnotateResponse for each face ID, populate, and add to return list
         for (Integer id : faceIds) {
-            if (id = null) {
+            if (id == null) {
                 throw new DbException("Error in faceIds retrieved from database");
             }
 
             FaceAnnotateResponse faceAnnotation = new FaceAnnotateResponse();
             faceAnnotation.setIdInOrigami(id);
 
-            //collects the annotations that match the face
+            //collects the annotations on the face
             List<PointAnnotationResponse> pointsInFace = pointAnnotations.stream()
                     .filter(point -> point.getFaceIdInOrigami().equals(id))
                     .collect(Collectors.toList());
-            List<L>
+            List<LineAnnotationResponse> linesInFace = lineAnnotations.stream()
+                    .filter(line -> line.getFaceIdInOrigami().equals(id))
+                    .collect(Collectors.toList());
+            List<Integer> deletedPointIds = pointDeletions.stream()
+                    .filter(pointId -> pointId.getFaceIdInOrigami().equals(id))
+                    .map(DeletedIdInFace::getIdInFace)
+                    .collect(Collectors.toList());
+            List<Integer> deletedLineIds = lineDeletions.stream()
+                    .filter(lineId -> lineId.getFaceIdInOrigami().equals(id))
+                    .map(DeletedIdInFace::getIdInFace)
+                    .collect(Collectors.toList());
+
+            // adds annotations to the face annotation response object
+            faceAnnotation.setPoints(pointsInFace);
+            faceAnnotation.setLines(linesInFace);
+            faceAnnotation.setDeletedPoints(deletedPointIds);
+            faceAnnotation.setDeletedLines(deletedLineIds);
+
+            // adds response object to list
+            annotationStep.add(faceAnnotation);
         }
+
+        return annotationStep;
     }
 
     /**
@@ -212,7 +279,7 @@ public class GeometryService {
         List<DeletedIdInFace> deletedPoints;
 
         if (isForward) {
-            deletedPointss = annotatePointMapper.getDeleteAnnotatedPointsByStepIdForward(stepId);
+            deletedPoints = annotatePointMapper.getDeleteAnnotatedPointsByStepIdForward(stepId);
         } else {
             deletedPoints = annotatePointMapper.getDeleteAnnotatedPointsByStepIdBackward(stepId);
         }
@@ -285,6 +352,7 @@ public class GeometryService {
         List<AnnotatePoint> annotatedPoints;
         ArrayList<PointAnnotationResponse> pointAnnotations = new ArrayList<>();
 
+        // gets the list of annotated points in the step
         if (isForward) {
             annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdForward(stepId);
         } else {
@@ -325,13 +393,13 @@ public class GeometryService {
                     throw new DbException("Error in data from DB, on edge id of point was not null but edge type is");
                 }
                 if (edgeType.equals("side")) {
-                    onEdgeIdInFace = annotatePointMapper.getOnSideEdgeIdInFace(annotatePoint.getEdgeId());
+                    onEdgeIdInFace = sideEdgeMapper.getEdgeIdInFace(annotatePoint.getEdgeId());
                     if (onEdgeIdInFace == null) {
                         throw new DbException("Error in DB, cannot get onEdgeIdInFace from DB");
                     }
 
                 } else if (edgeType.equals("fold")) {
-                    onEdgeIdInFace = annotatePointMapper.getOnFoldEdgeIdInFace(
+                    onEdgeIdInFace = foldEdgeMapper.getEdgeIdInFace(
                             annotatePoint.getEdgeId(), annotatePoint.getFaceId());
                     if (onEdgeIdInFace == null) {
                         throw new DbException("Error in DB, cannot get onEdgeIdInFace from DB");

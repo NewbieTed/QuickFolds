@@ -2,6 +2,7 @@ package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.AnnotatedPoint;
 import com.quickfolds.backend.geometry.model.dto.AnnotatePoint;
+import com.quickfolds.backend.geometry.model.dto.DeletedIdInFace;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -54,23 +55,6 @@ public interface AnnotatePointMapper {
      * or an empty list if no annotated points were deleted in the given step.
      */
     List<AnnotatePoint> getAnnotatedPointsByStepIdBackward(@Param("stepId") long stepId);
-
-    /**
-     * Retreives the onEdgeIdInFace of an annotated point on a side edge
-     *
-     * @param edgeId the specifc edge to get the id in face of.
-     * @return the Integer value of the edge's id in face, or Null if could not be found.
-     */
-    Integer getOnSideEdgeIdInFace(@Param("edgeId") long edgeId);
-
-    /**
-     * Retreives the onEdgeIdInFace of an annotated point on a fold edge
-     *
-     * @param edgeId the specifc edge to get the id in face of.
-     * @param faceId the face the edge is in.
-     * @return the Integer value of the edge's id in face, or Null if could not be found.
-     */
-    Integer getOnFoldEdgeIdInFace(@Param("edgeId") long edgeId, @Param("faceId") long faceId);
 
     /**
      * Retreives a list of IDs corresponding to annotated points deleted in a specific step.

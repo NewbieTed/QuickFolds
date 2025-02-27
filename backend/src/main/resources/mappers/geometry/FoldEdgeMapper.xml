@@ -93,4 +93,28 @@
         );
     </update>
 
+    <!--
+      Retrieves the id in a specified face of a specified edge.
+
+      Purpose:
+      - Retrieve the ID in face of a fold edge.
+
+      Parameters:
+      - `edgeId`: The ID of the edge being queried.
+      - `faceId`: the ID of the face the edge is in.
+
+      Result:
+      - The ID (`Integer`) of the edge in the face its on.
+  -->
+    <select id="getEdgeIdInFace" resultType="java.lang.Integer">
+        SELECT
+            CASE
+                WHEN face_1_id = #{faceId} THEN id_in_face_1
+                WHEN face_2_id = #{faceId} THEN id_in_face_2
+                ELSE NULL
+                END as id_in_face
+        FROM fold_edge
+        WHERE edge_id = #{edgeId}
+    </select>
+
 </mapper>
