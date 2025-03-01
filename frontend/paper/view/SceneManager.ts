@@ -7,12 +7,12 @@
 
 
 import * as THREE from 'three';
-import * as pt from '../geometry/Point';
-import {Face3D} from "../geometry/Face3D";
+import * as pt from '../geometry/Point.js';
+import {Face3D} from "../geometry/Face3D.js";
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { createNewGraph } from '../model/PaperGraph';
-import { Animation } from './animation/Animation';
-import { FoldAnimation } from './animation/FoldAnimation';
+import { createNewGraph } from '../model/PaperGraph.js';
+import { Animation } from './animation/Animation.js';
+import { FoldAnimation } from './animation/FoldAnimation.js';
 
 let stepID = 1n;
 const origamiID = localStorage.getItem("currentOrigamiIdForEditor");

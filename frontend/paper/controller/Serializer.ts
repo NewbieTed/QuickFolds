@@ -3,9 +3,9 @@
  * the given request
  */
 
-import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D";
-import { EdgesAdjList, getAdjList } from "../model/PaperGraph";
-import { getOrigamiID, getStepID } from "../view/SceneManager";
+import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
+import { EdgesAdjList, getAdjList } from "../model/PaperGraph.js";
+import { getOrigamiID, getStepID } from "../view/SceneManager.js";
 
 
 /**

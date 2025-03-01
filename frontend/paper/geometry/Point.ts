@@ -2,8 +2,8 @@
  * @fileoverview Contains basic point-related types and geometric operations.
  */
 
-import { Face2D } from "./Face2D";
-import { Face3D } from "./Face3D";
+import { Face2D } from "./Face2D.js";
+import { Face3D } from "./Face3D.js";
 
 
 // ----------------------------- Types ------------------------------------- //

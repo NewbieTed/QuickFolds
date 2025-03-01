@@ -4,9 +4,9 @@
  */
 
 
-import {EditorStatusType} from "../view/EditorMessage";
-import {getNextFaceID} from "../view/SceneManager"
-import * as pt from "./Point";
+import {EditorStatusType} from "../view/EditorMessage.js";
+import {getNextFaceID} from "../view/SceneManager.js"
+import * as pt from "./Point.js";
 
 const DISTANCE_TO_FOLD_EDGE_TO_DELETE = 0.5;
 
@@ -666,7 +666,7 @@ export class Face2D {
                 this.annotatedLines.set(lineID, line);
             }
         }
-        
+
     }
 
 }

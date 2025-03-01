@@ -6,8 +6,8 @@
  * and frontend data (that is, serialization and deserialization).
  */
 
-import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D";
-import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./Serializer";
+import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
+import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./Serializer.js";
 
 
 

@@ -4,9 +4,9 @@
  */
 
 
-import {getNextFaceID} from "../view/SceneManager"
+import {getNextFaceID} from "../view/SceneManager.js"
 import * as THREE from 'three';
-import * as pt from "./Point";
+import * as pt from "./Point.js";
 
 
 /**
@@ -596,7 +596,7 @@ export class Face3D {
      * @param deltaAngle The change in angle (radians)
      */
     public rotateObjects(
-                axisPoint1: pt.Point3D, 
+                axisPoint1: pt.Point3D,
                 axisPoint2: pt.Point3D,
                 deltaAngle: number
                 ): void {
@@ -614,7 +614,7 @@ export class Face3D {
         q.setFromAxisAngle(
             new THREE.Vector3(axis.x, axis.y, axis.z), deltaAngle
         );
-        
+
         // Apply the rotation to the parent object.
         this.pivot.position.sub(shift);
         this.pivot.position.applyQuaternion(q);
@@ -623,8 +623,8 @@ export class Face3D {
 
         // Adjust the principle normal vector.
         const principVec: THREE.Vector3 = new THREE.Vector3(
-            this.principalNormal.x, 
-            this.principalNormal.y, 
+            this.principalNormal.x,
+            this.principalNormal.y,
             this.principalNormal.z
         );
         principVec.applyQuaternion(q);
@@ -639,14 +639,14 @@ export class Face3D {
     /**
      * Rotates the whole face 3D including both vertices and mesh objects
      * starting from the last position saved by savePosition().
-     * Rotates this Face3D about the specified axis CCW 
+     * Rotates this Face3D about the specified axis CCW
      * (right-hand rule) by deltaAngle.
      * @param axisPoint1 The start of the rotation axis
      * @param axisPoint2 The end of the rotation axis.
      * @param deltaAngle The change in angle (radians)
      */
     public rotateFace(
-                axisPoint1: pt.Point3D, 
+                axisPoint1: pt.Point3D,
                 axisPoint2: pt.Point3D,
                 deltaAngle: number
                 ): void {
@@ -678,8 +678,8 @@ export class Face3D {
 
         // Adjust the principle normal vector.
         const principVec: THREE.Vector3 = new THREE.Vector3(
-            this.principalNormal.x, 
-            this.principalNormal.y, 
+            this.principalNormal.x,
+            this.principalNormal.y,
             this.principalNormal.z
         );
         principVec.applyQuaternion(q);
@@ -705,7 +705,7 @@ export class Face3D {
             );
 
         }
-        
+
     }
 
 
