@@ -4,7 +4,7 @@
 
 
 import * as assert from 'assert';
-import {solveForScalars} from "../../paper/geometry/Point";
+import {solveForScalars} from "../../paper/geometry/Point.js";
 
 const MAX_DIFF = 0.01;
 

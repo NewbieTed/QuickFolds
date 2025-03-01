@@ -7,12 +7,12 @@
  * the abstract mathematical sense, not considering any 3D rendering.
  */
 
-import { translate2dTo3d } from "../controller/Controller";
-import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D";
-import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
-import { add, AnnotatedLine, AnnotatedPoint2D, AnnotatedPoint3D, createPoint2D, distance, dotProduct, Point, Point2D, Point3D, scalarMult } from "../geometry/Point";
-import { addFace, deleteFace, getFace3DByID } from "../view/SceneManager";
-import { add2dFaceToPaperGraph, createNewGraph, delete2dFaceToPaperGraph, EdgesAdjList, getAdjList, getFace2dFromId, print2dGraph, updateAdjListForSplitGraph } from "./PaperGraph";
+import { translate2dTo3d } from "../controller/Controller.js";
+import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
+import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
+import { add, AnnotatedLine, AnnotatedPoint2D, AnnotatedPoint3D, createPoint2D, distance, dotProduct, Point, Point2D, Point3D, scalarMult } from "../geometry/Point.js";
+import { addFace, deleteFace, getFace3DByID } from "../view/SceneManager.js";
+import { add2dFaceToPaperGraph, createNewGraph, delete2dFaceToPaperGraph, EdgesAdjList, getAdjList, getFace2dFromId, print2dGraph, updateAdjListForSplitGraph } from "./PaperGraph.js";
 
 
 const HOW_CLOSE_DO_EDGES_NEED_BE_DIRECTION_WISE_TO_MERGE = -0.97;
@@ -668,7 +668,7 @@ function projectPointToCustomVectorCenteredAtOrigin(vector: Point2D, target: Poi
 
             the starting point of the vector that checks for direction]
  */
-function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEdgePointId, secondEdgeId]: [bigint, bigint], face2D: Face2D, face3D: Face3D):
+export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEdgePointId, secondEdgeId]: [bigint, bigint], face2D: Face2D, face3D: Face3D):
 [[Face2D, Face3D, Map<bigint, bigint>, bigint], [Face2D, Face3D, Map<bigint, bigint>, bigint], Point2D, Point2D] {
   const listOfVertexForLeftFace: Point2D[] = [];
   const listOfVertexForLeftFace3d: Point3D[] = [];
@@ -703,7 +703,7 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
   // one past the fold edge
   const createDirectionVectorPointEnd: Point2D = face2D.getPoint((secondEdgeId + 1n) % face2D.N);
   let createDirectionVectorPointStart: Point2D = createPoint2D(0, 0); // temp value
-  if (maxEdgePointId < face2D.ID) {
+  if (maxEdgePointId < face2D.N) {
     // turns out the end of the fold edge is on a vertex
     createDirectionVectorPointStart = face2D.getPoint(secondEdgeId % face2D.N);
   } else{
@@ -785,7 +785,7 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
  * @returns [the edge that the first fold vertex is on, the id of the point that's being folded: could be vertex or anno point],
  *          [the edge that the second fold vertex is on, the id of the point that's being folded: could be vertex or anno point]
  */
-function getPointEdgeOrder(point1Id: bigint, point2Id: bigint, faceId: bigint): [[bigint, bigint], [bigint, bigint]] {
+export function getPointEdgeOrder(point1Id: bigint, point2Id: bigint, faceId: bigint): [[bigint, bigint], [bigint, bigint]] {
   const face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     throw new Error("Face should be empty");

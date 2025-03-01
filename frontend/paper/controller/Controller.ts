@@ -6,14 +6,14 @@
  */
 
 import * as THREE from 'three';
-import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
-import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point";
-import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler";
-import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph"
-import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager';
-import { EditorStatus, EditorStatusType } from '../view/EditorMessage';
-import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager';
+import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
+import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point.js";
+import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
+import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
+import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
+import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
+import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager.js';
 
 
 /**

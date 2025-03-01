@@ -3,8 +3,8 @@
  * with public methods to manipulate the graph at a basic level.
  */
 
-import { Face2D } from "../geometry/Face2D";
-import { createPoint2D } from "../geometry/Point";
+import { Face2D } from "../geometry/Face2D.js";
+import { createPoint2D } from "../geometry/Point.js";
 
 /**
  * stores the values of the adjacency list when doing folds
@@ -357,7 +357,7 @@ function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
 export function updateRelativePositionBetweenFacesIndependentOfRelativeChange(faceId1: bigint, faceId2: bigint, relativeChange: bigint) {
   let theEdgeIdOfFoldInFaceId1 = -1n;
   let theEdgeIdOfFoldInFaceId2 = -1n;
-  
+
   const lookingAtFace1Connections = adjList.get(faceId1);
   if (lookingAtFace1Connections === undefined) {
     throw new Error();
