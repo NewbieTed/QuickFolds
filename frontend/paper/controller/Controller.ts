@@ -80,7 +80,7 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
 
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
-    console.error("error getting face 2d");
+    console.error("error getting face 2d", faceId);
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;
     return msg;

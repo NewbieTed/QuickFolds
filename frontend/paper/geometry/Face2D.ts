@@ -611,8 +611,8 @@ export class Face2D {
 
         const getAnnotationLine = this.getAnnotatedLine(lineId);
 
-        const edgeStart: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.startPointID).point;
-        const edgeEnd: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.endPointID).point;
+        const edgeStart: pt.Point2D = this.getPoint(getAnnotationLine.startPointID);
+        const edgeEnd: pt.Point2D = this.getPoint(getAnnotationLine.endPointID);
         const direction: pt.Point2D = pt.normalize(pt.subtract(
             edgeEnd, edgeStart
         ));

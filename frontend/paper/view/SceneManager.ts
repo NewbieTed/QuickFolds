@@ -15,7 +15,8 @@ import { Animation } from './animation/Animation';
 import { FoldAnimation } from './animation/FoldAnimation';
 
 let stepID = 1n;
-const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
+//const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
+const origamiID = "1";
 
 if (origamiID === null) {
     throw new Error("The ID of the current origami is null.");

@@ -431,7 +431,6 @@ export function createNewGraph(startingPlaneId: bigint) {
   idsToFaces.clear();
 
 
-
   idsToFaces.set(startingPlaneId, new Face2D(
     [
       createPoint2D(-3, -3),

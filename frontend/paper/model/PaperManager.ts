@@ -703,7 +703,7 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
   // one past the fold edge
   const createDirectionVectorPointEnd: Point2D = face2D.getPoint((secondEdgeId + 1n) % face2D.N);
   let createDirectionVectorPointStart: Point2D = createPoint2D(0, 0); // temp value
-  if (maxEdgePointId < face2D.ID) {
+  if (maxEdgePointId < face2D.N) {
     // turns out the end of the fold edge is on a vertex
     createDirectionVectorPointStart = face2D.getPoint(secondEdgeId % face2D.N);
   } else{

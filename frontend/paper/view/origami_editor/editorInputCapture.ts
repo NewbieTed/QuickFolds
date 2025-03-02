@@ -3,6 +3,10 @@
  */
 
 import {TOGGLE_FOCAL_PT_KEY} from './globalSettings';
+import { Point3D } from "../../geometry/Point";
+import * as SceneManager from "../SceneManager";
+import * as THREE from 'three';
+import { confirmButtonPressed } from './editor';
 
 
 let isFocalPointVisible = true;
@@ -10,6 +14,17 @@ let isShiftKeyPressed = false;
 let isLeftMousePressed = false;
 let isPickPointButtonPressed = false;
 let isDeletePointButtonPressed = false;
+let isFoldButtonPressed = false;
+let foldState = {
+    point1Id: -1n,
+    point2Id: -1n,
+    faceId: -1n, // the id of the face that is split into two
+    stationaryPoint: null as Point3D | null, // provide a point that is stationary in case of movement in future
+    step: 0  // 0: not started, 1: going to select first point, 2: second point, 3: stationary point
+};
+
+let isFoldAngleConfirmed = false;
+let foldAngleValue = 0n;
 
 
 // Set up event listeners for buttons and other actions.
@@ -32,6 +47,46 @@ if (deletePointButton !== null) {
   });
 }
 
+const confirmFoldButton = document.getElementById('confirm-fold');
+if (confirmFoldButton) {
+    confirmFoldButton.addEventListener('click', () => {
+        const angleInput = document.getElementById('fold-angle') as HTMLInputElement;
+        if (angleInput) {
+            const angleValue = angleInput.value || '0';
+            foldAngleValue = BigInt(Math.round(Number(angleValue))); // Round to nearest integer
+            isFoldAngleConfirmed = true;
+
+            console.log("Getting fold angle state immediately after click:", {
+              isConfirmed: isFoldAngleConfirmed,
+              angle: foldAngleValue
+            });
+
+            // Hide the angle popup
+            const anglePopup = document.querySelector('.angle-popup');
+            if (anglePopup) {
+                (anglePopup as HTMLElement).style.display = 'none';
+            }
+            
+            // remove the illustration line
+            // const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
+            // if (existingLine) {
+            //     SceneManager.getScene().remove(existingLine);
+            //     (existingLine as THREE.Line).geometry.dispose();
+            //     if (Array.isArray((existingLine as THREE.Line).material)) {
+            //         ((existingLine as THREE.Line).material as THREE.Material[]).forEach(mat => mat.dispose());
+            //     } else {
+            //         ((existingLine as THREE.Line).material as THREE.Material).dispose();
+            //     }
+            // }
+
+            // confirmButtonPressed(foldAngleValue);
+
+            // Debug log after state is updated
+            console.log("State updated - Angle:", foldAngleValue, "Confirmed:", isFoldAngleConfirmed);
+        }
+    });
+}
+
 //--------------------------- Event Listener Implementations ------------------------------------//
 
 
@@ -52,6 +107,14 @@ document.getElementById('del-line-button')?.addEventListener('click', () => {
   deleteLineState = true;
 });
 
+const foldButton = document.getElementById('fold-button');
+if (foldButton !== null) {
+  foldButton.addEventListener('click', () => {
+    isFoldButtonPressed = true;
+    foldState.step = 1;
+  });
+}
+
 let addLineState = false;
 let deleteLineState = false;
 
@@ -61,6 +124,17 @@ export function getAddLineButton() {
 
 export function getDeleteLineButton() {
   return deleteLineState;
+}
+
+/**
+ * Gets the state of the fold button.
+ * @returns The state of the fold button.
+ */
+export function getFoldButtonState() {
+  return {
+      isPressed: isFoldButtonPressed,
+      state: foldState
+  };
 }
 
 // getter method to see if the "add annotation line" button is pressed
@@ -171,4 +245,55 @@ export function resetIsPickPointButtonPressed(): void {
  */
 export function resetIsDeletePointButtonPressed(): void {
   isDeletePointButtonPressed = false;
+}
+
+
+/**
+* Updates the state of the fold button.
+* @param newState The new state of the fold button.
+*/
+export function updateFoldState(newState: typeof foldState) {
+    foldState = { ...newState };  // Create a new object to ensure state update
+    console.log("Updated fold state:", foldState); // Debug log
+}
+
+/**
+* Resets the state of the fold button to unpressed.
+*/
+export function resetFoldButton() {
+  isFoldButtonPressed = false;
+  foldState = {
+      point1Id: -1n,
+      point2Id: -1n,
+      faceId: -1n,
+      stationaryPoint: null,
+      step: 0
+  };
+}
+
+export function resetFoldButtonPressed() {
+  isFoldButtonPressed = false;
+}
+
+/**
+* Gets the state of the fold angle.
+* @returns The state of the fold angle.
+*/
+export function getFoldAngleState() {
+    console.log("Getting fold angle state:", {
+        isConfirmed: isFoldAngleConfirmed,
+        angle: foldAngleValue
+    });
+    return {
+        isConfirmed: isFoldAngleConfirmed,
+        angle: foldAngleValue
+    };
+}
+
+/**
+* Resets the state of the fold angle.
+*/
+export function resetFoldAngleState() {
+  isFoldAngleConfirmed = false;
+  foldAngleValue = 0n;
 }
