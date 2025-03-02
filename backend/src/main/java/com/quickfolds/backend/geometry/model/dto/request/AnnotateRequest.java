@@ -1,4 +1,4 @@
-package com.quickfolds.backend.geometry.model.dto;
+package com.quickfolds.backend.geometry.model.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +22,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Annotation {
+public class AnnotateRequest {
 
     /**
      * List of points to be added as annotations.

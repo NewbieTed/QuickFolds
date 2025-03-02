@@ -34,7 +34,7 @@
        - `on_edge_id`: Maps to `edgeId` in the DTO.
        - `edge_type_name`: Maps to `edgeType` in the DTO.
    -->
-    <resultMap id="AnnotatePointMap" type="com.quickfolds.backend.geometry.model.dto.AnnotatePoint">
+    <resultMap id="AnnotatePointMap" type="com.quickfolds.backend.geometry.model.dto.request.AnnotatePointRequest">
         <result property="faceId" column="face_id"/>
         <result property="faceIdInOrigami" column="f.id_in_origami"/>
         <result property="idInFace" column="id_in_face"/>

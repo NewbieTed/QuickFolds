@@ -1,6 +1,8 @@
 package com.quickfolds.backend.geometry.service;
 
 import com.quickfolds.backend.dto.BaseResponse;
+import com.quickfolds.backend.geometry.model.dto.DeletedIdInFace;
+import com.quickfolds.backend.geometry.model.dto.request.*;
 import com.quickfolds.backend.geometry.model.dto.response.*;
 import com.quickfolds.backend.exception.DbException;
 import com.quickfolds.backend.geometry.constants.EdgeType;
@@ -8,7 +10,6 @@ import com.quickfolds.backend.geometry.constants.PointType;
 import com.quickfolds.backend.geometry.constants.StepType;
 import com.quickfolds.backend.geometry.mapper.*;
 import com.quickfolds.backend.geometry.model.database.*;
-import com.quickfolds.backend.geometry.model.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,11 +89,57 @@ public class GeometryService {
         processFaceRequests(request.getFaces(), origamiId, stepId);
 
         // Create fold step with anchored face
-        Long anchoredFaceId = getAnchoredFaceId(origamiId, request.getAnchoredFaceIdInOrigami());
+        Long anchoredFaceId = getFaceIdByIdInFace(origamiId, request.getAnchoredFaceIdInOrigami(), "Anchored");
         createFoldStep(stepId, anchoredFaceId);
 
         // Annotate faces based on new geometry
         annotate(new AnnotationRequest(origamiId, stepIdInOrigami, collectFaceAnnotations(request.getFaces())), stepId);
+
+        return BaseResponse.success();
+    }
+
+
+    /**
+     * Handles the rotation process by deleting specified faces,
+     * creating new faces, and managing edges and vertices.
+     *
+     * @param request The rotate request containing faces to delete and add.
+     * @return ResponseEntity with a BaseResponse indicating success.
+     */
+    @Transactional
+    public ResponseEntity<BaseResponse<Boolean>> rotate(RotateRequest request) {
+        long origamiId = request.getOrigamiId();
+        int stepIdInOrigami = request.getStepIdInOrigami();
+        long stepId = createStep(origamiId, StepType.FOLD, stepIdInOrigami);
+
+        // Retrieve the ID of the faces
+        long anchoredFaceId = getFaceIdByIdInFace(origamiId, request.getAnchoredFaceIdInOrigami(), "Anchored");
+        long rotatedFaceId = getFaceIdByIdInFace(origamiId, request.getRotatedFaceIdInOrigami(), "Rotated");
+
+        // Retrieve the related fold edge
+        FoldEdge foldEdge = foldEdgeMapper.getObjByFaceIdPair(anchoredFaceId, rotatedFaceId);
+
+        // Deleted the edge
+        int deletedRows = edgeMapper.deleteById(foldEdge.getEdgeId(), stepId);
+
+        if (deletedRows != 1) {
+            throw  new DbException("Number of deleted fold edges is incorrect, expected: 1, actual: " + deletedRows +
+                    " Verify if DB is correct");
+        }
+
+        // Create a new edge
+        long edgeId = createEdge(stepId, getEdgeTypeId(EdgeType.FOLD));
+
+        // Update fields of the new fold edge
+        foldEdge.setEdgeId(edgeId);
+        foldEdge.setAngle(request.getAngle());
+        foldEdge.setCreatedBy(null);
+        foldEdge.setUpdatedBy(null);
+        foldEdge.setCreatedAt(null);
+        foldEdge.setUpdatedAt(null);
+
+        // Insert the fold edge entry
+        foldEdgeMapper.addByObj(foldEdge);
 
         return BaseResponse.success();
     }
@@ -159,15 +205,16 @@ public class GeometryService {
      * @throws DbException if an error occurs while retrieving data from the database.
      */
     @Transactional
-    public ResponseEntity<BaseResponse<StepResponse>> getStep(long origamiId, int startStep, int endStep, boolean isForward) {
-        // response object to return
+    public ResponseEntity<BaseResponse<StepResponse>> getStep(long origamiId, int startStep,
+                                                              int endStep, boolean isForward) {
+        // Response object to return
         StepResponse step = new StepResponse();
         // ID in database of step to query
         Long stepId;
         // string representation of step direction to reduce redundant conditionals
         String direction;
 
-        //sets the step ID to query based on step direction
+        // Sets the step ID to query based on step direction
         if (isForward) {
             direction = "forward";
             stepId = stepMapper.getIdByIdInOrigami(origamiId, endStep);
@@ -176,17 +223,18 @@ public class GeometryService {
             stepId = stepMapper.getIdByIdInOrigami(origamiId, startStep);
         }
         if (stepId == null) {
-            throw new DbException("Error in DB, could not find the requested step");
+            throw new IllegalArgumentException("Could not find the requested step, " +
+                    "verify if request is valid (no such step)");
         }
 
-        // determines the type of step being queried
+        // Determines the type of step being queried
         String stepType = stepMapper.getTypeByStepId(stepId);
         if (stepType == null) {
-            throw new DbException("Error in DB, could not determine the requested step type");
+            throw new IllegalArgumentException("Error in DB, could not determine the requested step type");
         }
 
-        // based on step type, retrieve the relevant data and add to the response object
-        if(stepType.equals("annotate")) {
+        // Based on step type, retrieve the relevant data and add to the response object
+        if(stepType.equals(StepType.ANNOTATE)) {
             List<FaceAnnotateResponse> annotations = annotateStep(stepId, isForward);
 
             if (annotations.isEmpty()) {
@@ -227,7 +275,7 @@ public class GeometryService {
                         lineAnnotations.stream().map(LineAnnotationResponse::getFaceIdInOrigami)),
                 pointDeletions.stream().map(DeletedIdInFace::getFaceIdInOrigami)),
                 lineDeletions.stream().map(DeletedIdInFace::getFaceIdInOrigami))
-                .distinct().collect(Collectors.toList());
+                .distinct().toList();
 
         // create a FaceAnnotateResponse for each face ID, populate, and add to return list
         for (Integer id : faceIds) {
@@ -238,7 +286,7 @@ public class GeometryService {
             FaceAnnotateResponse faceAnnotation = new FaceAnnotateResponse();
             faceAnnotation.setIdInOrigami(id);
 
-            //collects the annotations on the face
+            // Collects the annotations on the face
             List<PointAnnotationResponse> pointsInFace = pointAnnotations.stream()
                     .filter(point -> point.getFaceIdInOrigami().equals(id))
                     .collect(Collectors.toList());
@@ -336,7 +384,7 @@ public class GeometryService {
             throw new DbException("Error in DB, cannot get annotated line data from DB");
         }
 
-        //comprehensive error checking for list elements?
+        // Comprehensive error checking for list elements?
         return lineAnnotations;
     }
 
@@ -349,10 +397,10 @@ public class GeometryService {
      * @throws DbException if an error occurs while retrieving data from the database.
      */
     private List<PointAnnotationResponse> getAnnotatedPoints(long stepId, boolean isForward) {
-        List<AnnotatePoint> annotatedPoints;
+        List<AnnotatePointRequest> annotatedPoints;
         ArrayList<PointAnnotationResponse> pointAnnotations = new ArrayList<>();
 
-        // gets the list of annotated points in the step
+        // Gets the list of annotated points in the step
         if (isForward) {
             annotatedPoints = annotatePointMapper.getAnnotatedPointsByStepIdForward(stepId);
         } else {
@@ -365,42 +413,42 @@ public class GeometryService {
         }
 
         // loop through the annotatedPoints list to create PointAnnotationResponse objects and populate the return list
-        for (AnnotatePoint annotatePoint : annotatedPoints) {
+        for (AnnotatePointRequest annotatePointRequest : annotatedPoints) {
             PointAnnotationResponse pointAnnotation = new PointAnnotationResponse();
 
             // error checks to ensure required fields are not null
-            if (annotatePoint.getFaceId() == null) {
+            if (annotatePointRequest.getFaceId() == null) {
                 throw new DbException("Error in DB, cannot get annotate point face ID data from DB");
             }
-            if (annotatePoint.getFaceIdInOrigami() == null) {
+            if (annotatePointRequest.getFaceIdInOrigami() == null) {
                 throw new DbException("Error in DB, cannot get annotate point face ID in origami data from DB");
             }
-            if (annotatePoint.getIdInFace() == null) {
+            if (annotatePointRequest.getIdInFace() == null) {
                 throw new DbException("Error in DB, cannot get annotate point ID in face data from DB");
             }
-            if (annotatePoint.getX() == null) {
+            if (annotatePointRequest.getX() == null) {
                 throw new DbException("Error in DB, cannot get annotate point x coordinate data from DB");
             }
-            if (annotatePoint.getY() == null) {
+            if (annotatePointRequest.getY() == null) {
                 throw new DbException("Error in DB, cannot get annotate point y coordinate data from DB");
             }
 
             // determines the onEdgeIdInFace of the point if it's on an edge and sets the field
-            if (annotatePoint.getEdgeId() != null) {
+            if (annotatePointRequest.getEdgeId() != null) {
                 Integer onEdgeIdInFace;
-                String edgeType = annotatePoint.getEdgeType();
+                String edgeType = annotatePointRequest.getEdgeType();
                 if (edgeType == null) {
                     throw new DbException("Error in data from DB, on edge id of point was not null but edge type is");
                 }
                 if (edgeType.equals("side")) {
-                    onEdgeIdInFace = sideEdgeMapper.getEdgeIdInFace(annotatePoint.getEdgeId());
+                    onEdgeIdInFace = sideEdgeMapper.getEdgeIdInFace(annotatePointRequest.getEdgeId());
                     if (onEdgeIdInFace == null) {
                         throw new DbException("Error in DB, cannot get onEdgeIdInFace from DB");
                     }
 
                 } else if (edgeType.equals("fold")) {
                     onEdgeIdInFace = foldEdgeMapper.getEdgeIdInFace(
-                            annotatePoint.getEdgeId(), annotatePoint.getFaceId());
+                            annotatePointRequest.getEdgeId(), annotatePointRequest.getFaceId());
                     if (onEdgeIdInFace == null) {
                         throw new DbException("Error in DB, cannot get onEdgeIdInFace from DB");
                     }
@@ -413,10 +461,10 @@ public class GeometryService {
             }
 
             // sets fields of PointAnnotationResponse object
-            pointAnnotation.setFaceIdInOrigami(annotatePoint.getFaceIdInOrigami());
-            pointAnnotation.setIdInFace(annotatePoint.getIdInFace());
-            pointAnnotation.setX(annotatePoint.getX());
-            pointAnnotation.setY(annotatePoint.getY());
+            pointAnnotation.setFaceIdInOrigami(annotatePointRequest.getFaceIdInOrigami());
+            pointAnnotation.setIdInFace(annotatePointRequest.getIdInFace());
+            pointAnnotation.setX(annotatePointRequest.getX());
+            pointAnnotation.setY(annotatePointRequest.getY());
 
             // adds response object to list
             pointAnnotations.add(pointAnnotation);
@@ -491,16 +539,35 @@ public class GeometryService {
      * Retrieves the database ID of an anchored face by its origami-specific ID.
      *
      * @param origamiId The ID of the origami model.
-     * @param anchoredFaceIdInOrigami The ID of the anchored face within the origami context.
+     * @param faceIdInOrigami The ID of the face within the origami context.
+     * @param entityType The type of entity being deleted (e.g., anchored, rotate, added).
      * @return The database ID of the anchored face.
      * @throws IllegalArgumentException if the anchored face ID is not found.
      */
-    private Long getAnchoredFaceId(long origamiId, int anchoredFaceIdInOrigami) {
-        Long anchoredFaceId = faceMapper.getIdByFaceIdInOrigami(origamiId, anchoredFaceIdInOrigami);
+    private Long getFaceIdByIdInFace(long origamiId, int faceIdInOrigami, String entityType) {
+        Long anchoredFaceId = faceMapper.getIdByFaceIdInOrigami(origamiId, faceIdInOrigami);
         if (anchoredFaceId == null) {
-            throw new IllegalArgumentException("Anchored face id not found, verify if request is valid (no such face)");
+            throw new IllegalArgumentException(entityType
+                    + " face id not found, verify if request is valid (no such face)");
         }
         return anchoredFaceId;
+    }
+
+
+    /**
+     * Retrieves the database ID for a specific point type.
+     *
+     * @param stepTypeName The name of the step type (e.g., fold, rotate, annotate).
+     * @return The database ID for the specified step type.
+     * @throws DbException if the step type ID cannot be found.
+     */
+    private long getStepTypeId(String stepTypeName) {
+        Long stepTypeId = stepTypeMapper.getIdByName(stepTypeName);
+        if (stepTypeId == null) {
+            throw new DbException("Cannot find step type ID with type name: " + stepTypeName +
+                    ", verify if DB is correctly set up");
+        }
+        return stepTypeId;
     }
 
 

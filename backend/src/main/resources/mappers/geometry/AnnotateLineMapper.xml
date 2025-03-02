@@ -31,7 +31,7 @@
 
         Fields:
         - `id`: Primary key of the annotated line.
-        - `step_id`: The step associated with the annotation.
+        - `step_id`: The step associated with the annotateRequest.
         - `face_id`: The face where the line is drawn.
         - `point_1_id` / `point_2_id`: Start and end points of the line.
         - `id_in_face`: Line identifier within the face.
