@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
  * - {@link OrigamiService}: Handles the core business logic for origami operations.
  */
 @RestController
-@RequestMapping("/origami")
+@RequestMapping("/api/origami")
 @RequiredArgsConstructor
 public class OrigamiController {
 

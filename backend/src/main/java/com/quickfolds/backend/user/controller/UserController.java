@@ -28,7 +28,7 @@ import java.util.Map;
  * - Uses Spring Security's `SecurityContextHolder` for user authentication.
  */
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class UserController {
 

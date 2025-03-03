@@ -37,7 +37,7 @@ import java.util.List;
  * - {@link GeometryService}: Service layer for processing folding and annotation requests.
  */
 @RestController
-@RequestMapping("/geometry")
+@RequestMapping("/api/geometry")
 @RequiredArgsConstructor
 public class GeometryController {
 
