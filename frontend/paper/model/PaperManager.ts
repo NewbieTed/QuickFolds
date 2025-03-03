@@ -15,6 +15,17 @@ import { addFace, deleteFace, getFace3DByID } from "../view/SceneManager.js";
 import { add2dFaceToPaperGraph, createNewGraph, delete2dFaceToPaperGraph, EdgesAdjList, getAdjList, getFace2dFromId, print2dGraph, updateAdjListForSplitGraph } from "./PaperGraph.js";
 
 
+// contains information about edge that are created that split down the middle
+// of a face, giving the info needed to update
+export type ProblemEdgeInfo = {
+  idOfMyFace: bigint;
+  edgeIdOfMyFace: bigint;
+  idOfOtherFace: bigint;
+  edgeIdOfOtherFace: bigint;
+};
+
+
+
 const HOW_CLOSE_DO_EDGES_NEED_BE_DIRECTION_WISE_TO_MERGE = -0.97;
 const DISTANCE_TO_ALLOW_MERGING_POINTS = 0.05;
 
@@ -349,7 +360,8 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
  * @param pointThatShouldKeepFaceStationary - a point on the side of the face that shouldn't move
  * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary]
  */
-export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D): [Face2D,Face2D,bigint] | false {
+export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D)
+  : [Face2D,Face2D,bigint, ProblemEdgeInfo[]] | false {
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     console.log(`Cannot find face 2D ${faceId}`);
@@ -410,12 +422,15 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // now that we have the basic faces split, it's time to update the adj list with the
   // update edges of the new faces
 
-  updateAdjListForSplitGraph(
+  const problemIssuesEdges: ProblemEdgeInfo[]
+  = updateAdjListForSplitGraph(
     faceId,
     [leftFace.ID, foldEdgeIdLeft, leftFacePointIdFromOG],
     [rightFace.ID, foldEdgeIdRight, rightFacePointIdFromOG],
-    angle
-  );
+    angle, firstEdgeId, secondEdgeId
+  );      // feels weird putting this since it can be a annotation point id, but
+          // that's ok since we only care about matches with OG face, which means
+          // this will never triggers since pointIDs > vertex ids
 
 
   // now we need to add the points that should be duplicated on both sides
@@ -572,7 +587,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
 
   // return the created faces back to the controller so that we can send these to backend
-  return [leftFace, rightFace, whichFaceIsStationary];
+  return [leftFace, rightFace, whichFaceIsStationary, problemIssuesEdges];
 }
 
 

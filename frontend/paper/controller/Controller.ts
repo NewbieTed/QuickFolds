@@ -8,12 +8,16 @@
 import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point.js";
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance } from "../geometry/Point.js";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
 import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
-import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager.js';
+import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo } from '../model/PaperManager.js';
+
+
+const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
+
 
 
 /**
@@ -62,7 +66,7 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
  * @param faceId - the id of the face that is split into two
  * @param vertexOfFaceStationary - provide a point that is stationary in case of movement in future
  * @param angle - the angle to start between them. should be 180
- * @returns true/ or a string of error msg
+ * @returns {stationaryFaceId:bigint, rotationFaceId:bigint}/ or a string of error msg
  */
 export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
   if (point1Id == point2Id) {
@@ -123,7 +127,10 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   }
 
 
-  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
+  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint,ProblemEdgeInfo[]] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
+
+
+
   if (resultOfUpdatingPaperGraph === false) {
     throw new Error("Error saving paper graph");
   }
@@ -140,9 +147,295 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   printAdjList();
 
   incrementStepID();
-  return true;
+
+  if (resultOfUpdatingPaperGraph[0].ID == resultOfUpdatingPaperGraph[2]) {
+    // left face is stationary
+    return {stationaryFaceId:resultOfUpdatingPaperGraph[0].ID,
+            rotationFaceId:resultOfUpdatingPaperGraph[1].ID,
+            problemEdgesForFace:resultOfUpdatingPaperGraph[3]
+    };
+  }
+
+  // right face is stationary
+  return {stationaryFaceId:resultOfUpdatingPaperGraph[1].ID,
+          rotationFaceId:resultOfUpdatingPaperGraph[0].ID,
+          problemEdgesForFace:resultOfUpdatingPaperGraph[3]
+        };
 }
 
+
+
+/**
+ * Finds the intersection point of two lines defined by points (p1, p2) and (p3, p4).
+ * @param p1 First point of the first line.
+ * @param p2 Second point of the first line.
+ * @param p3 First point of the second line.
+ * @param p4 Second point of the second line.
+ * @returns The intersection point or null if the lines are parallel or coincident.
+ */
+function getLineIntersection(p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D): Point2D | null {
+  const denominator =
+      (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+
+  // If denominator is zero, the lines are parallel or coincident
+  if (denominator === 0) {
+      return null;
+  }
+
+  const numeratorX =
+      (p1.x * p2.y - p1.y * p2.x) * (p3.x - p4.x) -
+      (p1.x - p2.x) * (p3.x * p4.y - p3.y * p4.x);
+  const numeratorY =
+      (p1.x * p2.y - p1.y * p2.x) * (p3.y - p4.y) -
+      (p1.y - p2.y) * (p3.x * p4.y - p3.y * p4.x);
+
+  const x = numeratorX / denominator;
+  const y = numeratorY / denominator;
+
+  return createPoint2D(x, y);
+}
+
+
+
+/**
+ * given point 1 and point 2, returns the id of the points (either annotation or vertex)
+ * that p1 and p2 pass thru in the plane. If the points at which the user provides
+ * intersect the face don't have a vertex/annotation point nearby, this method makes one
+ * @param p1 - the first point in line
+ * @param p2 - the second point in line
+ * @param faceIdToUpdate - the id of the face to comapre to
+ */
+function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdate: bigint) {
+
+  const face2d = getFace2dFromId(faceIdToUpdate);
+  if (face2d === undefined) {
+    throw new Error("couldn't find face");
+  }
+
+  // algorithm
+  // we know that our line will intersect two lines if it intersects plane, so add to return list
+  const retList: bigint[] = [];
+  // keep track of whether we make a new point
+  const generated: boolean[] = [];
+
+  // go thru each vertex
+  for(let i = 0n; i < face2d.N; i++) {
+    let intersectionPointOfFaceEdgeAndUserLine = getLineIntersection(
+      p1, p2, face2d.getPoint(i), face2d.getPoint((i + 1n) % face2d.N)
+    );
+
+    // this just makes sure that we are on the edge (think of round off error)
+    intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+    if (face2d.isColinearPointInsideEdge(intersectionPointOfFaceEdgeAndUserLine, i)) {
+
+      // our point is actually at an intersection inside the polygon, so, we've found a target
+      // now we need to get the point nearby, or make one if it exists
+      let closestPointId: bigint = face2d.findClosestPointOnEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+      if (distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine) <= USE_EXISTING_POINT_IN_GREEN_LINE) {
+        // point exists, so use it
+        retList.push(closestPointId);
+        generated.push(false);
+      } else {
+
+        // need to make our own point
+        let annoRes2d = face2d.addAnnotatedPoint(intersectionPointOfFaceEdgeAndUserLine, i);
+        if (annoRes2d.pointsAdded.size !== 1) {
+          throw new Error("error making a point");
+        }
+
+        // add point (should just be one, but res uses map)
+        for(let pointId of annoRes2d.pointsAdded.keys()) {
+          retList.push(pointId);
+        }
+        generated.push(true);
+      }
+    }
+  }
+
+  if (retList.length === 2) {
+    return {
+    pt1:{
+      id:retList[0],
+      gen: generated[0]
+    },
+
+    pt2:{
+      id:retList[1],
+      gen: generated[0]
+    }};
+
+  }
+
+  if (retList.length === 0) {
+    return null;
+  }
+
+  throw new Error("you make diff number of collisions that you should have: " + retList.length);
+}
+
+
+// multifold udpate; final boss split method
+export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+  const startFaceObj = getFace3DByID(faceId);
+  if (startFaceObj === undefined) {
+    throw new Error("couldn't find face");
+  }
+
+  const p1: Point3D = startFaceObj.getPoint(point1Id);
+  const p2: Point3D = startFaceObj.getPoint(point2Id);
+
+  let faceIdToUpdate: bigint[] = null; // basically, get the connect component from the LUG
+  const allProblemEdges: ProblemEdgeInfo[] = [];
+
+  // stuff hady needs
+  const listOfStationaryFacesInLug: bigint[] = [];
+  const mapFromOgIdsToSplitFaces: Map<bigint, {face1Id:bigint, face2Id:bigint}> = new Map<bigint, {face1Id:bigint, face2Id:bigint}>();
+
+  // split all of the faces that need to split,
+  // and update adj list with this information
+  for(let i = 0; i < faceIdToUpdate.length; i++) {
+    // get face
+    const currFaceId: bigint = faceIdToUpdate[i];
+    const face3d = getFace3DByID(currFaceId);
+    if (face3d === undefined) {
+      throw new Error("couldn't find face");
+    }
+
+    const projectedP1 = translate3dTo2d(face3d.projectToFace(p1), currFaceId);
+    const projectedP2 = translate3dTo2d(face3d.projectToFace(p2), currFaceId);
+
+    if (projectedP1 === null || projectedP2 === null) {
+      throw new Error("error getting split point")
+    }
+
+    const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+    if (points == null) {
+      // line doesn't intersect plane, so just skip the splitting
+            // todo: udpate stationary faces in lug here, since the entire face
+            // is either static or rotating
+      continue;
+    }
+
+    const [idOnCurrFaceToSplit1, idOnCurrFaceToSplit2] = [points.pt1.id, points.pt2.id];
+    // we need to split faces
+    // note this also updates the adjlist of edges
+    const projectedVertexStationaryOnNewFace = face3d.projectToFace(vertexOfFaceStationary);
+    const resultFromSplitting = await createANewFoldBySplitting(idOnCurrFaceToSplit1, idOnCurrFaceToSplit2, currFaceId, projectedVertexStationaryOnNewFace, angle); // todo: update backend so that we don't add a step here
+
+    if (typeof(resultFromSplitting) === 'string') {
+      console.error("error creating split of a face");
+      return;
+    }
+
+
+    // add values that should be returned to renderer
+    listOfStationaryFacesInLug.push(resultFromSplitting.stationaryFaceId);
+    mapFromOgIdsToSplitFaces.set(currFaceId, {face1Id:resultFromSplitting.stationaryFaceId,
+                                          face2Id:resultFromSplitting.rotationFaceId
+    });
+
+    // add all the edges that the adjlist should update: Multifold update
+    // note that there will be duplicate one for B,A and one for A,B
+    allProblemEdges.push(...resultFromSplitting.problemEdgesForFace);
+  }
+
+
+  // update adjlist with problematic edges
+  // set is here so we don't have duplicates
+  // use format Face1-Face2, can check if oppsiiste exists so that
+  // we don't do it twice
+  const listOfAllEdgesFixed: Set<String> = new Set<String>();
+  for(const item of allProblemEdges) {
+    // do brute force mapping
+    // from A_1/A_2 edge connect B_1/B_2 edge
+
+    // check to make sure we don't do repeat
+    const hashCheck: string = item.idOfOtherFace + "-" + item.idOfMyFace;
+    if(Array.from(listOfAllEdgesFixed).includes(hashCheck)) {
+      // already have fixed this edge, don't do again
+      continue;
+    }
+    item.edgeIdOfMyFace // A edge
+    item.edgeIdOfOtherFace // B edge
+
+    const a1FaceId = mapFromOgIdsToSplitFaces.get(item.idOfMyFace).face1Id;
+    const a1FaceObj = getFace2dFromId(a1FaceId);
+
+    const a2FaceId = mapFromOgIdsToSplitFaces.get(item.idOfMyFace).face2Id;
+    const a2FaceObj = getFace2dFromId(a2FaceId);
+
+    const b1FaceId = mapFromOgIdsToSplitFaces.get(item.idOfOtherFace).face1Id;
+    const b1FaceObj = getFace2dFromId(b1FaceId);
+
+    const b2FaceId = mapFromOgIdsToSplitFaces.get(item.idOfOtherFace).face2Id;
+    const b2FaceObj = getFace2dFromId(b2FaceId);
+
+    if (a1FaceObj === undefined || a2FaceObj === undefined || b1FaceObj === undefined || b2FaceObj === undefined) {
+      throw new Error("Split faces don't exist");
+    }
+
+    // to get "edge", just get edgeId vertex and edgeID + 1 vertex
+
+    if(areEdgesTheSame(a1FaceObj, a1EdgeId, b2FaceObj, b2EdgeId)) {
+      // a1-b2 link up
+      // a2-b1 link up
+    } else {
+      // a1-b1 link up
+      // a2-b2 link up
+    }
+
+
+    // mark this completed in set
+    listOfAllEdgesFixed.add(item.idOfMyFace + "-" + item.idOfOtherFace);
+  }
+  // update disjointset: keep in mind i just need to know what goes together
+  // i can use the lug to find out what things should be stationary by looking
+  // thru the "set"
+  UpdateDisjointSetOfEdges();
+
+
+  // HADY update lug
+  ;
+
+  // first thing i need to do is get all faces that need to be split
+  // the list i look thru is from the lug
+  // split all faces in lug
+
+  // i need to return the faces/new values to hady's lug
+    // give me
+    // list of stationary faces in lug
+    // list of all edges in green line X
+    // map of og face id to split children, since we need to know X
+    // if descendends are related to og face
+    // example A splits into A_1, A_2,
+    // need list of mappings [{A, A_1, A_2}, ..]
+
+  // update the edges between faces since lug is dependent on it
+  // add to disjoint set of deges togehter
+
+  // update the lug
+
+
+  // todo: check to make sure backend only does one final step of adding crap
+
+}
+
+const CLOSE_ENOUGH_SO_POINTS_ARE_SAME = 0.02
+
+function areEdgesTheSame(faceObj1: Face2D, edgeIdForFace1: bigint, faceObj2: Face2D, edgeIdForFace2: bigint) {
+  const edge1Point1: Point2D = faceObj1.getPoint(edgeIdForFace1);
+  const edge1Point2: Point2D = faceObj1.getPoint((edgeIdForFace1 + 1n) % faceObj1.N);
+
+  const edge2Point1: Point2D = faceObj2.getPoint(edgeIdForFace2);
+  const edge2Point2: Point2D = faceObj2.getPoint((edgeIdForFace2 + 1n) % faceObj2.N);
+
+  const case1: boolean = distance(edge1Point1, edge2Point1) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME &&
+                         distance(edge1Point2, edge2Point2) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME;
+
+  const case2: boolean = distance(edge1Point2, edge2Point1) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME &&
+                         distance(edge1Point1, edge2Point2) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME;
+  return case1 || case2
+}
 
 
 /**
@@ -233,7 +526,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
 
-  let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId)
+    let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId);
   if (addPointResult.status !== "NORMAL") {
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;

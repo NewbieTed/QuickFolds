@@ -40,8 +40,25 @@ export function updateAdjListForSplitGraph(
   ogFaceId: bigint,
   [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
   [rightFaceId, rightFaceEdgeIdThatFolds, ogPoingIdsToRightPointIds]: [bigint, bigint, Map<bigint, bigint>],
-  angle: bigint
+  angle: bigint, idOfEdgeThatPointSplitsAtInOgFace1: bigint, idOfEdgeThatPointSplitsAtInOgFace2: bigint
 ) {
+
+  // multifold update: here is the list (should be max of size 2) of the
+  // problem edges to return to
+
+  // multifold update: you'll have to record
+                    // both this id of our trouble face, the ids of A_1, A_2 that need to be hooked
+                    // and the OG id of the outside connection (B)
+  const problemEdgesToReturnTo: {
+    idOfMyFace: bigint;
+    edgeIdOfMyFace: bigint;
+    idOfOtherFace: bigint;
+    edgeIdOfOtherFace: bigint;
+  }[] = [];
+
+
+
+
   // create new list, since we are making new planes
   adjList.set(leftFaceId, []);
   adjList.set(rightFaceId, []);
@@ -74,6 +91,8 @@ export function updateAdjListForSplitGraph(
   } else {
     // there have been folds before, so we need update the list parameters
     // first we create the new items for our list
+
+    // inner L-R connection
     const value: EdgesAdjList = {
       idOfOtherFace: rightFaceId,
       angleBetweenThem: angle,
@@ -95,11 +114,12 @@ export function updateAdjListForSplitGraph(
     // and add these to the new fold objects
     let allOldConnectionsThatNeedToBeUdpdated: EdgesAdjList[] | undefined = adjList.get(ogFaceId);
     if (allOldConnectionsThatNeedToBeUdpdated === undefined) {
-      throw new Error("OUTDATED ADJ LIST");
+      throw new Error("OUTDATED ADJ LIST; don't have og face");
     }
 
 
     // delete the copy from the other faces
+    // basically C -> A (where A is the face im splitting)
     for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
       const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
       const outsideFaceToUpdate = currentItem.idOfOtherFace;
@@ -109,9 +129,35 @@ export function updateAdjListForSplitGraph(
 
 
     // create the copy list, and add the copy to the other faces
+    // this is all the outside stuff connecting back to the L/R split
+    // i need to be careful here not to include any edges that
+    // cause a split down the middle, and instead return it
     for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
       const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
       const theOldEdgeIdOfMyFace = currentItem.edgeIdOfMyFace;
+
+      // updated for multifold:
+      // I should only do the basic fold IF THE CONNECTION THAT I AM DOING
+      // IS NOT SPLITTING UP THE EDGE OF THE ORIGINAL FACE
+      // note this doesn't pick up middle edges that split A_1 A_2
+      // where the edge is touching the outside, since that wouldn't be in our graph
+      // since we need another outside face to be in this loop bc it's an adj list
+      if(theOldEdgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace1 ||
+         theOldEdgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace2) {
+
+          // multifold update: you'll have to record
+          // both this id of our trouble face, the ids of A_1, A_2 that need to be hooked
+          // and the OG id of the outside connection (B)
+          problemEdgesToReturnTo.push({
+            idOfMyFace: ogFaceId,
+            edgeIdOfMyFace: currentItem.edgeIdOfMyFace,
+            idOfOtherFace: currentItem.idOfOtherFace,
+            edgeIdOfOtherFace: currentItem.edgeIdOfOtherFace
+         });;
+          continue;
+      }
+
+
 
       // find out where the old edge when to
       if (Array.from(ogPointIdsToLeftPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
@@ -175,6 +221,9 @@ export function updateAdjListForSplitGraph(
     // delete the old face adj list
     adjList.delete(ogFaceId);
   }
+
+
+  return problemEdgesToReturnTo;
 }
 
 

@@ -669,4 +669,55 @@ export class Face2D {
 
     }
 
+
+    /**
+     * given a point on the 2d face, that is on the line of edgeID return boolean as to whether the point
+     * is inside the line segement
+     * @param p - point to test
+     * @param edgeId - edge to test that colinear with p
+     */
+    public isColinearPointInsideEdge(p: pt.Point2D, edgeId: bigint) : boolean {
+        const edgeIdNum: number = Number(edgeId);
+        const vecFromPToStartPoint : pt.Point2D = pt.createPoint2D(this.vertices[edgeIdNum].x - p.x,
+                                                                   this.vertices[edgeIdNum].y - p.y,
+        );
+
+        const vecFromPToEndPoint : pt.Point2D = pt.createPoint2D(this.vertices[edgeIdNum].x - p.x,
+            this.vertices[edgeIdNum].y - p.y,
+        );
+
+
+        // if p are inside the edge, then these vectors should point in oppisite directions
+
+        return pt.dotProduct(vecFromPToEndPoint, vecFromPToStartPoint) < 0;
+
+    }
+
+
+    public findClosestPointOnEdge(p: pt.Point2D, edgeId: bigint) {
+        let minId: bigint = edgeId;
+        let minDistance: number = pt.distance(p, this.vertices[Number(edgeId)]);
+
+        // go thru edge provided (end endpoint)
+        const currDistance = pt.distance(p, this.vertices[Number((edgeId + 1n) % this.N)]);
+        if (currDistance < minDistance) {
+            minDistance = currDistance;
+            minId = BigInt(Number((edgeId + 1n) % this.N));
+        }
+
+        // go thru all annopoints
+        for(let [pointId, pointObj] of this.annotatedPoints) {
+            if (pointObj.edgeID === edgeId) {
+                const currDistance = pt.distance(p, pointObj.point);
+                if (currDistance < minDistance) {
+                    minDistance = currDistance;
+                    minId = pointId;
+                }
+            }
+
+        }
+
+        return minId;
+    }
+
 }
