@@ -6,9 +6,9 @@
  * and frontend data (that is, serialization and deserialization).
  */
 
+import { config } from "../../config/config.js";
 import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
 import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./Serializer.js";
-
 
 
 /**
@@ -20,7 +20,7 @@ import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./S
  */
 export async function addMergeFoldToDB(leftFaceId: bigint, rightFaceId: bigint, mergedFace: Face2D): Promise<boolean> {
   // add points locally
-  const url = 'http://localhost:8080/geometry/fold';
+  const url = config.API_URL + 'geometry/fold';
   const data = serializeMergeFold(leftFaceId, rightFaceId, mergedFace);
 
   console.log(data);
@@ -60,7 +60,7 @@ export async function addMergeFoldToDB(leftFaceId: bigint, rightFaceId: bigint, 
  */
 export async function addSplitFacesToDB(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, stationaryNewFaceID: bigint): Promise<boolean> {
   // add points locally
-  const url = 'http://localhost:8080/geometry/fold';
+  const url = config.API_URL + 'geometry/fold';
   const data = serializeSplitFold(leftFace, rightFace, ogFaceId, stationaryNewFaceID);
 
   console.log(data);
@@ -101,7 +101,7 @@ export async function addUpdatedAnnoationToDB(
   faceId: bigint
 ) : Promise<boolean> {
   // add points locally
-  const url = 'http://localhost:8080/geometry/annotate';
+  const url = config.API_URL + 'geometry/annotate';
   const data = serializeResultChange(statusUpdate, faceId);
 
   console.log(data);

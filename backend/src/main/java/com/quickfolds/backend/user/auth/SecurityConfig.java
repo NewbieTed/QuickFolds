@@ -56,7 +56,7 @@ public class SecurityConfig {
 
                 // Define authorization rules for endpoints.
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/user/signup", "user/login", "/origami/**", "/geometry/**")
+                        .requestMatchers("/api/user/signup", "/api/user/login", "/api/origami/**", "/api/geometry/**")
                         .permitAll()  // Allow public access to these endpoints
                         .anyRequest().authenticated() // Require authentication for all other requests
                 )

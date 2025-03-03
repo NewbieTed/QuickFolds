@@ -1,3 +1,5 @@
+import { config } from "../config/config.js";
+
 // login.ts
 document.querySelector('form')?.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -34,7 +36,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 const doLogin = async (username: string, password: string) => {
-    const url = 'http://localhost:8080/user/login';
+    const url = config.API_URL + 'user/login';
     const data = { username, password };
 
     try {
@@ -75,7 +77,7 @@ const doLogin = async (username: string, password: string) => {
             document.body.appendChild(anchor);
             anchor.click();
         };
-        redirectTo('http://localhost:5173/frontend/community/communityboard.html'); // Redirect using anchor click workaround
+        redirectTo(config.FRONTEND_URL + 'community/communityboard.html'); // Redirect using anchor click workaround
     } catch (error) {
         console.error('Login error:', error);
         alert('An error occurred during login');

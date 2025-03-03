@@ -7,6 +7,8 @@
  * 500: Internal server error
  */
 
+import { config } from "../config/config.js";
+
 document.querySelector('form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -17,7 +19,7 @@ document.querySelector('form')?.addEventListener('submit', async (event) => {
     const password = passwordInput.value;
 
     try {
-        const response = await fetch('http://localhost:8080/user/signup', {
+        const response = await fetch(config.API_URL + 'user/signup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -46,7 +48,7 @@ document.querySelector('form')?.addEventListener('submit', async (event) => {
             document.body.appendChild(anchor);
             anchor.click();
         };
-        redirectTo('http://localhost:5173/frontend/user/login.html');
+        redirectTo(config.FRONTEND_URL + 'user/login.html');
     } catch (error) {
         console.error(error);
     }

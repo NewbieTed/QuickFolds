@@ -3,7 +3,7 @@
  *  + create new origami
  *  + look at public origami
  */
-const USER_ID = 1;
+import { config } from "../config/config.js";
 
 // Global variable to store the list of origami profiles
 let origamiProfiles: OrigamiProfile[] = [];
@@ -41,7 +41,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
       throw new Error("No popup input found");
     }
     const newOrigamiName = popupInput.value;
-    const url = 'http://localhost:8080/origami/new';
+    const url = config.API_URL + 'origami/new';
 
     const token = localStorage.getItem('userToken');
     const userId = localStorage.getItem('userId');
@@ -60,7 +60,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
     if (!response.ok) {
       if (response.status === 403) {
         alert("Your login session has expired. Please log in again.");
-        redirectTo("http://localhost:5173/frontend/user/login");
+        redirectTo(config.FRONTEND_URL + "user/login.html");
       } else {
         console.error("Failed to fetch data");
       }
@@ -75,7 +75,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
     clearUserInputForName();
 
     // Navigate to editor
-    redirectTo("http://localhost:5173/frontend/paper/view/origami_editor/editor.html");
+    redirectTo(config.FRONTEND_URL + "paper/view/origami_editor/editor.html");
   } catch (err) {
     console.error("Error fetching data:", err);
   }
@@ -86,7 +86,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
  */
 const getAllPublicOrigami = async () => {
   try {
-    const url = 'http://localhost:8080/origami/list';
+    const url = config.API_URL + 'origami/list';
     const token = localStorage.getItem('userToken');
 
     const response = await fetch(url, {
@@ -100,7 +100,7 @@ const getAllPublicOrigami = async () => {
     if (!response.ok) {
       if (response.status === 403) {
         alert("Your login session has expired. Please log in again.");
-        redirectTo("http://localhost:5173/frontend/user/login");
+        redirectTo(config.FRONTEND_URL + "user/login.html");
       } else {
         console.error("Failed to fetch data");
       }
@@ -240,3 +240,10 @@ if (searchInput) {
 
 // Load public origami when the page is ready
 getAllPublicOrigami();
+
+
+document.getElementById("new-ori")?.addEventListener("click", openPopup);
+document.getElementById("confirm-new-ori")?.addEventListener("click", fetchCreatingOrigamiAndGoToEditor);
+document.getElementById("cancel-new-ori")?.addEventListener("click", closePopup);
+
+

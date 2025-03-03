@@ -24,7 +24,8 @@ Thumbs.db
 /out/
 
 # Frontend
-frontend/public/**/*.map
+frontend/dist/
+
 
 # Backend
 /backend/target/
