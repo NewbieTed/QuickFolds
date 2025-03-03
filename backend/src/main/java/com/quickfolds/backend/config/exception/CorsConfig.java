@@ -46,7 +46,7 @@ public class CorsConfig {
              */
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
+                registry.addMapping("/api/**")
                         .allowedOrigins("http://localhost:5173",
                                         "https://www.quickfolds.org")  // Allow deployed frontend
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")

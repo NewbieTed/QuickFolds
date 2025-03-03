@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,  // Development server port
-      open: true,  // Opens browser automatically
+      open: "user/login.html",  // Opens browser automatically
     },
     define: {
       'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL),
