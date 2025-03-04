@@ -18,10 +18,19 @@ import { add2dFaceToPaperGraph, createNewGraph, delete2dFaceToPaperGraph, EdgesA
 // contains information about edge that are created that split down the middle
 // of a face, giving the info needed to update
 export type ProblemEdgeInfo = {
-  idOfMyFace: bigint;
-  edgeIdOfMyFace: bigint;
-  idOfOtherFace: bigint;
-  edgeIdOfOtherFace: bigint;
+  sideA: {
+    faceIdOfMyFaceA: bigint;
+    edgeIdOfMyFaceA: bigint;
+    faceIdOfMyFaceA1: bigint;
+    edgeIdOfMyFaceA1: bigint;
+    faceIdOfMyFaceA2: bigint;
+    edgeIdOfMyFaceA2: bigint;
+  }
+  sideB: {
+    faceIdOfMyFaceB: bigint;
+    edgeIdOfMyFaceB: bigint;
+  }
+
 };
 
 
@@ -75,7 +84,7 @@ export function mergeFaces(faceId1: bigint, faceId2: bigint):
   // create the annotation content for the face 2d
   // now we add the annotation points for the left face
   const listOfAnnoPointsForOgFace1: Map<bigint, AnnotatedPoint2D> = face1Obj2d.getAnnotatedPointMap();
-  // todo merge same points
+
   for (const [annoPointId, annoPointObj] of listOfAnnoPointsForOgFace1) {
     let updateEdgeId: bigint | undefined = leftFacePointIdsToNewIds.get(annoPointObj.edgeID);
     if (updateEdgeId === undefined) {
@@ -716,6 +725,8 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   // are on which face
 
   // one past the fold edge
+  // todo: update this so the created vector is perpindicular to the cut line,
+  //       with this vector on the left side of the plane (since in 2d)
   const createDirectionVectorPointEnd: Point2D = face2D.getPoint((secondEdgeId + 1n) % face2D.N);
   let createDirectionVectorPointStart: Point2D = createPoint2D(0, 0); // temp value
   if (maxEdgePointId < face2D.N) {

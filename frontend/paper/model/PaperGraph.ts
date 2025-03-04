@@ -5,6 +5,7 @@
 
 import { Face2D } from "../geometry/Face2D.js";
 import { createPoint2D } from "../geometry/Point.js";
+import { ProblemEdgeInfo } from "./PaperManager.js";
 
 /**
  * stores the values of the adjacency list when doing folds
@@ -30,13 +31,30 @@ export function getAdjList() {
 }
 
 /**
+ * Adds an item to the ADJ list, IS NOT DONE IN REVERSE
+ * @param faceId - the id of the face for the key value
+ * @param otherFaceConnectionDetails - the item to add to the list
+ */
+export function addValueToAdjList(faceId: bigint, otherFaceConnectionDetails: EdgesAdjList) {
+  if (adjList.get(faceId) === undefined) {
+    console.log("couldn't find connections for faceId, making one. this is possible iff the face is being split for the first time and there are no other connections");
+    adjList.set(faceId, []);
+  }
+
+  const value = adjList.get(faceId);
+  value.push(otherFaceConnectionDetails);
+}
+
+/**
  * Udpate the adjcency list when splitting a face
  * @param ogFaceId - the original face to split
  * @param param1 - a list of the updated left face information, [id, the edge that is being folded, map of points from ogFace to LeftFace]
  * @param param2 - a list of the updated right face information, [id, the edge that is being folded, map of points from ogFace to rightFace]
  * @param angle - the angle between the two faces
+ * @param idOfEdgeThatPointSplitsAtInOgFace1 - the edge in my original face that the edge splits, returns pointid if not on edge
+ * @param idOfEdgeThatPointSplitsAtInOgFace1 - the other edge in my original face that the edge splits, returns pointid if not on edge
  */
-export function updateAdjListForSplitGraph(
+export function updateAdjListForSplitGraph( // bak; if map of points includes vertex we're chillin
   ogFaceId: bigint,
   [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
   [rightFaceId, rightFaceEdgeIdThatFolds, ogPoingIdsToRightPointIds]: [bigint, bigint, Map<bigint, bigint>],
@@ -49,12 +67,7 @@ export function updateAdjListForSplitGraph(
   // multifold update: you'll have to record
                     // both this id of our trouble face, the ids of A_1, A_2 that need to be hooked
                     // and the OG id of the outside connection (B)
-  const problemEdgesToReturnTo: {
-    idOfMyFace: bigint;
-    edgeIdOfMyFace: bigint;
-    idOfOtherFace: bigint;
-    edgeIdOfOtherFace: bigint;
-  }[] = [];
+  const problemEdgesToReturnTo: ProblemEdgeInfo[] = [];
 
 
 
@@ -145,15 +158,30 @@ export function updateAdjListForSplitGraph(
       if(theOldEdgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace1 ||
          theOldEdgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace2) {
 
+          // safety check that there is a mapping between A-> A1 and A -> A2
+          if (ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace) === undefined ||
+              ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace) === undefined) {
+                throw new Error("NO MAPPING FROM A->A_1/A_2 Edges");
+          }
+
           // multifold update: you'll have to record
           // both this id of our trouble face, the ids of A_1, A_2 that need to be hooked
           // and the OG id of the outside connection (B)
           problemEdgesToReturnTo.push({
-            idOfMyFace: ogFaceId,
-            edgeIdOfMyFace: currentItem.edgeIdOfMyFace,
-            idOfOtherFace: currentItem.idOfOtherFace,
-            edgeIdOfOtherFace: currentItem.edgeIdOfOtherFace
-         });;
+            sideA: {
+              faceIdOfMyFaceA: ogFaceId,
+              edgeIdOfMyFaceA: theOldEdgeIdOfMyFace,
+              faceIdOfMyFaceA1: leftFaceId,
+              edgeIdOfMyFaceA1: ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace), // idea here is to get the edge of A1, since vertex and edges correspond
+              faceIdOfMyFaceA2: rightFaceId,
+              edgeIdOfMyFaceA2: ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace)
+            },
+            sideB: {
+              faceIdOfMyFaceB: currentItem.idOfOtherFace,
+              edgeIdOfMyFaceB: currentItem.edgeIdOfOtherFace
+            }
+
+          });;
           continue;
       }
 

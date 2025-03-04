@@ -10,7 +10,7 @@ import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance } from "../geometry/Point.js";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
-import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
+import {addValueToAdjList, getAdjList, getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo } from '../model/PaperManager.js';
@@ -284,8 +284,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p1: Point3D = startFaceObj.getPoint(point1Id);
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
-  let faceIdToUpdate: bigint[] = null; // basically, get the connect component from the LUG
-  const allProblemEdges: ProblemEdgeInfo[] = [];
+  let faceIdToUpdate: bigint[] = null; // basically, get the connect component from the LUG from faceid
+  const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
 
   // stuff hady needs
   const listOfStationaryFacesInLug: bigint[] = [];
@@ -346,51 +346,161 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // we don't do it twice
   const listOfAllEdgesFixed: Set<String> = new Set<String>();
   for(const item of allProblemEdges) {
+    // POV is to be from A looking to B
     // do brute force mapping
     // from A_1/A_2 edge connect B_1/B_2 edge
 
     // check to make sure we don't do repeat
-    const hashCheck: string = item.idOfOtherFace + "-" + item.idOfMyFace;
+    const hashCheck: string = item.sideB.faceIdOfMyFaceB + "-" + item.sideA.faceIdOfMyFaceA;
     if(Array.from(listOfAllEdgesFixed).includes(hashCheck)) {
       // already have fixed this edge, don't do again
       continue;
     }
-    item.edgeIdOfMyFace // A edge
-    item.edgeIdOfOtherFace // B edge
+    item.sideA.edgeIdOfMyFaceA // A edge
+    item.sideB.edgeIdOfMyFaceB // B edge
 
-    const a1FaceId = mapFromOgIdsToSplitFaces.get(item.idOfMyFace).face1Id;
+    const aFaceId = item.sideA.faceIdOfMyFaceA;
+
+    const a1FaceId = item.sideA.faceIdOfMyFaceA1;
+    const a1EdgeId = item.sideA.edgeIdOfMyFaceA1;
     const a1FaceObj = getFace2dFromId(a1FaceId);
 
-    const a2FaceId = mapFromOgIdsToSplitFaces.get(item.idOfMyFace).face2Id;
+    const a2FaceId = item.sideA.faceIdOfMyFaceA2;
+    const a2EdgeId = item.sideA.edgeIdOfMyFaceA2;
     const a2FaceObj = getFace2dFromId(a2FaceId);
 
-    const b1FaceId = mapFromOgIdsToSplitFaces.get(item.idOfOtherFace).face1Id;
+    const bFaceId = item.sideB.faceIdOfMyFaceB;
+
+    // to get the B1/B2 Faces, we need to find the B->A value which should still be in our list
+    const getBrecord: ProblemEdgeInfo = getProblemEdgeRecord(bFaceId + "-" + aFaceId, allProblemEdges); // goal of this method is to get the oppsite record
+                                                                                                        // from looking at B face and seeing problem edge connecting to A
+    // feels weird doing this from sideA for B values, but the list is classified as
+    // 'A' as the POV in the JSON object
+
+    const b1FaceId = getBrecord.sideA.faceIdOfMyFaceA1;
+    const b1EdgeId = getBrecord.sideA.edgeIdOfMyFaceA1;
     const b1FaceObj = getFace2dFromId(b1FaceId);
 
-    const b2FaceId = mapFromOgIdsToSplitFaces.get(item.idOfOtherFace).face2Id;
+    const b2FaceId = getBrecord.sideA.faceIdOfMyFaceA1;
+    const b2EdgeId = getBrecord.sideA.edgeIdOfMyFaceA2;
     const b2FaceObj = getFace2dFromId(b2FaceId);
 
     if (a1FaceObj === undefined || a2FaceObj === undefined || b1FaceObj === undefined || b2FaceObj === undefined) {
       throw new Error("Split faces don't exist");
     }
 
-    // to get "edge", just get edgeId vertex and edgeID + 1 vertex
-
+    // manually check if the points line up
     if(areEdgesTheSame(a1FaceObj, a1EdgeId, b2FaceObj, b2EdgeId)) {
       // a1-b2 link up
       // a2-b1 link up
+
+      // safety check to catch early error
+      if(!areEdgesTheSame(a2FaceObj, a2EdgeId, b1FaceObj, b1EdgeId)) {
+        throw new Error("other edges don't overlap");
+      }
+      // a1-b2 link up
+      addValueToAdjList(
+        a1FaceId,
+        {
+          idOfOtherFace: b2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a1EdgeId,
+          edgeIdOfOtherFace: b2EdgeId
+        }
+      );
+      addValueToAdjList(
+        b2FaceId,
+        {
+          idOfOtherFace: a1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b2EdgeId,
+          edgeIdOfOtherFace: a1EdgeId
+        }
+      );
+
+      // a2-b1 link up
+      addValueToAdjList(
+        a2FaceId,
+        {
+          idOfOtherFace: b1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a2EdgeId,
+          edgeIdOfOtherFace: b1EdgeId
+        }
+      );
+      addValueToAdjList(
+        b1FaceId,
+        {
+          idOfOtherFace: a2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b1EdgeId,
+          edgeIdOfOtherFace: a2EdgeId
+        }
+      );
+
     } else {
+      // a1 - b1  / a2 - b2 link up
+      // safety check to catch early error
+      if(!areEdgesTheSame(a1FaceObj, a1EdgeId, b1FaceObj, b1EdgeId)) {
+        throw new Error("other edges don't overlap");
+      }
+      if(!areEdgesTheSame(a2FaceObj, a2EdgeId, b2FaceObj, b2EdgeId)) {
+        throw new Error("other edges don't overlap");
+      }
+
       // a1-b1 link up
+      addValueToAdjList(
+        a1FaceId,
+        {
+          idOfOtherFace: b1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a1EdgeId,
+          edgeIdOfOtherFace: b1EdgeId
+        }
+      );
+      addValueToAdjList(
+        b1FaceId,
+        {
+          idOfOtherFace: a1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b1EdgeId,
+          edgeIdOfOtherFace: a1EdgeId
+        }
+      );
+
+
       // a2-b2 link up
+      addValueToAdjList(
+        a2FaceId,
+        {
+          idOfOtherFace: b2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a2EdgeId,
+          edgeIdOfOtherFace: b2EdgeId
+        }
+      );
+      addValueToAdjList(
+        b2FaceId,
+        {
+          idOfOtherFace: a1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b2EdgeId,
+          edgeIdOfOtherFace: a1EdgeId
+        }
+      );
     }
 
 
     // mark this completed in set
-    listOfAllEdgesFixed.add(item.idOfMyFace + "-" + item.idOfOtherFace);
+    listOfAllEdgesFixed.add(aFaceId + "-" + bFaceId);
   }
   // update disjointset: keep in mind i just need to know what goes together
   // i can use the lug to find out what things should be stationary by looking
   // thru the "set"
+  // to do the update disjoint sets,
+  // 1) add a new set that comes from all the split lines
+  // 2) update the trouble edges by removing OG connection A-B and replacing it
+  //    with new connections A1-B1/B2 and vice versa
   UpdateDisjointSetOfEdges();
 
 
@@ -420,9 +530,27 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
 }
 
+// goal of this method is to get the oppsite record
+/**
+ *
+ * @param pairingToLookFor - hash combo to look for in format "FaceId1-FaceId2"
+ * @param allProblemEdges - the list to look for in this list
+ */
+function getProblemEdgeRecord(pairingToLookFor: string, allProblemEdges: ProblemEdgeInfo[]) {
+  for(const item of Array.from(allProblemEdges)) {
+    const thisHash = item.sideA.faceIdOfMyFaceA + "-" + item.sideB.faceIdOfMyFaceB
+    if (pairingToLookFor === thisHash) {
+      return item;
+    }
+  }
+
+  throw new Error("could find pairing:" + pairingToLookFor);
+}
+
 const CLOSE_ENOUGH_SO_POINTS_ARE_SAME = 0.02
 
 function areEdgesTheSame(faceObj1: Face2D, edgeIdForFace1: bigint, faceObj2: Face2D, edgeIdForFace2: bigint) {
+  // to get "edge", just get edgeId vertex and edgeID + 1 vertex
   const edge1Point1: Point2D = faceObj1.getPoint(edgeIdForFace1);
   const edge1Point2: Point2D = faceObj1.getPoint((edgeIdForFace1 + 1n) % faceObj1.N);
 
