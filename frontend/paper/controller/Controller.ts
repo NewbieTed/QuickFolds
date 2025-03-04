@@ -8,12 +8,13 @@
 import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance } from "../geometry/Point.js";
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance, dotProduct } from "../geometry/Point.js";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
 import {addValueToAdjList, getAdjList, getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo } from '../model/PaperManager.js';
+import { start } from 'repl';
 
 
 const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
@@ -126,10 +127,10 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
     return msg;
   }
 
+                                                                  //vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine
+  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint,ProblemEdgeInfo[], Point2D, Point2D] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
 
-  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint,ProblemEdgeInfo[]] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
-
-
+  // do a quick double check later that it's ok to delete adjlist/mapping of old faces, assuming it splits
 
   if (resultOfUpdatingPaperGraph === false) {
     throw new Error("Error saving paper graph");
@@ -152,14 +153,18 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
     // left face is stationary
     return {stationaryFaceId:resultOfUpdatingPaperGraph[0].ID,
             rotationFaceId:resultOfUpdatingPaperGraph[1].ID,
-            problemEdgesForFace:resultOfUpdatingPaperGraph[3]
+            problemEdgesForFace:resultOfUpdatingPaperGraph[3],
+            perpindicularVectorPointTowardsLeftSpaceDirection: resultOfUpdatingPaperGraph[4],
+            perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5]
     };
   }
 
   // right face is stationary
   return {stationaryFaceId:resultOfUpdatingPaperGraph[1].ID,
           rotationFaceId:resultOfUpdatingPaperGraph[0].ID,
-          problemEdgesForFace:resultOfUpdatingPaperGraph[3]
+          problemEdgesForFace:resultOfUpdatingPaperGraph[3],
+          perpindicularVectorPointTowardsLeftSpaceDirection: resultOfUpdatingPaperGraph[4],
+          perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5]
         };
 }
 
@@ -286,6 +291,21 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
   let faceIdToUpdate: bigint[] = null; // basically, get the connect component from the LUG from faceid
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
+  const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn
+
+  // current tasks:
+  // create the DS datastructure
+  // implement update method
+  // implmeent add new edge method
+  // do DB management of making only one call
+  // recheck adj/ds list reasoning, not trying to get something that doesn't exist anymore
+  // make test request?
+
+  // will be set during the first iteration of the for loop
+  // needed for any planes that don't intersect the cut
+  let perpindicularVectorPointTowardsLeftSpaceDirection = null;
+  let perpindicularVectorPointTowardsLeftSpaceOrigin = null;
+  let isLeftSideRotating = false;
 
   // stuff hady needs
   const listOfStationaryFacesInLug: bigint[] = [];
@@ -310,9 +330,27 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
     const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
     if (points == null) {
-      // line doesn't intersect plane, so just skip the splitting
-            // todo: udpate stationary faces in lug here, since the entire face
-            // is either static or rotating
+      // line doesn't intersect plane, so just skip the splitting todo: don't delete og face until after this for loop since i need it here
+      // is either static or rotating
+      const planePointOnStartFace = startFaceObj.projectToFace(face3d.getAveragePoint());
+      const planePoint2dVersion = translate3dTo2d(planePointOnStartFace, startFaceObj.ID);
+
+      const directionToPlanePoint = createPoint2D(
+        planePoint2dVersion.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
+        planePoint2dVersion.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
+      );
+
+      // i can check if im on left side if they point in the same direction
+      const amIonLeftSide = dotProduct(directionToPlanePoint, perpindicularVectorPointTowardsLeftSpaceDirection) > 0;
+
+      let amIRotating = (isLeftSideRotating && amIonLeftSide) ||
+                        (!isLeftSideRotating && !amIonLeftSide);
+
+      // im not rotating, so add it to list for hady
+      if (!amIRotating) {
+        listOfStationaryFacesInLug.push(currFaceId);
+      }
+
       continue;
     }
 
@@ -320,11 +358,27 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     // we need to split faces
     // note this also updates the adjlist of edges
     const projectedVertexStationaryOnNewFace = face3d.projectToFace(vertexOfFaceStationary);
+    const targetPointOn2dSpace = translate3dTo2d(projectedVertexStationaryOnNewFace, face3d.ID);
     const resultFromSplitting = await createANewFoldBySplitting(idOnCurrFaceToSplit1, idOnCurrFaceToSplit2, currFaceId, projectedVertexStationaryOnNewFace, angle); // todo: update backend so that we don't add a step here
 
     if (typeof(resultFromSplitting) === 'string') {
       console.error("error creating split of a face");
       return;
+    }
+
+    // setup up left direction vector for all future iterations (only runs first time)
+    if (perpindicularVectorPointTowardsLeftSpaceOrigin == null) {
+      perpindicularVectorPointTowardsLeftSpaceDirection = resultFromSplitting.perpindicularVectorPointTowardsLeftSpaceDirection;
+      perpindicularVectorPointTowardsLeftSpaceOrigin = resultFromSplitting.perpindicularVectorPointTowardsLeftSpaceOrigin;
+
+      const vectorDirectionOfUserPoint = createPoint2D(
+        targetPointOn2dSpace.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
+        targetPointOn2dSpace.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
+      );
+      // basically, is the point on left space?
+      // if so, it's stationary, so left rotates only
+      // if point is on otherside
+      isLeftSideRotating = dotProduct(vectorDirectionOfUserPoint, perpindicularVectorPointTowardsLeftSpaceDirection) < 0;
     }
 
 
@@ -337,6 +391,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     // add all the edges that the adjlist should update: Multifold update
     // note that there will be duplicate one for B,A and one for A,B
     allProblemEdges.push(...resultFromSplitting.problemEdgesForFace);
+
+
+    // add new line to DS. this is my a1-a2 connection
+    newSetOfEdgesForDS.add({face1Id:resultFromSplitting.stationaryFaceId , face2Id:resultFromSplitting.rotationFaceId})
   }
 
 
@@ -398,6 +456,17 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       if(!areEdgesTheSame(a2FaceObj, a2EdgeId, b1FaceObj, b1EdgeId)) {
         throw new Error("other edges don't overlap");
       }
+
+      // update these connections in the DS
+      ReplaceExistingConnectionWithNewConnections(
+        oldconnection = {aFaceId, bFaceId}
+        newconnections = [
+          {a1FaceId, b2FaceId},
+          {a2FaceId, b1FaceId}
+        ]
+      );
+
+
       // a1-b2 link up
       addValueToAdjList(
         a1FaceId,
@@ -447,6 +516,16 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       if(!areEdgesTheSame(a2FaceObj, a2EdgeId, b2FaceObj, b2EdgeId)) {
         throw new Error("other edges don't overlap");
       }
+
+
+      ReplaceExistingConnectionWithNewConnections(
+        oldconnection = {aFaceId, bFaceId}
+        newconnections = [
+          {a1FaceId, b1FaceId},
+          {a2FaceId, b2FaceId}
+        ]
+      );
+
 
       // a1-b1 link up
       addValueToAdjList(
@@ -502,7 +581,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // 2) update the trouble edges by removing OG connection A-B and replacing it
   //    with new connections A1-B1/B2 and vice versa
   UpdateDisjointSetOfEdges();
-
+  // add new edge: newSetOfEdgesForDS
+  // update all existing edges that have split. come from problem children
 
   // HADY update lug
   ;
@@ -744,7 +824,7 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
 export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) : Promise<string | true>   {
   // add annotation point to face3d [ie in SceneManager]
   if (point1Id == point2Id) {
-    return "Cannot click the same point"; // todo: update will fail
+    return "Cannot click the same point"; // todo: update will fail for user
   }
 
   // get faces

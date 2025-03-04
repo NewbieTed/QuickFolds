@@ -370,7 +370,7 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
  * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary]
  */
 export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D)
-  : [Face2D,Face2D,bigint, ProblemEdgeInfo[]] | false {
+  : [Face2D,Face2D,bigint, ProblemEdgeInfo[], Point2D, Point2D] | false {
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     console.log(`Cannot find face 2D ${faceId}`);
@@ -596,7 +596,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
 
   // return the created faces back to the controller so that we can send these to backend
-  return [leftFace, rightFace, whichFaceIsStationary, problemIssuesEdges];
+  return [leftFace, rightFace, whichFaceIsStationary, problemIssuesEdges, vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine];
 }
 
 
@@ -725,8 +725,26 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   // are on which face
 
   // one past the fold edge
-  // todo: update this so the created vector is perpindicular to the cut line,
-  //       with this vector on the left side of the plane (since in 2d)
+
+  // create a vector direction that point in same direction as cut line
+  const vectorOfLineSplit: Point2D = createPoint2D(
+    face2D.getPoint(maxEdgePointId).x - face2D.getPoint(minEdgePointId).x,
+    face2D.getPoint(maxEdgePointId).y - face2D.getPoint(minEdgePointId).y
+  );
+
+  // create vector that's perpindicular to face split
+  // note this automatically points to left facing direction
+  // becuase this creates perpendicular vector that rotates clockwise
+  // and left face is the face that contains the arrow pointing to the origin
+  // (or more formally, the face that comes from following the original plane
+  // in a clockwise direction, starting from vertex zero, following the split
+  // edge, and looking at the direction of the vector that comes after going to the
+  // next point in a clockwise direction)
+  const perpindicularVectorOfLineSplit: Point2D = createPoint2D(
+    vectorOfLineSplit.y,
+    -vectorOfLineSplit.x
+  );
+
   const createDirectionVectorPointEnd: Point2D = face2D.getPoint((secondEdgeId + 1n) % face2D.N);
   let createDirectionVectorPointStart: Point2D = createPoint2D(0, 0); // temp value
   if (maxEdgePointId < face2D.N) {
@@ -737,11 +755,11 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     createDirectionVectorPointStart = face2D.getAnnotatedPoint(maxEdgePointId).point;
   }
 
-  // create the vertex that will check for direction, it is centered at origin
-  const vectorTowardsLeftFaceBasedOnOgPointIds: Point2D = createPoint2D(
-    createDirectionVectorPointEnd.x - createDirectionVectorPointStart.x,
-    createDirectionVectorPointEnd.y - createDirectionVectorPointStart.y,
-  );
+  // create the vertex that will check for direction, it is centered at origin: outdated version
+  // const vectorTowardsLeftFaceBasedOnOgPointIds: Point2D = createPoint2D(
+  //   createDirectionVectorPointEnd.x - createDirectionVectorPointStart.x,
+  //   createDirectionVectorPointEnd.y - createDirectionVectorPointStart.y,
+  // );
 
 
 
@@ -796,7 +814,7 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
 
   return [[leftFace,  leftFace3d,  mapOfOgPointIdsToNewPointIdsForLeftFace,  theEdgeInTheLeftFaceThatComesFromFolding],
           [rightFace, rightFace3d, mapOfOgPointIdsToNewPointIdsForRightFace, theEdgeInTheRightFaceThatComesFromFolding],
-          vectorTowardsLeftFaceBasedOnOgPointIds, createDirectionVectorPointStart];
+          perpindicularVectorOfLineSplit, createDirectionVectorPointStart];
 }
 
 
