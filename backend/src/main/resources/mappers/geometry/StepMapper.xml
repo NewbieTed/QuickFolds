@@ -142,6 +142,28 @@
     </insert>
 
     <!--
+        Retrieves the database ID of a step using its identifier within a specific origami model.
+
+        Purpose:
+        - Ensures that the queried step belongs to the specified origami model.
+        - Uses `LIMIT 1` to return only a single result, preventing multiple matches.
+
+        Parameters:
+        - `origamiId`: The ID of the origami model containing the step.
+        - `idInOrigami`: The identifier of the step within the origami context.
+
+        Result:
+        - Returns the ID of the matching step, or null if not found.
+    -->
+    <select id="getIdByIdInOrigami" resultType="java.lang.Long">
+        SELECT id
+        FROM step
+        WHERE origami_id = #{origamiId}
+          AND id_in_origami = #{idInOrigami}
+            LIMIT 1
+    </select>
+
+    <!--
         Retrieves the step type of a step using its identifier within the database.
 
         Parameters:
