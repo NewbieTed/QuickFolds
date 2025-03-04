@@ -15,6 +15,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -211,5 +212,61 @@ public class GeometryControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Tests that a valid request to fetch a step is processed successfully.
+     * <p>
+     * This test mocks the {@link GeometryService#getStep()} method to return a successful response.
+     * It sends a valid {@code GET} request to {@code /geometry/getStep/} and expects an HTTP 200 OK response.
+     *
+     * @throws Exception if the request cannot be processed.
+     */
+    @Test
+    public void handlesValidGetStepRequest() throws Exception {
 
+        // Mocking service response
+        Mockito.when(geometryService.getStep(1234L, 2, 3, true))
+                .thenReturn(BaseResponse.success(null));
+
+        // Performing GET request and asserting response status
+        mockMvc.perform(get("/geometry/getStep/1234/2/3/true"))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("success"));
+    }
+
+    /**
+     * Tests that a request where the startStep endStep direction and isForward don't match
+     * is rejected with an HTTP 400 Bad Request.
+     * <p>
+     * This test makes a get request with stepIds going forward and {@code isForward} going backward,
+     * sends it to the endpoint, and expects a 400 status code as a response.
+     *
+     * @throws Exception if the request cannot be processed.
+     */
+    @Test
+    public void handlesInvalidGetStepRequest_DirectionMismatch() throws Exception {
+
+        // Performing GET request and asserting response status
+        mockMvc.perform(get("/geometry/getStep/1234/2/3/false"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Tests that a request where the startStep and endStep values differ by a number greater than 1
+     * is rejected with an HTTP 400 Bad Request.
+     * <p>
+     * This test makes a get request with values of startStep and endStep differing by 2,
+     * sends it to the endpoint, and expects a 400 status code as a response.
+     *
+     * @throws Exception if the request cannot be processed.
+     */
+    @Test
+    public void handlesInvalidGetStepRequest_MoreThanOneStep() throws Exception {
+
+        // Performing GET request and asserting response status
+        mockMvc.perform(get("/geometry/getStep/1234/3/1/false"))
+                .andExpect(status().isBadRequest());
+    }
 }
