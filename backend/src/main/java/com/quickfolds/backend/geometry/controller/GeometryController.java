@@ -1,10 +1,11 @@
 package com.quickfolds.backend.geometry.controller;
 
 import com.quickfolds.backend.dto.BaseResponse;
+import com.quickfolds.backend.geometry.model.dto.request.RotateRequest;
 import com.quickfolds.backend.geometry.model.dto.response.StepResponse;
-import com.quickfolds.backend.geometry.model.dto.AnnotationRequest;
-import com.quickfolds.backend.geometry.model.dto.FaceAnnotateRequest;
-import com.quickfolds.backend.geometry.model.dto.FoldRequest;
+import com.quickfolds.backend.geometry.model.dto.request.AnnotationRequest;
+import com.quickfolds.backend.geometry.model.dto.request.FaceAnnotateRequest;
+import com.quickfolds.backend.geometry.model.dto.request.FoldRequest;
 import com.quickfolds.backend.geometry.service.GeometryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +68,25 @@ public class GeometryController {
     }
 
     /**
+     * Handles the rotating operation for an origami structure.
+     * <p>
+     * This endpoint receives a {@link RotateRequest} containing the necessary fold instructions.
+     * It validates the request, ensures it is not null, and delegates the processing
+     * to the {@link GeometryService#rotate(RotateRequest)} (FoldRequest)} method.
+     *
+     * @param request The fold request containing the necessary transformations.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success or failure.
+     * @throws IllegalArgumentException If the request body is null.
+     */
+    @PostMapping("/rotate")
+    public ResponseEntity<BaseResponse<Boolean>> rotate(@Valid @RequestBody RotateRequest request) {
+        if (request == null) {
+            return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
+        }
+        return geometryService.rotate(request);
+    }
+
+    /**
      * Handles annotation requests for an origami structure.
      * <p>
      * This endpoint receives an {@link AnnotationRequest} containing face annotations.
@@ -76,7 +96,7 @@ public class GeometryController {
      *     <li>Non-null step ID</li>
      *     <li>Non-empty list of face annotations</li>
      * </ul>
-     * If the validation passes, the request is processed by {@link GeometryService#annotate(AnnotationRequest)}.
+     * If the validation passes, the request is processed by {@link GeometryService#annotate(AnnotationRequest, Long)} (AnnotationRequest, null)}.
      *
      * @param request The annotation request containing face modifications.
      * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success or failure.

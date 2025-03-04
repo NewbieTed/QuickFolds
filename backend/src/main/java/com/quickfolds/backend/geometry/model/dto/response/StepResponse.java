@@ -47,5 +47,5 @@ public class StepResponse {
      */
     private List<FaceAnnotateResponse> annotations;
 
-    //TODO: fold steps
+    // TODO: fold steps
 }

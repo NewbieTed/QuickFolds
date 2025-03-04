@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: local  # Default profile (change dynamically)
+    active: local # prod profile (change dynamically)
   config:
     import: "config/application-${spring.profiles.active}.yml"
   application:

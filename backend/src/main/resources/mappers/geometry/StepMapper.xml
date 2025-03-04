@@ -31,7 +31,7 @@
         Mapped Fields:
         - `id`: Primary key of the step.
         - `origami_id`: Foreign key referencing the origami model.
-        - `step_type_id`: Identifies the type of the step (e.g., fold, annotation).
+        - `step_type_id`: Identifies the type of the step (e.g., fold, annotateRequest).
         - `id_in_origami`: Step identifier within the origami context.
         - `created_by` / `updated_by`: User metadata for auditing.
         - `created_at` / `updated_at`: Timestamps for record creation and updates.
@@ -117,7 +117,7 @@
 
         Parameters:
         - `origamiId`: The ID of the origami model associated with the step.
-        - `stepTypeId`: The type of the step (e.g., fold, annotation).
+        - `stepTypeId`: The type of the step (e.g., fold, annotateRequest).
         - `idInOrigami`: The identifier of the step within the origami context.
         - Optional: `createdBy`, `updatedBy`
 
@@ -141,27 +141,6 @@
         );
     </insert>
 
-    <!--
-        Retrieves the database ID of a step using its identifier within a specific origami model.
-
-        Purpose:
-        - Ensures that the queried step belongs to the specified origami model.
-        - Uses `LIMIT 1` to return only a single result, preventing multiple matches.
-
-        Parameters:
-        - `origamiId`: The ID of the origami model containing the step.
-        - `idInOrigami`: The identifier of the step within the origami context.
-
-        Result:
-        - Returns the ID of the matching step, or null if not found.
-    -->
-    <select id="getIdByIdInOrigami" resultType="java.lang.Long">
-        SELECT id
-        FROM step
-        WHERE origami_id = #{origamiId}
-          AND id_in_origami = #{idInOrigami}
-            LIMIT 1
-    </select>
 
     <!--
         Retrieves the step type of a step using its identifier within the database.

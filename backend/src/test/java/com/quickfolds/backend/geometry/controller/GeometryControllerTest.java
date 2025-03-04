@@ -2,7 +2,7 @@ package com.quickfolds.backend.geometry.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quickfolds.backend.dto.BaseResponse;
-import com.quickfolds.backend.geometry.model.dto.*;
+import com.quickfolds.backend.geometry.model.dto.request.*;
 import com.quickfolds.backend.geometry.service.GeometryService;
 import com.quickfolds.backend.user.auth.JwtAuthenticationFilter;
 import lombok.Data;
@@ -99,8 +99,8 @@ public class GeometryControllerTest {
                                                             List<LineAnnotationRequest> lines,
                                                             List<Integer> deletedPoints,
                                                             List<Integer> deletedLines) {
-        Annotation annotation = new Annotation(points, lines, deletedPoints, deletedLines);
-        FaceAnnotateRequest face = new FaceAnnotateRequest(5, annotation);
+        AnnotateRequest annotateRequest = new AnnotateRequest(points, lines, deletedPoints, deletedLines);
+        FaceAnnotateRequest face = new FaceAnnotateRequest(5, annotateRequest);
         return new AnnotationRequest(origamiId, stepIdInOrigami, Collections.singletonList(face));
     }
 

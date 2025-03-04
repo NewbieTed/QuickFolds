@@ -1,4 +1,4 @@
-package com.quickfolds.backend.geometry.model.dto;
+package com.quickfolds.backend.geometry.model.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AnnotatePoint {
+public class AnnotatePointRequest {
 
     /**
      * The face the annotated point is on.

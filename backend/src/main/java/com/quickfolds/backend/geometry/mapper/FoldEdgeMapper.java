@@ -21,6 +21,8 @@ public interface FoldEdgeMapper {
 
     Long getIdByFaceIdPair(@Param("face1Id") Long face1Id, @Param("face2Id") Long face2Id);
 
+    FoldEdge getObjByFaceIdPair(@Param("face1Id") Long face1Id, @Param("face2Id") Long face2Id);
+
     /**
      * Inserts a new fold edge into the database.
      * <p>
@@ -35,6 +37,11 @@ public interface FoldEdgeMapper {
      */
     Long addByObj(@Param("foldEdge") FoldEdge foldEdge);
 
+    int deleteById(@Param("id") Long id,
+                   @Param("deletedStepId") long deletedStepId);
+
+    int deleteByFaceId(@Param("faceId") Long faceId,
+                       @Param("deletedStepId") long deletedStepId);
 
     int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
                         @Param("deletedStepId") long deletedStepId);
