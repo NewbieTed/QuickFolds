@@ -10,7 +10,7 @@ import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance, dotProduct } from "../geometry/Point.js";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
-import {AddNewEdgeToDisjointSet, addValueToAdjList, getAdjList, getFace2dFromId, print2dGraph, printAdjList, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
+import {AddNewEdgeToDisjointSet, addValueToAdjList, BFS, getAdjList, getAllFaceIds, getDisjointSetEdge, getFace2dFromId, print2dGraph, printAdjList, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo } from '../model/PaperManager.js';
@@ -54,6 +54,145 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
   incrementStepID();
   return true;
 }
+
+
+// find if there is a face that in my facesToConnectWith set that is connected to target face in adj  list
+function getFaceIdThatTouchesTargetFace(targetFaceId: bigint, facesToConnectWith: Set<bigint>) {
+  const listOfTargetConnections = getAdjList().get(targetFaceId);
+  const listOfTargetConnectionsIds: bigint[] = [];
+
+  for(const item of listOfTargetConnections) {
+    listOfTargetConnectionsIds.push(item.idOfOtherFace);
+  }
+
+
+  if (listOfTargetConnections === undefined) {
+    return undefined;
+  }
+
+  for(const potentialIdConnection of facesToConnectWith) {
+    if (listOfTargetConnectionsIds.includes(potentialIdConnection)) {
+      return potentialIdConnection;
+    }
+  }
+
+  return undefined;
+}
+
+
+function getOriginVectorPointingInDirectionOfTargetFromCutEdge(stationaryFaceId: bigint, edgeIdOfST: bigint, targetPoint: Point3D) {
+  const statFaceObj = getFace3DByID(stationaryFaceId);
+  if (statFaceObj === undefined) {
+    throw new Error("no face");
+  }
+  const targetPointProjectedOnStatFace = statFaceObj.projectToFace(targetPoint);
+  const projectedPtToCutEdge = statFaceObj.projectToEdge(targetPointProjectedOnStatFace, edgeIdOfST);
+
+
+  return createPoint3D(
+    targetPointProjectedOnStatFace.x - projectedPtToCutEdge.x,
+    targetPointProjectedOnStatFace.y - projectedPtToCutEdge.y,
+    targetPointProjectedOnStatFace.z - projectedPtToCutEdge.z
+  );
+}
+
+
+
+export function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+  if (faceId1 === faceId2) {
+    return "Faces are the same";
+  }
+
+  const getAllEdgesThatAreApartOfTheFace1Face2Connection = getDisjointSetEdge(faceId1, faceId2);
+
+
+  let startMovingFace: bigint = -1n;
+  let startStationaryFace: bigint = -1n;
+
+  if (stationaryFace === faceId1) {
+    startStationaryFace = faceId1;
+    startMovingFace = faceId2;
+  } else {
+    startStationaryFace = faceId2;
+    startMovingFace = faceId1;
+  }
+
+  // get moving faces for animation
+  const allMovingFaces: Set<bigint> = BFS([startMovingFace], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+  const allStatFaces: Set<bigint> = BFS([startStationaryFace], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+
+  // idea is if we have an isolated face
+  // we do bfs from isolated face, matching with oppisite of cross edge type
+  for (const faceId of getAllFaceIds()) {
+    // if we've found a isolated face, need to add it
+    if (!allMovingFaces.has(faceId) && !allStatFaces.has(faceId)) {
+      // find connection from either set that connects existing face to it
+      const faceIdFromSetTouchesFace = getFaceIdThatTouchesTargetFace(faceId, allMovingFaces);
+      if(faceIdFromSetTouchesFace !== undefined) {
+        // meaning other side was a moving face, so I am stationary
+        // and any other independed faces attached to me are as well
+        const allIdpFaces: Set<bigint> = BFS([faceId], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+        allIdpFaces.forEach(item => allStatFaces.add(item));
+      } else if (faceIdFromSetTouchesFace !== undefined) {
+        // meaning other side was a stat face, so I am moving
+        // and any other independed faces attached to me are as well
+        const allIdpFaces: Set<bigint> = BFS([faceId], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+        allMovingFaces.forEach(item => allStatFaces.add(item));
+      }
+    }
+  }
+
+
+  // safety check that makes sure all faces were caught
+  for(const faceId of getAllFaceIds()) {
+    if (!allMovingFaces.has(faceId) && !allStatFaces.has(faceId)) {
+      console.error("missed a face");
+    }
+  }
+
+
+  const pointOfStationarySide: Point3D = getFace3DByID(stationaryFace).getAveragePoint();
+
+  // get edge id of rotation for animation
+  let edgeIdOfRot: bigint = -1n;
+
+  const edgeIDsStart = updateRelativePositionBetweenFacesIndependentOfRelativeChange(
+    faceId1, faceId2, relativeChange
+  );
+
+  if (stationaryFace === faceId1) {
+    edgeIdOfRot = edgeIDsStart[0];
+  } else if (stationaryFace === faceId2) {
+    edgeIdOfRot = edgeIDsStart[1];
+  } else {
+    throw new Error("internal issue");
+  }
+
+
+  // update face value
+  for(const edge of getAllEdgesThatAreApartOfTheFace1Face2Connection) {
+    updateRelativePositionBetweenFacesIndependentOfRelativeChange(
+      edge.face1Id, edge.face2Id, relativeChange
+    );
+  }
+  // todo fix: deal with if first for loop iteration doesn't split
+
+  // then i need to check if new connection is 180,
+  // if so i need to merge and not update db and call merge method
+  // otherwise i need to just update db
+
+  animateFold(stationaryFace, edgeIdOfRot, Number(relativeChange), ...allMovingFaces);
+
+
+  // todo: get moving faces of all children split by
+  // taking the average point of the face and projecting it to first
+  // split and seeing what side it's one of edge
+
+
+}
+
+
+
 
 
 // creates a new split based on the edge, face, and what part should move
@@ -280,7 +419,19 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 }
 
 
+
+
 // multifold udpate; final boss split method
+/**
+ * takes 2 pointids, and a faceid for said points, and cuts thru everything in said face
+ * and any paper that is stacked on top of it, going thru the cut line
+ * @param point1Id
+ * @param point2Id
+ * @param faceId
+ * @param vertexOfFaceStationary
+ * @param angle - the new angle of the faces
+ * @returns
+ */
 export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
   const startFaceObj = getFace3DByID(faceId);
   if (startFaceObj === undefined) {
@@ -633,9 +784,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
   // update renderer with animation
   // all set - stationary
-
+  // todo: include all moving faces from BFS in this list
+  const allFacesThatMoveForAnyReason: bigint[] = Array.from(BFS(allMovingFaces, newSetOfEdgesForDS));
   animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
-    ...allMovingFaces
+    ...allFacesThatMoveForAnyReason
   );
 
   let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);

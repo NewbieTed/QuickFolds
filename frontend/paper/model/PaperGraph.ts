@@ -27,6 +27,74 @@ const adjList : Map<bigint, EdgesAdjList[]> = new Map<bigint, EdgesAdjList[]>();
 // will dynamically update
 const disjointSet: Set<{face1Id:bigint, face2Id:bigint}>[] = [];
 
+
+
+/**
+ * Traverse the ADJ list, returning a new list containing all faces that are reachable
+ * from all of the starting points, traversing via BFS, ignoring edges not to cross
+ * @param startingPoints
+ * @param edgesNotToCross
+ */
+export function BFS(startingPoints: bigint[], edgesNotToCross: Set<{face1Id: bigint;face2Id: bigint;}>): Set<bigint> {
+  // allFoundLocations
+  const retSet: Set<bigint> = new Set<bigint>();
+
+  for(let i = 0; i < startingPoints.length; i++) {
+    // do bfs on a start node
+    const currentRes: bigint[] = Array.from(singleBfs(startingPoints[i], edgesNotToCross));
+    currentRes.forEach(item => retSet.add(item));
+  }
+
+  return retSet;
+}
+
+
+function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;face2Id: bigint;}>): Set<bigint> {
+  const result: Set<bigint> = new Set();
+  const visited: Set<bigint> = new Set();
+  const queue: bigint[] = [];
+
+  queue.push(startVertex);
+  visited.add(startVertex);
+
+  while (queue.length > 0) {
+      const currentVertex = queue.shift()!;
+      result.add(currentVertex);
+
+      const neighbors = this.adjacencyList.get(currentVertex) || [];
+      for (const neighbor of neighbors) {
+          // standard bfs given its's a new neighbor and we don't use the edges not to cross
+          if (!visited.has(neighbor) &&
+          !edgesNotToCross.has({face1Id:currentVertex, face2Id:neighbor}) &&
+          !edgesNotToCross.has({face1Id:neighbor, face2Id:currentVertex})) {
+
+              visited.add(neighbor);
+              queue.push(neighbor);
+          }
+      }
+  }
+  return result;
+}
+
+/**
+ * returns the set of edges that are connected to the provided face1-face2 edge
+ * or an error if no connection found
+ * @param face1Id
+ * @param face2Id
+ */
+export function getDisjointSetEdge(face1Id: bigint, face2Id: bigint): Set<{face1Id:bigint, face2Id:bigint}> {
+  for(const set of disjointSet) {
+    if (set.has({face1Id: face1Id, face2Id: face2Id}) ||
+       set.has({face1Id: face2Id, face2Id: face1Id})) {
+      return set;
+    }
+  }
+
+  throw new Error("no set found for edge: " +  face1Id +"-" + face2Id);
+}
+
+
+
 /**
  * Takes an instance of the old connection anywhere in the disjoint set
  * and replaces it will all items in new connection
@@ -74,6 +142,9 @@ export function AddNewEdgeToDisjointSet(newSetOfEdgesForDS: Set<{
 export function getAdjList() {
   return adjList;
 }
+
+
+
 
 /**
  * Adds an item to the ADJ list, IS NOT DONE IN REVERSE
@@ -557,6 +628,14 @@ export function createNewGraph(startingPlaneId: bigint) {
   )); // big face
   adjList.set(startingPlaneId, []);
 
+}
+
+
+/**
+ * @returns MapIterator<bigint> of all avaiable faces id
+ */
+export function getAllFaceIds() {
+  return idsToFaces.keys();
 }
 
 /**
