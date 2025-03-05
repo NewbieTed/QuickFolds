@@ -6,10 +6,11 @@
  */
 
 import * as THREE from 'three';
+import * as SceneManager from "../view/SceneManager.js";
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point.js";
-import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
+import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB, getStepFromDB} from "./RequestHandler.js";
 import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
@@ -198,7 +199,6 @@ export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) 
 export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId: bigint = -1n) : Promise<string | true> {
   // add points to frontend
 
-
   // add annotation point to face3d [ie in SceneManager]
   let face3d: Face3D | undefined = getFace3DByID(faceId);
   if (face3d === undefined) {
@@ -226,6 +226,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
   let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
+  console.log("getTranslated2dPoint", getTranslated2dPoint);
   if (getTranslated2dPoint == null) {
     console.error("Error translating to 2d");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -244,9 +245,9 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     const msg = EditorStatus[myStatus].msg;
     return msg;
   }
-
   // create manual new update change, since we already know the 3d point
   let pointId: bigint = getaddPointFromResultMap(addPointResult);
+  console.log("pointId", pointId);
   face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, flattedPoint));
 
   let result: boolean = await addUpdatedAnnoationToDB(addPointResult, faceId);
@@ -476,8 +477,6 @@ function convertAnnotationsForDeletes(update2D: AnnotationUpdate2D, faceId : big
 
 	return update3D
 }
-
-
 
 /**
  * Creates a 3d udpate result for creating exactly 1 new point, and no other status changes
@@ -728,3 +727,135 @@ function solve2dSystemForScalars(
 //   }
 //   return false;
 // }
+
+/**
+ * Given a provided point (ie you can provided the layered shot, no need to
+ * project), and a face id, updates all frontend systems and backend systems
+ * with adding a new annotation point
+ * @param point - the point to be added [note: will be projected onto face]
+ * @param faceId - the face to add the point to
+ * @returns either true, or a message about while the action failed
+ */
+export async function displayAnnotations(startStep: bigint, endStep: bigint, isForward: boolean) : Promise<string | true> {
+  // get the response from the backend
+  const response = await getStepFromDB(startStep, endStep, isForward);
+  if (!response) {
+    const myStatus: EditorStatusType = "BACKEND_500_ERROR";
+    const msg = EditorStatus[myStatus].msg;
+    return msg;
+  }
+  return true;
+}
+
+/**
+ * Given a provided line, and a face id, updates all frontend systems and backend systems
+ * with adding a new annotation point
+ * @param point - the point to be added [note: will be projected onto face]
+ * @param faceId - the face to add the point to
+ * @returns either true, or a message about while the action failed
+ */
+export async function processAnnotationStep(result: any) : Promise<string | true> {
+  
+  for (let i = 0; i < result.annotations.length; i++) {
+    const newPointsMap2d = new Map<bigint, AnnotatedPoint2D>();
+    const newPointsMap3d = new Map<bigint, AnnotatedPoint3D>();
+    const pointsDeleted: bigint[] = [];
+    const linesAdded = new Map<bigint, AnnotatedLine>();
+    const linesDeleted: bigint[] = [];
+    //update for face i
+
+    console.log("result", result);
+    const faceId : bigint = BigInt(result.annotations[i].idInOrigami);
+    console.log("faceId", faceId);
+
+    // get the face2d object
+    const face2d: Face2D | undefined = getFace2dFromId(faceId);
+    if (face2d === undefined) {
+      console.error("face 2d id doesn't exists");
+      const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+      const msg = EditorStatus[myStatus].msg;
+      return msg;
+    }
+
+    // get the face3d object
+    const face3d: Face3D | undefined = getFace3DByID(faceId);
+    if (face3d === undefined) {
+      console.error("face 3d id doesn't exists", faceId );
+      const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+      const msg = EditorStatus[myStatus].msg;
+      return msg;
+    }
+
+    // points added
+    for (let j = 0; j < result.annotations[i].points.length; j++) {
+      const point2d = createPoint2D(result.annotations[i].points[j].x, result.annotations[i].points[j].y);
+      const point3d = translate2dTo3d(point2d, faceId);
+      if (point3d === null) {
+        console.error("Point creation isn't on plane");
+        const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+        const msg = EditorStatus[myStatus].msg;
+        return msg;
+      }
+      const flattedPoint: Point3D | null = projectPointToFace(point3d, face3d);
+      if (flattedPoint == null) {
+        console.error("Point creation isn't on plane");
+        const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
+        const msg = EditorStatus[myStatus].msg;
+        return msg;
+      }
+
+      const newAnnoPoint2d: AnnotatedPoint2D = {
+        point: point2d,
+        edgeID: result.annotations[i].points[j].onEdgeIdInFace,
+      };
+      newPointsMap2d.set(BigInt(result.annotations[i].points[j].idInFace), newAnnoPoint2d);
+
+      const newAnnoPoint3d: AnnotatedPoint3D = {
+        point: flattedPoint,
+        edgeID: result.annotations[i].points[j].onEdgeIdInFace,
+      };
+      newPointsMap3d.set(BigInt(result.annotations[i].points[j].idInFace), newAnnoPoint3d);
+
+
+    }
+
+    // lines added
+    for (let j = 0; j < result.annotations[i].lines.length; j++) {
+      const newAnnoLine: AnnotatedLine = {
+        startPointID: BigInt(result.annotations[i].lines[j].point1IdInFace),
+        endPointID: BigInt(result.annotations[i].lines[j].point2IdInFace),
+      };
+      linesAdded.set(BigInt(result.annotations[i].lines[j].idInFace), newAnnoLine);
+    }
+
+    // points deleted
+    for (let j = 0; j < result.annotations[i].deletedPoints.length; j++) {
+      pointsDeleted.push(BigInt(result.annotations[i].deletedPoints[j]));
+    }
+
+    // lines deleted
+    for (let j = 0; j < result.annotations[i].deletedLines.length; j++) {
+      linesDeleted.push(BigInt(result.annotations[i].deletedLines[j]));
+    }
+
+    const update2d: AnnotationUpdate2D = {
+      status: "NORMAL",
+      pointsAdded: newPointsMap2d,
+      pointsDeleted: pointsDeleted,
+      linesAdded: linesAdded,
+      linesDeleted: linesDeleted
+    }
+
+    const update3d: AnnotationUpdate3D = {
+      pointsAdded: newPointsMap3d,
+      pointsDeleted: pointsDeleted,
+      linesAdded: linesAdded,
+      linesDeleted: linesDeleted
+    }
+
+    face2d.updateAnnotations(update2d);
+    face3d.updateAnnotations(update3d);
+    
+  }
+}
+

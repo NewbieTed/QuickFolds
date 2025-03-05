@@ -212,7 +212,7 @@ export class Face3D {
      * @returns A Three JS object mesh which displays the provided point.
      */
     private createPointObject(point: pt.Point3D): THREE.Points {
-
+        console.log("createPointObject called with point:", point);
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
             this.principalNormal, this.paperThickness * this.offset * 0.5
@@ -231,10 +231,9 @@ export class Face3D {
             [new THREE.Vector3(pos.x, pos.y, pos.z)]
         );
         const glowingPoint = new THREE.Points(pointGeometry, glowingMaterial);
-
         // Render this point last (to get X-ray vision).
         glowingPoint.renderOrder = 2;
-
+        console.log("Created point object:", glowingPoint);
         return glowingPoint;
     }
 
