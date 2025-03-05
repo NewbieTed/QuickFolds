@@ -33,9 +33,16 @@ import java.util.List;
 public class StepResponse {
 
     /**
-     * TODO
+     * Indicates the type of step being sent back
      */
     private String stepType;
+
+    /**
+     * Indicates the direction of the step being sent back
+     * <p>
+     * For frontend verification purposes
+     */
+    private Boolean isForward;
 
     /**
      * A list of faces to annotate included in the response.
