@@ -22,6 +22,51 @@ export type EdgesAdjList = {
 
 const idsToFaces : Map<bigint, Face2D> = new Map<bigint, Face2D>();
 const adjList : Map<bigint, EdgesAdjList[]> = new Map<bigint, EdgesAdjList[]>();
+// this field stores all edges that are created at the same time
+// note these "mini edges" that constitute a larger edge
+// will dynamically update
+const disjointSet: Set<{face1Id:bigint, face2Id:bigint}>[] = [];
+
+/**
+ * Takes an instance of the old connection anywhere in the disjoint set
+ * and replaces it will all items in new connection
+ * @param oldconnection - the old connection
+ * @param newconnections - list of new connections that replace the old connection
+ */
+export function ReplaceExistingConnectionWithNewConnections(
+  oldconnection: {aFaceId: bigint, bFaceId: bigint},
+  newconnections:  {face1Id: bigint, face2Id: bigint}[]
+) {
+
+  for(const setsOfEdgesInAGroup of disjointSet) {
+    // try to delete item and see if it works, if so, add new connections
+    let removedOldCon = setsOfEdgesInAGroup.delete({face1Id: oldconnection.aFaceId, face2Id: oldconnection.bFaceId});
+    removedOldCon ||= setsOfEdgesInAGroup.delete({face1Id: oldconnection.bFaceId, face2Id: oldconnection.aFaceId});
+
+    if (removedOldCon) {
+      // old connection exists in this set, so add all of the new connections
+      for(const newEdge of newconnections) {
+        setsOfEdgesInAGroup.add(newEdge);
+      }
+    }
+
+
+  }
+
+
+}
+
+/**
+ * takes a set of edges that were created at once and adds it
+ * @param newSetOfEdgesForDS - the new set of edges to link together
+ */
+export function AddNewEdgeToDisjointSet(newSetOfEdgesForDS: Set<{
+  face1Id: bigint;
+  face2Id: bigint;
+}>) {
+  disjointSet.push(newSetOfEdgesForDS);
+}
+
 
 /**
  * @returns - the adjcency list of connected faces
@@ -76,12 +121,8 @@ export function updateAdjListForSplitGraph( // bak; if map of points includes ve
   adjList.set(leftFaceId, []);
   adjList.set(rightFaceId, []);
 
-  const correctLeftFaceEdge: bigint | undefined =  leftFaceEdgeIdThatFolds;
-  const correctRightFaceEdge:  bigint | undefined = rightFaceEdgeIdThatFolds;
-
-  if (correctLeftFaceEdge === undefined || correctRightFaceEdge === undefined) {
-    throw new Error("Incorrect mapping");
-  }
+  const correctLeftFaceEdge: bigint =  leftFaceEdgeIdThatFolds;
+  const correctRightFaceEdge:  bigint = rightFaceEdgeIdThatFolds;
 
   if (adjList.size === 1) {
     // this is the first fold ever
@@ -181,7 +222,7 @@ export function updateAdjListForSplitGraph( // bak; if map of points includes ve
               edgeIdOfMyFaceB: currentItem.edgeIdOfOtherFace
             }
 
-          });;
+          });
           continue;
       }
 
@@ -241,7 +282,7 @@ export function updateAdjListForSplitGraph( // bak; if map of points includes ve
 
         adjList.get(currentItem.idOfOtherFace)?.push(valueForTheOutsideValue);
       } else {
-        throw new Error("one should have happened");
+        throw new Error("one should have happened, saying there is an old connection from A to outside face, but A1 A2 don't have the old edge mapped to either one");
       }
     }
 

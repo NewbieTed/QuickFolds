@@ -755,14 +755,6 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     createDirectionVectorPointStart = face2D.getAnnotatedPoint(maxEdgePointId).point;
   }
 
-  // create the vertex that will check for direction, it is centered at origin: outdated version
-  // const vectorTowardsLeftFaceBasedOnOgPointIds: Point2D = createPoint2D(
-  //   createDirectionVectorPointEnd.x - createDirectionVectorPointStart.x,
-  //   createDirectionVectorPointEnd.y - createDirectionVectorPointStart.y,
-  // );
-
-
-
   // move on to the next vertex, since regardless of whether maxEdgeId = 2ndPointOnEdge, go to next
   for(let i = secondEdgeId + 1n; i < face2D.N; i+=1n) {
     mapOfOgPointIdsToNewPointIdsForLeftFace.set(i, BigInt(listOfVertexForLeftFace.length));
@@ -811,6 +803,9 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   if (rightFace.getAnnotatedPointMap().size  > 0) {
     throw new Error("SHOULD E");
   }
+
+
+
 
   return [[leftFace,  leftFace3d,  mapOfOgPointIdsToNewPointIdsForLeftFace,  theEdgeInTheLeftFaceThatComesFromFolding],
           [rightFace, rightFace3d, mapOfOgPointIdsToNewPointIdsForRightFace, theEdgeInTheRightFaceThatComesFromFolding],

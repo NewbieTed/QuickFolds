@@ -10,11 +10,10 @@ import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance, dotProduct } from "../geometry/Point.js";
 import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
-import {addValueToAdjList, getAdjList, getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
+import {AddNewEdgeToDisjointSet, addValueToAdjList, getAdjList, getFace2dFromId, print2dGraph, printAdjList, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo } from '../model/PaperManager.js';
-import { start } from 'repl';
 
 
 const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
@@ -136,18 +135,11 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
     throw new Error("Error saving paper graph");
   }
 
-  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
+  //let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
 
-  if (result === false) {
-    throw new Error("error with db");
-  }
-
-
-  print2dGraph();
-  print3dGraph();
-  printAdjList();
-
-  incrementStepID();
+  // if (result === false) {
+  //   throw new Error("error with db");
+  // }
 
   if (resultOfUpdatingPaperGraph[0].ID == resultOfUpdatingPaperGraph[2]) {
     // left face is stationary
@@ -290,16 +282,15 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
   let faceIdToUpdate: bigint[] = null; // basically, get the connect component from the LUG from faceid
+  //faceIdToUpdate sort
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
   const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn
 
   // current tasks:
-  // create the DS datastructure
-  // implement update method
-  // implmeent add new edge method
   // do DB management of making only one call
   // recheck adj/ds list reasoning, not trying to get something that doesn't exist anymore
   // make test request?
+  // see if you can create order to items
 
   // will be set during the first iteration of the for loop
   // needed for any planes that don't intersect the cut
@@ -459,10 +450,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
       // update these connections in the DS
       ReplaceExistingConnectionWithNewConnections(
-        oldconnection = {aFaceId, bFaceId}
-        newconnections = [
-          {a1FaceId, b2FaceId},
-          {a2FaceId, b1FaceId}
+        {aFaceId:aFaceId, bFaceId:bFaceId},
+        [
+          {face1Id:a1FaceId, face2Id:b2FaceId},
+          {face1Id:a2FaceId, face2Id:b1FaceId}
         ]
       );
 
@@ -517,12 +508,12 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
         throw new Error("other edges don't overlap");
       }
 
-
+      // replace old edge with new ones
       ReplaceExistingConnectionWithNewConnections(
-        oldconnection = {aFaceId, bFaceId}
-        newconnections = [
-          {a1FaceId, b1FaceId},
-          {a2FaceId, b2FaceId}
+        {aFaceId: aFaceId, bFaceId: bFaceId},
+        [
+          {face1Id: a1FaceId, face2Id: b1FaceId},
+          {face1Id: a2FaceId, face2Id: b2FaceId}
         ]
       );
 
@@ -580,10 +571,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // 1) add a new set that comes from all the split lines
   // 2) update the trouble edges by removing OG connection A-B and replacing it
   //    with new connections A1-B1/B2 and vice versa
-  UpdateDisjointSetOfEdges();
+  // UpdateDisjointSetOfEdges();
   // add new edge: newSetOfEdgesForDS
   // update all existing edges that have split. come from problem children
-
+  AddNewEdgeToDisjointSet(newSetOfEdgesForDS);
   // HADY update lug
   ;
 
@@ -605,9 +596,13 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
   // update the lug
 
+  // todo: add backend call
+  //let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
+  print2dGraph();
+  print3dGraph();
+  printAdjList();
 
-  // todo: check to make sure backend only does one final step of adding crap
-
+  incrementStepID();
 }
 
 // goal of this method is to get the oppsite record
