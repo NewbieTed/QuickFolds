@@ -85,8 +85,8 @@ export function projectToPlane(
     const result: pt.Point2D[] = [];
     for (const point of points) {
         result.push(pt.createPoint2D(
-            pt.dotProduct(basis.axis1, point),
-            pt.dotProduct(basis.axis2, point)
+            pt.dotProduct(basis.axis1, pt.subtract(point, basis.origin)),
+            pt.dotProduct(basis.axis2, pt.subtract(point, basis.origin))
         ));
     }
     
