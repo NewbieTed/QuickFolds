@@ -448,6 +448,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // add the points that should be on both left and right
   // add all the points on the left
   for(const id of addedLineUpdates.pointsAdded.keys()) {
+
     const pointToAdd: Point2D = face2d.getPoint(id);
     const listOfIds: Map<bigint, AnnotatedPoint2D> =  leftFace.addAnnotatedPoint(pointToAdd, foldEdgeIdLeft).pointsAdded;
     if (listOfIds.size != 1) {
@@ -456,12 +457,13 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
     // add the one new point to the mapping for lines later
     for(const newId of listOfIds.keys()) {
-      leftFacePointIdFromOG.set(id, newId);
+      leftFacePointIdFromOG.set(id, newId)
     }
 
   }
   // add all the points on the right
   for(const id of addedLineUpdates.pointsAdded.keys()) {
+
     const pointToAdd: Point2D = face2d.getPoint(id);
     const listOfIds: Map<bigint, AnnotatedPoint2D> =  rightFace.addAnnotatedPoint(pointToAdd, foldEdgeIdRight).pointsAdded;
     if (listOfIds.size != 1) {
@@ -535,8 +537,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
   // now add all the annotationlines
   const listOfLinesOnFoldEdge: bigint[] = Array.from(addedLineUpdates.linesAdded.keys());
-  const leftFacePoints: bigint[] = Array.from(leftFacePointIdFromOG.keys());
-  const rightFacePoints: bigint[] = Array.from(rightFacePointIdFromOG.keys());
+
   for(const [lineId, lineIdObj] of face2d.getAnnotatedLinesMap()) {
     // only add line if not colinear
     if(true || !listOfLinesOnFoldEdge.includes(lineId)) {
@@ -550,8 +551,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
       const check4 = rightFacePointIdFromOG.get(lineIdObj.endPointID);
       // we do the checks here since either 1/2 or 3/4 will miss them
       // since these lines should be on one and only one face
-      if(check1 !== undefined && check2 !== undefined && leftFacePoints.includes(check1) &&
-         leftFacePoints.includes(check2)) {
+      if(check1 !== undefined && check2 !== undefined) {
 
         // left face has both points, so make a new line
         const startPointForNewFace: bigint | undefined = leftFacePointIdFromOG.get(lineIdObj.startPointID);
@@ -560,9 +560,9 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
           throw new Error("create points map for left face missed something");
         }
         leftFace.addAnnotatedLine(startPointForNewFace, endPointForNewFace);
+
       }
-      else if(check3 !== undefined && check4 !== undefined && rightFacePoints.includes(check3) &&
-         rightFacePoints.includes(check4)) {
+      else if(check3 !== undefined && check4 !== undefined) {
 
         // right face has both points, so make a new line
         const startPointForNewFace: bigint | undefined = rightFacePointIdFromOG.get(lineIdObj.startPointID);
@@ -571,6 +571,8 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
           throw new Error("create points map for right face missed something");
         }
         rightFace.addAnnotatedLine(startPointForNewFace, endPointForNewFace);
+      } else {
+        console.error("no points found for edge", lineIdObj.startPointID, lineIdObj.endPointID);
       }
     }
 
@@ -609,7 +611,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 function copyAllAnnotationsFrom2dTo3d(ogFaceID: bigint, face2d: Face2D): AnnotationUpdate3D {
   const pointsAdded: Map<bigint, AnnotatedPoint3D> = new Map<bigint, AnnotatedPoint3D>();
   const pointsDeleted: bigint[] = [];
-  const linesAdded: Map<bigint, AnnotatedLine> = new Map<bigint, AnnotatedLine>();
+  const linesAdded: Map<bigint, AnnotatedLine> = new Map<bigint, AnnotatedLine>(face2d.getAnnotatedLinesMap());
   const linesDeleted: bigint[] = [];
 
 

@@ -608,11 +608,10 @@ export class Face2D {
      * @throws Error if the given ID is not a valid edge ID.
      */
     public projectToLine(point: pt.Point2D, lineId: bigint): pt.Point2D {
-
         const getAnnotationLine = this.getAnnotatedLine(lineId);
 
-        const edgeStart: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.startPointID).point;
-        const edgeEnd: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.endPointID).point;
+        const edgeStart: pt.Point2D = this.getPoint(getAnnotationLine.startPointID);
+        const edgeEnd: pt.Point2D = this.getPoint(getAnnotationLine.endPointID);
         const direction: pt.Point2D = pt.normalize(pt.subtract(
             edgeEnd, edgeStart
         ));
@@ -682,16 +681,22 @@ export class Face2D {
                                                                    this.vertices[edgeIdNum].y - p.y,
         );
 
-        const vecFromPToEndPoint : pt.Point2D = pt.createPoint2D(this.vertices[edgeIdNum].x - p.x,
-            this.vertices[edgeIdNum].y - p.y,
+        const vecFromPToEndPoint : pt.Point2D = pt.createPoint2D(this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].x - p.x,
+            this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].y - p.y,
         );
 
+
+        console.log("checking point [" + p.x + ", " + p.y + "]");
+        console.log("edge: [" + p.x + ", " + p.y + "] - " + p.x + ", " + p.y + "]");
 
         // if p are inside the edge, then these vectors should point in oppisite directions
 
         return pt.dotProduct(vecFromPToEndPoint, vecFromPToStartPoint) < 0;
 
     }
+
+
+    public
 
 
     public findClosestPointOnEdge(p: pt.Point2D, edgeId: bigint) {

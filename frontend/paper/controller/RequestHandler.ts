@@ -10,6 +10,9 @@ import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
 import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./Serializer.js";
 
 
+const ANNOTATE_EDITOR_URL = 'http://localhost:8080/geometry/annotate';
+const FOLDER_EDITOR_URL = 'http://localhost:8080/geometry/fold';
+
 
 /**
  * Sends the backend a fold request to merge the faces, no rotation
@@ -20,7 +23,7 @@ import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./S
  */
 export async function addMergeFoldToDB(leftFaceId: bigint, rightFaceId: bigint, mergedFace: Face2D): Promise<boolean> {
   // add points locally
-  const url = 'http://localhost:8080/geometry/fold';
+  const url = FOLDER_EDITOR_URL;
   const data = serializeMergeFold(leftFaceId, rightFaceId, mergedFace);
 
   console.log(data);
@@ -58,10 +61,10 @@ export async function addMergeFoldToDB(leftFaceId: bigint, rightFaceId: bigint, 
  * @param stationaryNewFaceID - the id of the new face that doesn't move during a rotation
  * @returns boolean as to result
  */
-export async function addSplitFacesToDB(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, stationaryNewFaceID: bigint): Promise<boolean> {
+export async function addSplitFacesToDB(facesToAdd: Face2D[], facesToDelete: bigint[], stationaryNewFaceID: bigint): Promise<boolean> {
   // add points locally
-  const url = 'http://localhost:8080/geometry/fold';
-  const data = serializeSplitFold(leftFace, rightFace, ogFaceId, stationaryNewFaceID);
+  const url = FOLDER_EDITOR_URL;
+  const data = serializeSplitFold(facesToAdd, facesToDelete, stationaryNewFaceID);
 
   console.log(data);
 
@@ -101,7 +104,7 @@ export async function addUpdatedAnnoationToDB(
   faceId: bigint
 ) : Promise<boolean> {
   // add points locally
-  const url = 'http://localhost:8080/geometry/annotate';
+  const url = ANNOTATE_EDITOR_URL;
   const data = serializeResultChange(statusUpdate, faceId);
 
   console.log(data);

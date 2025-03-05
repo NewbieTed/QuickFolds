@@ -135,7 +135,7 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
     throw new Error("Error saving paper graph");
   }
 
-  //let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
+  // let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
 
   // if (result === false) {
   //   throw new Error("error with db");
@@ -203,7 +203,6 @@ function getLineIntersection(p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D)
  * @param faceIdToUpdate - the id of the face to comapre to
  */
 function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdate: bigint) {
-
   const face2d = getFace2dFromId(faceIdToUpdate);
   if (face2d === undefined) {
     throw new Error("couldn't find face");
@@ -223,6 +222,16 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 
     // this just makes sure that we are on the edge (think of round off error)
     intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+
+    // edge case, check if point is actually on the edge:
+    if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.075) {
+      // add edge as hit point
+      retList.push(i);
+      generated.push(false);
+      continue;
+    }
+
+
     if (face2d.isColinearPointInsideEdge(intersectionPointOfFaceEdgeAndUserLine, i)) {
 
       // our point is actually at an intersection inside the polygon, so, we've found a target
@@ -286,6 +295,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
   const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn
 
+  // for renderer
+  const allMovingFaces : bigint[]  = [];
   // current tasks:
   // do DB management of making only one call
   // recheck adj/ds list reasoning, not trying to get something that doesn't exist anymore
@@ -297,6 +308,14 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   let perpindicularVectorPointTowardsLeftSpaceDirection = null;
   let perpindicularVectorPointTowardsLeftSpaceOrigin = null;
   let isLeftSideRotating = false;
+
+
+  // stuff for db request
+  let allCreatedFaces: Face2D[] = [];
+  let allDeletedFaces: bigint[] = [];
+
+  let firstDescendentFaceIdThatStationary: bigint = -1n;
+  let edgeIdOfFirstDescendentThatisStationaryThatRotatesOn: bigint = -1n;
 
   // stuff hady needs
   const listOfStationaryFacesInLug: bigint[] = [];
@@ -340,6 +359,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       // im not rotating, so add it to list for hady
       if (!amIRotating) {
         listOfStationaryFacesInLug.push(currFaceId);
+      } else {
+        allMovingFaces.push(currFaceId);
       }
 
       continue;
@@ -370,14 +391,47 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       // if so, it's stationary, so left rotates only
       // if point is on otherside
       isLeftSideRotating = dotProduct(vectorDirectionOfUserPoint, perpindicularVectorPointTowardsLeftSpaceDirection) < 0;
+      firstDescendentFaceIdThatStationary = resultFromSplitting.stationaryFaceId;
+
+      const listOfConnectsForStatFace = getAdjList().get(resultFromSplitting.stationaryFaceId);
+      if(listOfConnectsForStatFace === undefined) {
+        throw new Error("missing face in adj list, trying to connect to inner edge a1 a2");
+      }
+
+      for(let z = 0; z < listOfConnectsForStatFace.length; z++) {
+        if (listOfConnectsForStatFace[z].idOfOtherFace === resultFromSplitting.rotationFaceId) {
+          // found inner split, so this must be the edge
+          edgeIdOfFirstDescendentThatisStationaryThatRotatesOn = listOfConnectsForStatFace[z].edgeIdOfMyFace;
+          break;
+        }
+      }
+
+
     }
 
+
+    //getFace2dFromId(resultFromSplitting.stationaryFaceId).updateAnnotations();
 
     // add values that should be returned to renderer
     listOfStationaryFacesInLug.push(resultFromSplitting.stationaryFaceId);
     mapFromOgIdsToSplitFaces.set(currFaceId, {face1Id:resultFromSplitting.stationaryFaceId,
                                           face2Id:resultFromSplitting.rotationFaceId
     });
+    allMovingFaces.push(resultFromSplitting.rotationFaceId);
+
+
+    // add faces to DB request
+    if(getFace2dFromId(resultFromSplitting.stationaryFaceId) === undefined ||
+       getFace2dFromId(resultFromSplitting.rotationFaceId) === undefined) {
+        throw new Error("descendent faces were not put in adj list before adding to db")
+    }
+
+    allCreatedFaces.push(getFace2dFromId(resultFromSplitting.stationaryFaceId));
+    allCreatedFaces.push(getFace2dFromId(resultFromSplitting.rotationFaceId));
+
+    allDeletedFaces.push(currFaceId);
+
+
 
     // add all the edges that the adjlist should update: Multifold update
     // note that there will be duplicate one for B,A and one for A,B
@@ -560,7 +614,6 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       );
     }
 
-
     // mark this completed in set
     listOfAllEdgesFixed.add(aFaceId + "-" + bFaceId);
   }
@@ -578,32 +631,31 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // HADY update lug
   ;
 
-  // first thing i need to do is get all faces that need to be split
-  // the list i look thru is from the lug
-  // split all faces in lug
+  // update renderer with animation
+  // all set - stationary
 
-  // i need to return the faces/new values to hady's lug
-    // give me
-    // list of stationary faces in lug
-    // list of all edges in green line X
-    // map of og face id to split children, since we need to know X
-    // if descendends are related to og face
-    // example A splits into A_1, A_2,
-    // need list of mappings [{A, A_1, A_2}, ..]
+  animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
+    ...allMovingFaces
+  );
 
-  // update the edges between faces since lug is dependent on it
-  // add to disjoint set of deges togehter
+  let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);
 
-  // update the lug
+  if (result === false) {
+    throw new Error("error with db");
+  }
 
-  // todo: add backend call
-  //let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
+  // todo: update the lug
+  // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces);
+
+
+
   print2dGraph();
   print3dGraph();
   printAdjList();
 
   incrementStepID();
 }
+
 
 // goal of this method is to get the oppsite record
 /**

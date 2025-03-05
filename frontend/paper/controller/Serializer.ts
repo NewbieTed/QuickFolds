@@ -147,30 +147,47 @@ export function serializeMergeFold(leftFaceId: bigint, rightFaceId: bigint, merg
  * @param anchoredFaceIdInOrigami - the id of the new origami that states stationary
  * @returns
  */
-export function serializeSplitFold(leftFace: Face2D, rightFace: Face2D, ogFaceId: bigint, anchoredFaceIdInOrigami: bigint) {
+export function serializeSplitFold(facesList: Face2D[], deletedFaces: bigint[], anchoredFaceIdInOrigami: bigint) {
 
   // create two new faces
-  const faces: any[] = [
-    { // face left
-      "idInOrigami": Number(leftFace.ID),
-      "vertices": processVertex(leftFace),
-      "edges": processEdges(leftFace),
-      "annotations": {
-        "points": processAnnoPoints(leftFace),
-        "lines": processAnnoLines(leftFace)
-      }
-    },
+  const faces: any[] = [];
 
-    { // face right
-      "idInOrigami": Number(rightFace.ID),
-      "vertices": processVertex(rightFace),
-      "edges": processEdges(rightFace),
-      "annotations": {
-        "points": processAnnoPoints(rightFace),
-        "lines": processAnnoLines(rightFace)
+  // add all faces
+  for(let i = 0; i < facesList.length; i++) {
+    const currFace = facesList[i];
+    faces.push(
+      { // face left
+        "idInOrigami": Number(currFace.ID),
+        "vertices": processVertex(currFace),
+        "edges": processEdges(currFace),
+        "annotations": {
+          "points": processAnnoPoints(currFace),
+          "lines": processAnnoLines(currFace)
+        }
       }
-    }
-  ];
+    );
+  }
+
+
+  // put all deletedFaces
+  const deletedFacesList: Number[] = [];
+  for(let i = 0; i < deletedFaces.length; i++) {
+    deletedFacesList.push(Number(deletedFaces[i]));
+  }
+
+
+
+    // ,
+
+    // { // face right
+    //   "idInOrigami": Number(rightFace.ID),
+    //   "vertices": processVertex(rightFace),
+    //   "edges": processEdges(rightFace),
+    //   "annotations": {
+    //     "points": processAnnoPoints(rightFace),
+    //     "lines": processAnnoLines(rightFace)
+    //   }
+    // }
 
 
 
@@ -187,7 +204,7 @@ export function serializeSplitFold(leftFace: Face2D, rightFace: Face2D, ogFaceId
     "stepIdInOrigami": Number(stepID),
     "anchoredFaceIdInOrigami": Number(anchoredFaceIdInOrigami),
     "faces": faces,
-    "deletedFaces": [Number(ogFaceId)]
+    "deletedFaces": deletedFacesList
   }
 
 

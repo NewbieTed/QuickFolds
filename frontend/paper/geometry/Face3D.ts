@@ -581,6 +581,7 @@ export class Face3D {
      * to rotateFromPreviousPosition() will rotate from the saved position.
      */
     public savePosition() {
+        this.startNormal = pt.copyPoint(this.principalNormal);
         this.startPosition = new THREE.Vector3();
         this.startPosition.copy(this.pivot.position);
         this.startRotation = new THREE.Quaternion();
@@ -690,10 +691,11 @@ export class Face3D {
         // Rotate the vertices similarly.
         for (let i = 0n; i < this.N; i++) {
 
+            const oldVertex = this.vertices[Number(i)];
             const vertexVec = new THREE.Vector3(
-                this.vertices[Number(i)].x,
-                this.vertices[Number(i)].y,
-                this.vertices[Number(i)].z,
+                oldVertex.x,
+                oldVertex.y,
+                oldVertex.z,
             )
 
             vertexVec.sub(shift);
@@ -701,14 +703,40 @@ export class Face3D {
             vertexVec.add(shift);
 
             this.vertices[Number(i)] = pt.createPoint3D(
-                vertexVec.x, vertexVec.y, vertexVec.z
+                vertexVec.x, vertexVec.y, vertexVec.z, "Vertex"
             );
+
+        }
+
+        // Rotate the annotations similarly.
+        for (const pointID of this.annotatedPoints.keys()) {
+
+            const oldAnnotation = this.annotatedPoints.get(pointID);
+            const annotationVec = new THREE.Vector3(
+                oldAnnotation.point.x,
+                oldAnnotation.point.y,
+                oldAnnotation.point.z,
+            )
+
+            annotationVec.sub(shift);
+            annotationVec.applyQuaternion(q);
+            annotationVec.add(shift);
+
+            const newAnnotation: pt.AnnotatedPoint3D = {
+                point: pt.createPoint3D(
+                    annotationVec.x, annotationVec.y, annotationVec.z
+                ),
+                edgeID: oldAnnotation.edgeID
+            }
+            this.annotatedPoints.set(pointID, newAnnotation);
 
         }
 
     }
 
 
+
+    // TODO: methods to change visibility and disable/enable raycasting thru this face.
     public getAveragePoint() : pt.Point3D {
         let xValue = 0.0;
         let yValue = 0.0;
@@ -723,10 +751,6 @@ export class Face3D {
 
 
         return pt.createPoint3D(xValue/Number(this.N), yValue/Number(this.N), zValue/Number(this.N));
+
     }
-
-
-
-    // TODO: methods to change visibility and disable/enable raycasting thru this face.
-
 }

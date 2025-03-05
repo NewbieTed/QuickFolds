@@ -88,6 +88,7 @@ export function getScene(): THREE.Scene {
  * This does not include annotation geometry - only the polygon meshes.
  */
 export function getFaceObjects(): THREE.Object3D[] {
+    console.log("face objects", idsToFaceObj.values());
     return Array.from(idsToFaceObj.values());
 }
 
