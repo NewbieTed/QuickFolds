@@ -3,8 +3,6 @@
  * structure which tracks how layers of the paper stack on top of each other.
  */
 
-import { vectorComponents } from "three/webgpu";
-
 
 /** 
  * Some terminology to help understand the kinds of folds and implementation of this file:
@@ -296,6 +294,7 @@ function addUplink(
              .get(faceID).upLinks.add(upID);
 }
 
+
 /**
  * Adds a downlink to the given paper component, from the node with ID
  * faceID to the node in the next layer up, with ID upID.
@@ -312,7 +311,6 @@ function addDownlink(
     component.layers[Number(component.layerMap.get(faceID))]
              .get(faceID).downLinks.add(downID);
 }
-
 
 
 /**
@@ -351,6 +349,7 @@ function clean(component: PaperComponent): void {
 
 }
 
+
 /**
  * Iterates the paper component and updates the layerMap, which maps
  * face IDs to the particular layer they belong to.
@@ -368,6 +367,97 @@ function setLayerMap(component: PaperComponent): void {
 
     }
 
+}
+
+
+/**
+ * Splits the paper component, based on the set of stationary faces, 
+ * which should be a subset of all the faces in this component. Unlike
+ * split(), this operation assumes that no faces are created or deleted.
+ * @param component The LUG component to split.
+ * @param stationary Set of which faces are stationary.
+ * @returns The stationary component and mobile component, in that order.
+ */
+function partition(
+    component: PaperComponent,
+    stationary: Set<bigint>
+    ): [PaperComponent, PaperComponent] {
+
+    const stationaryComponent = new PaperComponent(getNextComponentID());
+    const mobileComponent = new PaperComponent(getNextComponentID());
+
+    // Iterate layer by layer and turn ancestors into descendants.
+    for (let layer = 0n; layer < component.layers.length; layer++) {
+
+        stationaryComponent.layers.push(new Map<bigint, FaceNode>);
+        mobileComponent.layers.push(new Map<bigint, FaceNode>);
+
+        // Consider one node, classify it into the two components.
+        for (const faceID of component.layers[Number(layer)].keys()) {
+
+            if (stationary.has(faceID)) {
+                stationaryComponent.layers[Number(layer)].set(
+                    faceID, new FaceNode(faceID)
+                );
+            } else {
+                mobileComponent.layers[Number(layer)].set(
+                    faceID, new FaceNode(faceID)
+                );
+            }
+
+        }
+
+    }
+
+    // Now clean the components: Remove empty layers from the top and bottom.
+    clean(stationaryComponent);
+    clean(mobileComponent);
+
+    // Next we set the maps from face IDS to which layer the face is in.
+    setLayerMap(stationaryComponent);
+    setLayerMap(mobileComponent);
+
+// Finally, set all of the uplinks and downlinks in each component, based
+    // on the layer mappings and stationary set.
+    // Iterate layer by layer and connect up the nodes in the same set. 
+    for (let layer = 0n; layer < component.layers.length; layer++) {
+
+        const oldLayer = component.layers[Number(layer)];
+        // Consider one node, iterate its uplinks and downlinks.
+        for (const faceID of oldLayer.keys()) {
+
+            // Set all of the downlinks.
+            for (const downID of oldLayer.get(faceID).downLinks) {
+
+                if (pairs(stationary, faceID, downID)) {
+
+                    const toUpdate = (stationary.has(faceID)) ?
+                                      stationaryComponent : 
+                                      mobileComponent;
+                    addDownlink(toUpdate, faceID, downID);
+                }
+
+            }
+
+            // Set all of the uplinks similarly.
+            for (const upID of oldLayer.get(faceID).upLinks) {
+
+                if (pairs(stationary, faceID, upID)) {
+
+                    const toUpdate = (stationary.has(faceID)) ?
+                                      stationaryComponent : 
+                                      mobileComponent;
+                    addUplink(toUpdate, faceID, upID);
+                }
+
+            }
+
+        }
+
+    }
+
+    // Return the stationary component and mobile component.
+    return [stationaryComponent, mobileComponent];
 }
 
 
