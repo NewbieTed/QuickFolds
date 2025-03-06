@@ -386,8 +386,9 @@ async function onMouseDown(event : MouseEvent) {
 			}
 
 		}
-
-		if (input.getFoldButtonState().state.step === 4) {
+		// current issue: all faces are being captured, i'm crossing the boundary
+		console.log(input.getFoldAngleState());
+		if (false && 	input.getFoldButtonState().state.step === 4) {
 
 
 
@@ -437,6 +438,50 @@ async function onMouseDown(event : MouseEvent) {
 	}
 }
 
+document.getElementById('confirm-fold')?.addEventListener('click', activateFoldStep);
+
+async function activateFoldStep() {
+	const foldButtonState = input.getFoldButtonState();
+
+	// Remove illustration line
+	const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
+	if (existingLine) {
+		SceneManager.getScene().remove(existingLine);
+		(existingLine as THREE.Line).geometry.dispose();
+		if (Array.isArray((existingLine as THREE.Line).material)) {
+			((existingLine as THREE.Line).material as THREE.Material[]).forEach(mat => mat.dispose());
+		} else {
+			((existingLine as THREE.Line).material as THREE.Material).dispose();
+		}
+	}
+
+	// First create the split
+	const result = await createMultiFoldBySplitting(
+		foldButtonState.state.point1Id,
+		foldButtonState.state.point2Id,
+		foldButtonState.state.faceId,
+		foldButtonState.state.stationaryPoint,
+		100n
+	);
+
+	// Log all face IDs
+	const allFaces = SceneManager.getFaceObjects();
+	console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
+	console.log("aaaaaaaa");
+
+	if (typeof result === 'string') {
+		addlogfeedMessage("red", "Error: ", result);
+	}
+
+
+
+	// Reset the fold state
+	input.resetFoldButton();
+	input.resetFoldAngleState();
+}
+
+
+
 
 /**
  *
@@ -477,9 +522,6 @@ function projectAndCreateEdgePoint(
 ): [Point3D, bigint] {
     const closestEdgeId = face3d.findNearestEdge(point);
     const projectedPoint = face3d.projectToEdge(point, closestEdgeId);
-
-		console.log("projected point:" + projectedPoint.x + ", " + projectedPoint.y + ", " + projectedPoint.z);
-		console.log("actually point:" + point.x + ", " + point.y + ", " + point.z);
 
     if (projectedPoint === undefined) {
         return [point, -1n];

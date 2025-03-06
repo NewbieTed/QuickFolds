@@ -441,7 +441,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p1: Point3D = startFaceObj.getPoint(point1Id);
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
-  let faceIdToUpdate: bigint[] = null; // basically, get the connect component from the LUG from faceid
+  let faceIdToUpdate: bigint[] = [0n]; // basically, get the connect component from the LUG from faceid
   //faceIdToUpdate sort
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
   const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn

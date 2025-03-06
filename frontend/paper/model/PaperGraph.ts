@@ -61,7 +61,9 @@ function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;fa
       const currentVertex = queue.shift()!;
       result.add(currentVertex);
 
-      const neighbors = this.adjacencyList.get(currentVertex) || [];
+      const neighborsRecord = adjList.get(currentVertex) || [];
+      const neighbors = [];
+      neighborsRecord.forEach(item => neighbors.push(item.idOfOtherFace));
       for (const neighbor of neighbors) {
           // standard bfs given its's a new neighbor and we don't use the edges not to cross
           if (!visited.has(neighbor) &&
