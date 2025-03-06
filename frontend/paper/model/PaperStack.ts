@@ -3,6 +3,8 @@
  * structure which tracks how layers of the paper stack on top of each other.
  */
 
+import { vectorComponents } from "three/webgpu";
+
 
 /** 
  * Some terminology to help understand the kinds of folds and implementation of this file:
@@ -67,7 +69,7 @@ class PaperComponent {
 
     readonly ID: bigint;
     readonly layerMap: Map<bigint, bigint>;
-    readonly layers: Set<FaceNode>[];
+    readonly layers: Map<bigint, FaceNode>[];
     
     constructor(ID: bigint) {
         this.ID = ID;
@@ -77,3 +79,299 @@ class PaperComponent {
 
 }
 
+
+
+/**
+ * Splits the paper component, given the mapping of ancestor face IDs
+ * to descendant face IDs, which must contain every face in this component
+ * as a key. Splits based on the set of stationary faces, which should be a
+ * subset of all the descendant faces of this component.
+ * @param component The LUG component to split.
+ * @param descendants Mapping of ancestor to descendant faces. If a face is
+ *                    its own descendant, the map entry should <id, [id]>.
+ * @param stationary Set of which faces are stationary.
+ * @returns The stationary component and mobile component, in that order.
+ */
+function split(
+            component: PaperComponent,
+            descendants: Map<bigint, [bigint, bigint] | [bigint]>,
+            stationary: Set<bigint>
+            ): [PaperComponent, PaperComponent] {
+
+    const stationaryComponent = new PaperComponent(getNextComponentID());
+    const mobileComponent = new PaperComponent(getNextComponentID());
+
+    // Iterate layer by layer and turn ancestors into descendants.
+    for (let layer = 0n; layer < component.layers.length; layer++) {
+
+        stationaryComponent.layers.push(new Map<bigint, FaceNode>);
+        mobileComponent.layers.push(new Map<bigint, FaceNode>);
+
+        // Consider one node, find its descendants and classify them.
+        for (const faceID of component.layers[Number(layer)].keys()) {
+
+            for (const descID of descendants.get(faceID)) {
+
+                if (stationary.has(descID)) {
+                    stationaryComponent.layers[Number(layer)].set(
+                        descID, new FaceNode(descID)
+                    );
+                } else {
+                    mobileComponent.layers[Number(layer)].set(
+                        descID, new FaceNode(descID)
+                    );
+                }
+
+            }
+
+        }
+
+    }
+
+    // Now clean the components: Remove empty layers from the top and bottom.
+    clean(stationaryComponent);
+    clean(mobileComponent);
+
+    // Next we set the maps from face IDS to which layer the face is in.
+    setLayerMap(stationaryComponent);
+    setLayerMap(mobileComponent);
+
+    // Finally, set all of the uplinks and downlinks in each component, based
+    // on the descendant mapping, layer mappings, and stationary set.
+    // Iterate layer by layer and connect up descendants togethers.
+    for (let layer = 0n; layer < component.layers.length; layer++) {
+
+        const oldLayer = component.layers[Number(layer)];
+        // Consider one node, iterate its uplinks and downlinks.
+        for (const faceID of oldLayer.keys()) {
+
+            // Set all of the downlinks.
+            for (const downID of oldLayer.get(faceID).downLinks) {
+
+                const descA = descendants.get(faceID);
+                const descB = descendants.get(downID);
+
+                const lenCase = 2 * (descA.length - 1) + (descB.length - 1);
+                // 1, 1 --> 0
+                // 1, 2 --> 1
+                // 2, 1 --> 2
+                // 2, 2 --> 3
+
+                // Case 3: Both faces were split and have two descendents.
+                if (lenCase === 3) {
+                    if (pairs(stationary, descA[1], descB[1])) {
+
+                        const toUpdate = (stationary.has(descA[1])) ?
+                                          stationaryComponent : 
+                                          mobileComponent;
+                        addDownlink(toUpdate, descA[1], descB[1]);
+                    }
+                }
+                // Case 2: Only one face was split (face A)
+                if (lenCase === 3 || lenCase === 2) {
+                    if (pairs(stationary, descA[1], descB[0])) {
+
+                        const toUpdate = (stationary.has(descA[1])) ?
+                                          stationaryComponent : 
+                                          mobileComponent;
+                        addDownlink(toUpdate, descA[1], descB[0]);
+                    }
+                }
+                // Case 1: Only one face was split (face B)
+                if (lenCase === 3 || lenCase === 1) {
+                    if (pairs(stationary, descA[0], descB[1])) {
+
+                        const toUpdate = (stationary.has(descA[0])) ?
+                                          stationaryComponent : 
+                                          mobileComponent;
+                        addDownlink(toUpdate, descA[0], descB[1]);
+                    }
+                }
+                // Case 0 (should always execute): Neither was split.
+                if (pairs(stationary, descA[0], descB[0])) {
+
+                    const toUpdate = (stationary.has(descA[0])) ?
+                                      stationaryComponent : 
+                                      mobileComponent;
+                    addDownlink(toUpdate, descA[0], descB[0]);
+                }
+
+            }
+
+            // Set all of the uplinks similarly.
+            for (const upID of oldLayer.get(faceID).upLinks) {
+
+                const descA = descendants.get(faceID);
+                const descB = descendants.get(upID);
+
+                const lenCase = 2 * (descA.length - 1) + (descB.length - 1);
+                // 1, 1 --> 0
+                // 1, 2 --> 1
+                // 2, 1 --> 2
+                // 2, 2 --> 3
+
+                // Case 3: Both faces were split and have two descendents.
+                if (lenCase === 3) {
+                    if (pairs(stationary, descA[1], descB[1])) {
+
+                        const toUpdate = (stationary.has(descA[1])) ?
+                                          stationaryComponent : 
+                                          mobileComponent;
+                        addUplink(toUpdate, descA[1], descB[1]);
+                    }
+                }
+                // Case 2: Only one face was split (face A)
+                if (lenCase === 3 || lenCase === 2) {
+                    if (pairs(stationary, descA[1], descB[0])) {
+
+                        const toUpdate = (stationary.has(descA[1])) ?
+                                          stationaryComponent : 
+                                          mobileComponent;
+                        addUplink(toUpdate, descA[1], descB[0]);
+                    }
+                }
+                // Case 1: Only one face was split (face B)
+                if (lenCase === 3 || lenCase === 1) {
+                    if (pairs(stationary, descA[0], descB[1])) {
+
+                        const toUpdate = (stationary.has(descA[0])) ?
+                                          stationaryComponent : 
+                                          mobileComponent;
+                        addUplink(toUpdate, descA[0], descB[1]);
+                    }
+                }
+                // Case 0 (should always execute): Neither was split.
+                if (pairs(stationary, descA[0], descB[0])) {
+
+                    const toUpdate = (stationary.has(descA[0])) ?
+                                      stationaryComponent : 
+                                      mobileComponent;
+                    addUplink(toUpdate, descA[0], descB[0]);
+                }
+
+            }
+
+        }
+
+    }
+
+    // Return the stationary component and mobile component.
+    return [stationaryComponent, mobileComponent];
+}
+
+
+/**
+ * Checks whether a given set which partitions some larger set either
+ * contains both of the first and second IDs, or contains neither.
+ * @param partition The set to check for separation of the IDs.
+ * @param firstID The first ID.
+ * @param secondID The second ID.
+ * @returns True if both firstID and secondID are both in the set
+ * or both not in the set. False when one of the two is in the set.
+ */
+function pairs(
+            partition: Set<bigint>,
+            firstID,
+            secondID
+            ): boolean {
+
+    return partition.has(firstID) === partition.has(secondID);
+}
+
+
+/**
+ * Adds an uplink to the given paper component, from the node with ID
+ * faceID to the node in the next layer up, with ID upID.
+ * @param component The component to update.
+ * @param faceID The face to add a link to.
+ * @param upID The face to link it to.
+ */
+function addUplink(
+            component: PaperComponent, 
+            faceID: bigint, 
+            upID: bigint
+            ) {
+
+    component.layers[Number(component.layerMap.get(faceID))]
+             .get(faceID).upLinks.add(upID);
+}
+
+/**
+ * Adds a downlink to the given paper component, from the node with ID
+ * faceID to the node in the next layer up, with ID upID.
+ * @param component The component to update.
+ * @param faceID The face to add a link to.
+ * @param downID The face to link it to.
+ */
+function addDownlink(
+            component: PaperComponent, 
+            faceID: bigint, 
+            downID: bigint
+            ) {
+
+    component.layers[Number(component.layerMap.get(faceID))]
+             .get(faceID).downLinks.add(downID);
+}
+
+
+
+/**
+ * Removes any empty layers from the top and bottom of the given component.
+ * @param component The component to clean.
+ */
+function clean(component: PaperComponent): void {
+
+    let firstBottom = 0;
+    // Remove from the bottom of the component.
+    while (component.layers.length > 0 &&
+           component.layers[0].size == 0) {
+     
+        firstBottom++;
+     }
+
+    let firstTop = component.layers.length;
+    // Remove from the top of the component.
+    while (component.layers.length > 0 &&
+           component.layers[component.layers.length - 1].size == 0) {
+        
+        firstTop--;
+    }
+
+    // Shift only the non-empty layers.
+    let i = 0;
+    for (let j = firstBottom; j < firstTop; j++) {
+        component.layers[i] = component.layers[j];
+        i++;
+    }
+
+    // Remove excess.
+    while (i < component.layers.length) {
+        component.layers.pop();
+    }
+
+}
+
+/**
+ * Iterates the paper component and updates the layerMap, which maps
+ * face IDs to the particular layer they belong to.
+ * @param component The component to update.
+ */
+function setLayerMap(component: PaperComponent): void {
+
+    // Iterate layer by layer, check every node.
+    for (let layer = 0n; layer < component.layers.length; layer++) {
+
+        for (const faceID of component.layers[Number(layer)].keys()) {
+
+            component.layerMap.set(faceID, layer);
+        }
+
+    }
+
+}
+
+
+function getNextComponentID() {
+    // TODO
+    return 0n;
+}
