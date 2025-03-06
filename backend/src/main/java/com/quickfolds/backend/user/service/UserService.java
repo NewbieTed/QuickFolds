@@ -1,10 +1,9 @@
 package com.quickfolds.backend.user.service;
 
-import com.quickfolds.backend.user.mapper.UserMapper;
 import com.quickfolds.backend.user.auth.JwtUtil;
+import com.quickfolds.backend.user.mapper.UserMapper;
 import com.quickfolds.backend.user.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
@@ -77,5 +76,14 @@ public class UserService {
 
         // Return null if authentication fails.
         return null;
+    }
+
+    /**
+     * Retrieves a user from the database by their username.
+     * @param username The username of the user to retrieve.
+     * @return The {@link User} object corresponding to the given username, or {@code null} if not found.
+     */
+    public User findByUsername(String username) {
+        return userMapper.findByUsername(username);
     }
 }

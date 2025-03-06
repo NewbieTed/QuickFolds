@@ -2,8 +2,8 @@
  * @fileoverview Contains basic point-related types and geometric operations.
  */
 
-import { Face2D } from "./Face2D";
-import { Face3D } from "./Face3D";
+import { Face2D } from "./Face2D.js";
+import { Face3D } from "./Face3D.js";
 
 
 // ----------------------------- Types ------------------------------------- //
@@ -109,7 +109,8 @@ export function createPoint2D(
  */
 export function createPoint3D(
             x: number, y: number, z: number,
-            context: PointContext = "Annotation"
+            context: PointContext = "Annotation",
+            edgeId: bigint = -1n
             ): Point3D {
 
     const point: Point3D = {
@@ -268,6 +269,31 @@ export function dotProduct<T extends Point>(a: T, b: T): number {
 
     if (a.dim == "3D" && b.dim == "3D") {
         result += a.z * b.z;
+    }
+
+    return result;
+}
+
+/**
+ * Computes the vector (cross) product of two 3D vectors.
+ * @param a The first vector to multiply.
+ * @param b The second vector to multiply
+ * @param context Context of the resulting point.
+ *                Defaults to Annotation.
+ * @returns the vector product a x b.
+ */
+export function crossProduct(
+            a: Point3D,
+            b: Point3D,
+            context: PointContext = "Annotation"
+            ): Point3D {
+
+    const result: Point3D = {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x,
+        context: context,
+        dim: "3D"
     }
 
     return result;
@@ -441,12 +467,6 @@ export function normalize<T extends Point>(vec: T): T {
 
 
 
-// TODO
-export function rotatePoint(point: Point3D, axis: null, angle: null) {
-
-}
-
-
   /**
  * calculates the new point to put in face 2d based on the provided point
  * and corresponding face 3d object
@@ -461,56 +481,56 @@ export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, fac
     for (let i = 0; i < 3; i++) {
       points.push(face3d.vertices[i]);
     }
-  
+
     const basis1 : Point3D = createPoint3D(
       points[1].x - points[0].x,
       points[1].y - points[0].y,
       points[1].z - points[0].z,
     );
-  
+
     const basis2 : Point3D = createPoint3D(
       points[2].x - points[0].x,
       points[2].y - points[0].y,
       points[2].z - points[0].z,
     );
-  
+
     let basisResult = solveForScalars(
     [basis1.x, basis1.y, basis2.z],
     [basis2.x, basis2.y, basis2.z],
     [point.x, point.y, point.z]
     );
-  
-  
+
+
     if (basisResult == null) {
       return null;
     }
-  
-  
+
+
     // because our problem is isometric, use the same coordinates for our
     // new basis vectors rotated on the 2d plane
     const point0in2D : Point2D = face2d.vertices[0];
     const point1in2D : Point2D = face2d.vertices[1];
     const point2in2D : Point2D = face2d.vertices[2];
-  
+
     const basis1in2d : Point2D = createPoint2D(
       point1in2D.x - point0in2D.x,
       point1in2D.y - point0in2D.y
     );
-  
+
     const basis2in2d : Point2D = createPoint2D(
       point2in2D.x - point0in2D.x,
       point2in2D.y - point0in2D.y
     );
-  
+
     const coverted2dPoint = createPoint2D(
       basis1in2d.x * basisResult[0] +  basis2in2d.x * basisResult[1],
       basis1in2d.y * basisResult[0] +  basis2in2d.y * basisResult[1],
     );
-  
+
     return coverted2dPoint;
   }
-  
-  
+
+
   /**
  * Solve a * v1 + b * v2 = t for scalars a, b in R^3.
  *
@@ -531,25 +551,25 @@ export function solveForScalars(
         a[0] * b[1] - a[1] * b[0],
       ];
     }
-  
+
     // Dot product helper
     function dot(a: [number, number, number], b: [number, number, number]): number {
       return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     }
-  
+
     // Normal vector n = v1 x v2
     const n = cross(v1, v2);
-  
+
     // |v1 x v2|^2
     const denom = dot(n, n);
-  
+
     // a = ((t x v2) ⋅ (v1 x v2)) / |v1 x v2|^2
     const tXv2 = cross(t, v2);
     const a = dot(tXv2, n) / denom;
-  
+
     // b = -((t x v1) ⋅ (v1 x v2)) / |v1 x v2|^2
     const tXv1 = cross(t, v1);
     const b = -dot(tXv1, n) / denom;
-  
+
     return [a, b];
   }
