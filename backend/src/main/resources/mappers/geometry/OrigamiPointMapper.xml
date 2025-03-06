@@ -78,7 +78,7 @@
         - Ensures only points of the specified type are returned.
 
         Parameters:
-        - `pointTypeId`: The type of the point (e.g., vertex, annotation).
+        - `pointTypeId`: The type of the point (e.g., vertex, annotateRequest).
         - `ids`: A list of point IDs to filter by.
 
         Result:

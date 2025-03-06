@@ -31,7 +31,7 @@
         Mapped Fields:
         - `id`: Primary key of the step.
         - `origami_id`: Foreign key referencing the origami model.
-        - `step_type_id`: Identifies the type of the step (e.g., fold, annotation).
+        - `step_type_id`: Identifies the type of the step (e.g., fold, annotateRequest).
         - `id_in_origami`: Step identifier within the origami context.
         - `created_by` / `updated_by`: User metadata for auditing.
         - `created_at` / `updated_at`: Timestamps for record creation and updates.
@@ -117,7 +117,7 @@
 
         Parameters:
         - `origamiId`: The ID of the origami model associated with the step.
-        - `stepTypeId`: The type of the step (e.g., fold, annotation).
+        - `stepTypeId`: The type of the step (e.g., fold, annotateRequest).
         - `idInOrigami`: The identifier of the step within the origami context.
         - Optional: `createdBy`, `updatedBy`
 
@@ -140,5 +140,22 @@
         <if test="updatedBy != null">, #{updatedBy}</if>
         );
     </insert>
+
+
+    <!--
+        Retrieves the step type of a step using its identifier within the database.
+
+        Parameters:
+        - `stepId`: The ID of the step in the database
+
+        Result:
+        - Returns the name of the matching step type, or null if not found.
+    -->
+    <select id="getTypeByStepId" resultType="java.lang.String">
+        SELECT t.step_type_name
+        FROM step s
+        INNER JOIN step_type t ON s.step_type_id = t.id
+        WHERE s.id = #{stepId}
+    </select>
 
 </mapper>

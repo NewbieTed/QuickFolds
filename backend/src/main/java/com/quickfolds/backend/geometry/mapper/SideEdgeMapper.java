@@ -34,4 +34,12 @@ public interface SideEdgeMapper {
 
     int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
                         @Param("deletedStepId") long deletedStepId);
+
+    /**
+     * Retreives the ID in face of a side edge
+     *
+     * @param edgeId the specifc edge to get the id in face of.
+     * @return the Integer value of the edge's id in face, or Null if could not be found.
+     */
+    Integer getEdgeIdInFace(@Param("edgeId") long edgeId);
 }

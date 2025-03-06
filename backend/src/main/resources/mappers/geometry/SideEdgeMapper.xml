@@ -76,4 +76,22 @@
         );
     </update>
 
+    <!--
+       Retrieves the id in face of a specified edge.
+
+       Purpose:
+       - Retrieve the ID in face of a side edge.
+
+       Parameters:
+       - `edgeId`: The ID of the edge being queried.
+
+       Result:
+       - The ID (`Integer`) of the edge in the face its on.
+   -->
+    <select id="getEdgeIdInFace" resultType="java.lang.Integer">
+        SELECT id_in_face
+        FROM side_edge
+        WHERE edge_id = #{edgeId}
+    </select>
+
 </mapper>

@@ -19,12 +19,40 @@
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.FoldEdgeMapper">
 
+    <resultMap id="FoldEdgeMap" type="com.quickfolds.backend.geometry.model.database.FoldEdge">
+        <result property="edgeId" column="edge_id"/>
+        <result property="face1Id" column="face_1_id"/>
+        <result property="face2Id" column="face_2_id"/>
+        <result property="angle" column="angle"/>
+        <result property="idInFace1" column="id_in_face_1"/>
+        <result property="idInFace2" column="id_in_face_2"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+
     <select id="getIdByFaceIdPair">
         SELECT id from fold_edge
         WHERE face_1_id = #{face1Id}
         AND face_2_id = #{face2Id}
         ORDER BY ID DESC
         LIMIT 1;
+    </select>
+
+    <select id="getObjByFaceIdPair" resultMap="FoldEdgeMap">
+        SELECT
+        edge_id, face_1_id, face_2_id, angle,
+        id_in_face_1, id_in_face_2,
+        created_by, updated_by, created_at, updated_at
+        from fold_edge
+        WHERE (face_1_id = #{face1Id}
+        AND face_2_id = #{face2Id})
+        OR (face_1_id = #{face2Id}
+        AND face_2_id = #{face1Id})
+        ORDER BY edge_id DESC
+        LIMIT 1
     </select>
 
     <!--
@@ -72,6 +100,19 @@
     </insert>
 
 
+    <update id="deleteByFaceId">
+        UPDATE edge e
+        SET deleted_step_id = #{deletedStepId}
+        FROM fold_edge fe
+        WHERE
+        fe.edge_id = e.id
+        AND e.deleted_step_id IS NULL
+        AND (
+        fe.face_1_id = #{faceId}
+        OR fe.face_2_id = #{faceId}
+        );
+    </update>
+
     <update id="deleteByFaceIds">
         UPDATE edge e
         SET deleted_step_id = #{deletedStepId}
@@ -92,5 +133,29 @@
         )
         );
     </update>
+
+    <!--
+      Retrieves the id in a specified face of a specified edge.
+
+      Purpose:
+      - Retrieve the ID in face of a fold edge.
+
+      Parameters:
+      - `edgeId`: The ID of the edge being queried.
+      - `faceId`: the ID of the face the edge is in.
+
+      Result:
+      - The ID (`Integer`) of the edge in the face its on.
+  -->
+    <select id="getEdgeIdInFace" resultType="java.lang.Integer">
+        SELECT
+            CASE
+                WHEN face_1_id = #{faceId} THEN id_in_face_1
+                WHEN face_2_id = #{faceId} THEN id_in_face_2
+                ELSE NULL
+                END as id_in_face
+        FROM fold_edge
+        WHERE edge_id = #{edgeId}
+    </select>
 
 </mapper>

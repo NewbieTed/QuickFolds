@@ -54,6 +54,20 @@ public interface FaceMapper {
      */
     void addByObj(@Param("face") Face face);
 
+
+    /**
+     * Deletes multiple faces within an origami model, linked to a specific step ID.
+     * <p>
+     * This method performs a logical deletion by marking a face as deleted, associating them with a deletion step.
+     * The historical context is retained for potential rollback or auditing purposes.
+     *
+     * @param id A database ID representing the face to be deleted.
+     * @param deletedStepId The ID of the step associated with the deletion operation.
+     * @return The number of rows affected by the delete operation.
+     */
+    int deleteById(@Param("ids") long id,
+                    @Param("deletedStepId") long deletedStepId);
+
     /**
      * Deletes multiple faces within an origami model, linked to a specific step ID.
      * <p>
