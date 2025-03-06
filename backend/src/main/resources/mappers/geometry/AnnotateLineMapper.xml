@@ -209,8 +209,8 @@
         - `point_2_id`: Maps to `point2IdInFace` in the DTO.
     -->
     <resultMap id="LineAnnotationResponseMap" type="com.quickfolds.backend.geometry.model.dto.response.LineAnnotationResponse">
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
-        <result property="idInFace" column="l.id_in_face"/>
+        <result property="faceIdInOrigami" column="faceIdInOrigami"/>
+        <result property="idInFace" column="idInFace"/>
         <result property="point1IdInFace" column="point_1_id"/>
         <result property="point2IdInFace" column="point_2_id"/>
     </resultMap>
@@ -227,8 +227,8 @@
         - `id_in_face`: Maps to `idInFace` in the DTO.
     -->
     <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
-        <result property="idInFace" column="l.id_in_face"/>
+        <result property="faceIdInOrigami" column="faceIdInOrigami"/>
+        <result property="idInFace" column="idInFace"/>
     </resultMap>
 
     <!--
@@ -245,7 +245,7 @@
             and face ID in origami of the face the point is in.
     -->
     <select id="getAnnotatedLinesByStepIdForward" resultMap="LineAnnotationResponseMap">
-        SELECT l.id_in_face, f.id_in_origami, point_1.id_in_face AS point_1_id, point_2.id_in_face AS point_2_id
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami, point_1.id_in_face AS point_1_id, point_2.id_in_face AS point_2_id
         FROM annotated_line l
         INNER JOIN face f ON l.face_id = f.id
         INNER JOIN origami_point AS point_1 ON l.point_1_id = point_1.id
@@ -268,7 +268,7 @@
            and face ID in origami of the face the point is in.
    -->
     <select id="getAnnotatedLinesByStepIdBackward" resultMap="LineAnnotationResponseMap">
-        SELECT l.id_in_face, f.id_in_origami, point_1.id_in_face AS point_1_id, point_2.id_in_face AS point_2_id
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami, point_1.id_in_face AS point_1_id, point_2.id_in_face AS point_2_id
         FROM annotated_line l
         INNER JOIN face f ON l.face_id = f.id
         INNER JOIN origami_point AS point_1 ON l.point_1_id = point_1.id
@@ -291,7 +291,7 @@
             and face ID in origami of the face the line is in.
     -->
     <select id="getDeleteAnnotatedLinesByStepIdForward" resultMap="DeletedIdInFaceMap">
-        SELECT l.id_in_face, f.id_in_origami
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami
         FROM annotated_line l
         INNER JOIN face f ON l.face_id = f.id
         WHERE l.deleted_step_id = #{stepId}
@@ -312,7 +312,7 @@
             and face ID in origami of the face the line is in.
     -->
     <select id="getDeleteAnnotatedLinesByStepIdBackward" resultMap="DeletedIdInFaceMap">
-        SELECT l.id_in_face, f.id_in_origami
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami
         FROM annotated_line l
         INNER JOIN face f ON l.face_id = f.id
         WHERE l.step_id = #{stepId}
