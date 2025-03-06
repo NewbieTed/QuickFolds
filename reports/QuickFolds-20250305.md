@@ -23,6 +23,11 @@ Assignee: Yixuan Wang
 
 Is it Finished: Yes
 
+#### Task: Deploy all services on AWS
+Assignee: Yixuan Wang, Hady Fawal
+
+Is it Finished: Yes
+
 #### Task: Begin /fold API for viewer on backend
 Assignee: Hinyeung Lam
 
@@ -54,11 +59,11 @@ Is it Finished: Yes
 
 #### Team Member 1: Yixuan Wang
 
-Action Items/What you did: Implemented the /rotate API
+Action Items/What you did: Implemented the /rotate API, deployed all services on AWS
 
 Result (What worked/What didn’t): All tasks are completed without any issues.
 
-What did you learn: Setting up DB tests on GitHub Actions, testing with more automation.
+What did you learn: How to deploy services using AWS RDS, EC2, and how to run frontend and backend on a single server. 
 
 Any Current Issues: N/A
 
@@ -116,7 +121,7 @@ Team Discussion if still having issues: N/A
 
 #### Team Member 6: Hady
 
-Action Items/What you did: Worked on LUG: a Layered Undirected Graph. It's a new data structure that we use to render faces directly on top of each other.
+Action Items/What you did: Worked on LUG: a Layered Undirected Graph. It's a new data structure that we use to render faces directly on top of each other. Deployed all services on AWS
 
 Result (What worked/What didn’t): We had difficulting coming up with the algorithm, but realized how to think about stacking faces, and what information in needed to complete the algorithms
 
