@@ -5,7 +5,7 @@
 
 import { Face2D } from "../geometry/Face2D.js";
 import { createPoint2D } from "../geometry/Point.js";
-import { ProblemEdgeInfo } from "./PaperManager.js";
+import { ProblemEdgeInfo, ProblemEdgeInfoMerge } from "./PaperManager.js";
 
 /**
  * stores the values of the adjacency list when doing folds
@@ -17,6 +17,38 @@ export type EdgesAdjList = {
     readonly edgeIdOfOtherFace: bigint;
 }
 
+/**
+ * stores the values of the adjacency list when doing folds
+ * used for sending data back up for mergin
+ */
+export type EdgesAdjListMerging = {
+  readonly idOfMyFace: bigint;
+  readonly idOfOtherFace: bigint;
+  readonly angleBetweenThem: bigint;
+  readonly edgeIdOfMyFace: bigint;
+  readonly edgeIdOfOtherFace: bigint;
+}
+
+
+/**
+ * Delete outsideFace -> [ogFaceId] in the adjency list
+ * @param outsideFace - the face to look for connections in adj list
+ * @param ogFaceId - the face to remove for in list of connections
+ * @returns void
+ */
+function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
+  let outsideFacesPairs: EdgesAdjList[] | undefined = adjList.get(outsideFace);
+  if (outsideFacesPairs === undefined) {
+    throw new Error();
+  }
+  for(let i = 0; i < outsideFacesPairs.length; i++) {
+    if (outsideFacesPairs[i].idOfOtherFace === ogFaceId) {
+      // found the outdated value
+      adjList.get(outsideFace)?.splice(i, 1);
+      return;
+    }
+  }
+}
 
 
 
@@ -49,6 +81,26 @@ export function BFS(startingPoints: bigint[], edgesNotToCross: Set<{face1Id: big
 }
 
 
+/**
+ * helper method to see if item is in set
+ * don't want to deal with reference semantics in normal has
+ * @param edgesSet - the set to check
+ * @param f1 = face 1
+ * @param f2 - face 2 in edge
+ */
+function DisJointSetHas(edgesSet: Set<{face1Id: bigint;face2Id: bigint;}>, f1: bigint, f2: bigint): boolean {
+  for(const item of edgesSet) {
+    if (item.face1Id === f1 && item.face2Id === f2) {
+      return true;
+    }
+    if (item.face1Id === f2 && item.face2Id === f1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;face2Id: bigint;}>): Set<bigint> {
   const result: Set<bigint> = new Set();
   const visited: Set<bigint> = new Set();
@@ -56,7 +108,7 @@ function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;fa
 
   queue.push(startVertex);
   visited.add(startVertex);
-
+  console.log(edgesNotToCross);
   while (queue.length > 0) {
       const currentVertex = queue.shift()!;
       result.add(currentVertex);
@@ -67,9 +119,8 @@ function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;fa
       for (const neighbor of neighbors) {
           // standard bfs given its's a new neighbor and we don't use the edges not to cross
           if (!visited.has(neighbor) &&
-          !edgesNotToCross.has({face1Id:currentVertex, face2Id:neighbor}) &&
-          !edgesNotToCross.has({face1Id:neighbor, face2Id:currentVertex})) {
-
+          !DisJointSetHas(edgesNotToCross, currentVertex, neighbor)) {
+              console.log("added neighbor", {face1Id:currentVertex, face2Id:neighbor});
               visited.add(neighbor);
               queue.push(neighbor);
           }
@@ -96,6 +147,50 @@ export function getDisjointSetEdge(face1Id: bigint, face2Id: bigint): Set<{face1
 }
 
 
+
+function removeAllConnectionsFromSetInDS() {
+
+}
+
+
+
+/**
+ * Takes an instance of the first old connection anywhere in the disjoint set,
+ * removes all of the itesm,
+ * and replaces it will all items in new connection
+ * @param oldconnection - the old connection
+ * @param newconnections - list of new connections that replace the old connection
+ */
+export function ReplaceExistingConnectionsBasedOnFirstWithNewConnections(
+  oldconnection: {aFaceId: bigint, bFaceId: bigint}[],
+  newconnections:  {face1Id: bigint, face2Id: bigint}[]
+) {
+
+
+  // goes for every old connection and removes it if found
+  // only adds once to every time it finds new connection
+  for(const setsOfEdgesInAGroup of disjointSet) {
+    // try to delete item and see if it works, if so, add new connections
+    let removedOldCon = setsOfEdgesInAGroup.delete({face1Id: oldconnection[0].aFaceId, face2Id: oldconnection[0].bFaceId});
+    removedOldCon ||= setsOfEdgesInAGroup.delete({face1Id: oldconnection[0].bFaceId, face2Id: oldconnection[0].aFaceId});
+
+    if (removedOldCon) {
+      // remove all other connectsion in my set
+      for(let i = 1; i < oldconnection.length; i++) {
+        setsOfEdgesInAGroup.delete({face1Id: oldconnection[i].aFaceId, face2Id: oldconnection[i].bFaceId});
+        setsOfEdgesInAGroup.delete({face1Id: oldconnection[i].bFaceId, face2Id: oldconnection[i].aFaceId});
+      }
+
+
+      // old connection exists in this set, so add all of the new connections
+      for(const newEdge of newconnections) {
+        setsOfEdgesInAGroup.add(newEdge);
+      }
+    }
+
+  }
+
+}
 
 /**
  * Takes an instance of the old connection anywhere in the disjoint set
@@ -125,6 +220,30 @@ export function ReplaceExistingConnectionWithNewConnections(
 
 
 }
+
+/**
+ * checks if there is a connection between face 1 -> face 2 in adj list
+ * @param faceId1
+ * @param faceId2
+ * @returns boolean
+ */
+export function isConnectionInAdjList(faceId1: bigint, faceId2: bigint) {
+  const listConnections = adjList.get(faceId1);
+  if (listConnections === undefined) {
+    return false;
+  }
+
+  for (const item of listConnections) {
+    if (item.idOfOtherFace === faceId2) {
+      return true;
+    }
+  }
+
+  return false;
+
+}
+
+
 
 /**
  * takes a set of edges that were created at once and adds it
@@ -172,7 +291,7 @@ export function addValueToAdjList(faceId: bigint, otherFaceConnectionDetails: Ed
  * @param idOfEdgeThatPointSplitsAtInOgFace1 - the edge in my original face that the edge splits, returns pointid if not on edge
  * @param idOfEdgeThatPointSplitsAtInOgFace1 - the other edge in my original face that the edge splits, returns pointid if not on edge
  */
-export function updateAdjListForSplitGraph( // bak; if map of points includes vertex we're chillin
+export function updateAdjListForSplitGraph(
   ogFaceId: bigint,
   [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
   [rightFaceId, rightFaceEdgeIdThatFolds, ogPoingIdsToRightPointIds]: [bigint, bigint, Map<bigint, bigint>],
@@ -370,10 +489,15 @@ export function updateAdjListForSplitGraph( // bak; if map of points includes ve
 
 
 /**
- * Udpate the adjcency list when merging a face
+ * Udpate the adjcency list when merging a face,
+ * does everything, but update the problem edges
+ * returns it in the list format of the children connection
+ * example [a1, b1], [a2, b2]
+ * will be duplicated request
  * @param mergedFaceId - the id of the new merged face
  * @param firstFaceId - the id of the first face that's merged
  * @param secondFaceId  - the id of the second face that's merged
+ * @param problemFacesICantUdpateYet list of all faces id you can't add yet. this are your a1 a2 b1 b2 faces in your DS edge
  * @param mapFromFirstFaceEdgeIdsToMergedEdges - a map of point ids in the left face that map to the merged face
  * @param mapFromSecondFaceEdgeIdsToMergedEdges - a map of point ids in the right face that map to the merged face
  */
@@ -381,9 +505,15 @@ export function updateAdjListForMergeGraph(
   mergedFaceId: bigint,
   firstFaceId: bigint,
   secondFaceId: bigint,
+  problemFacesICantUdpateYet: bigint[],
   mapFromFirstFaceEdgeIdsToMergedEdges: Map<bigint, bigint>,
   mapFromSecondFaceEdgeIdsToMergedEdges: Map<bigint, bigint>
 ) {
+  const problemEdgesToReturnTo: EdgesAdjListMerging[] = [];
+
+
+
+
     // create new list, since we are making new planes
     adjList.set(mergedFaceId, []);
 
@@ -396,7 +526,9 @@ export function updateAdjListForMergeGraph(
 
     // add udpate items for my mergedface -> list for the firstFace for INDEPENDENT FACES
     for(const item of firstFaceConnections) {
-      if (item.idOfOtherFace !== secondFaceId) {
+      // dont connect if it's my connected face from merge line
+      // OR any other face from my edge
+      if (item.idOfOtherFace !== secondFaceId && !problemFacesICantUdpateYet.includes(item.idOfOtherFace)) {
         const updatedEdge: bigint | undefined = mapFromFirstFaceEdgeIdsToMergedEdges.get(item.edgeIdOfMyFace);
         if (updatedEdge === undefined) {
           throw new Error();
@@ -410,6 +542,22 @@ export function updateAdjListForMergeGraph(
 
         // we know this exists from very top of method, so ? syntax is ok
         adjList.get(mergedFaceId)?.push(myFaceUpdatedValues);
+      } else if (item.idOfOtherFace !== secondFaceId && problemFacesICantUdpateYet.includes(item.idOfOtherFace)) {
+        // this is the face where we have a match with problem edge
+        // we'll make a note of storing a1 -> b1
+        // meaning by the end well have a1 (a) -> b1 (b)
+        //                              b1 (b) -> a1 (a)
+        //                              a2 (a) -> b2 (b)
+        //                              b2 (b) -> a2 (a)
+        // but just be on the lookout for this
+        const pairing = findValueBasedOnIds(firstFaceId, item.idOfOtherFace)
+        problemEdgesToReturnTo.push({
+          idOfMyFace: firstFaceId,
+          idOfOtherFace: pairing.idOfOtherFace,
+          edgeIdOfMyFace: pairing.edgeIdOfMyFace,
+          edgeIdOfOtherFace: pairing.edgeIdOfOtherFace,
+          angleBetweenThem: pairing.angleBetweenThem
+        });
       }
     }
 
@@ -420,7 +568,7 @@ export function updateAdjListForMergeGraph(
 
     // add udpate items for my mergedface -> list for the second Face
     for(const item of secondFaceConnections) {
-      if (item.idOfOtherFace !== firstFaceId) {
+      if (item.idOfOtherFace !== firstFaceId && !problemFacesICantUdpateYet.includes(item.idOfOtherFace)) {
         const updatedEdge: bigint | undefined = mapFromSecondFaceEdgeIdsToMergedEdges.get(item.edgeIdOfMyFace);
         if (updatedEdge === undefined) {
           throw new Error();
@@ -434,11 +582,29 @@ export function updateAdjListForMergeGraph(
 
         // we know this exists from very top of method, so ? syntax is ok
         adjList.get(mergedFaceId)?.push(myFaceUpdatedValues);
+      } else if (item.idOfOtherFace !== firstFaceId && problemFacesICantUdpateYet.includes(item.idOfOtherFace)) {
+        // this is the face where we have a match with problem edge
+        // we'll make a note of storing a1 -> b1
+        // meaning by the end well have a1 (a) -> b1 (b)
+        //                              b1 (b) -> a1 (a)
+        //                              a2 (a) -> b2 (b)
+        //                              b2 (b) -> a2 (a)
+        // but just be on the lookout for this
+
+        const pairing = findValueBasedOnIds(secondFaceId, item.idOfOtherFace)
+        problemEdgesToReturnTo.push({
+          idOfMyFace: firstFaceId,
+          idOfOtherFace: pairing.idOfOtherFace,
+          edgeIdOfMyFace: pairing.edgeIdOfMyFace,
+          edgeIdOfOtherFace: pairing.edgeIdOfOtherFace,
+          angleBetweenThem: pairing.angleBetweenThem
+        });
       }
     }
 
-
     // now we need to update all of the other faces that have our oudated version
+    // again DO NOT UPDATE THE PROBLEM EDGE
+    // a1 b1 (since b face doesn't exist yet)
     // other connections -> [.., new merged face, ...]
     // now we update any connection to our old id using the old adj list
     // and add these to the new fold objects
@@ -461,7 +627,8 @@ export function updateAdjListForMergeGraph(
     // now we add the update values back in
     for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated.length; i++) {
       const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
-      if (currentItem.idOfOtherFace !== secondFaceId) {
+      // only update put outside connection, no a1 b1
+      if (currentItem.idOfOtherFace !== secondFaceId && !problemFacesICantUdpateYet.includes(currentItem.idOfOtherFace)) {
         const outsideFaceToUpdate = currentItem.idOfOtherFace;
         // deletes the outsideFace -> firstFace kv pair
         const outsideFaceUpdatedValues: EdgesAdjList = {
@@ -499,7 +666,7 @@ export function updateAdjListForMergeGraph(
     // now we add the update values back in
     for (let i = 0; i < allOldConnectionsThatNeedToBeUdpdated2.length; i++) {
       const currentItem = allOldConnectionsThatNeedToBeUdpdated2[i];
-      if (currentItem.idOfOtherFace !== firstFaceId) {
+      if (currentItem.idOfOtherFace !== firstFaceId && !problemFacesICantUdpateYet.includes(currentItem.idOfOtherFace)) {
         const outsideFaceToUpdate = currentItem.idOfOtherFace;
         // deletes the outsideFace -> firstFace kv pair
         const outsideFaceUpdatedValues: EdgesAdjList = {
@@ -515,29 +682,12 @@ export function updateAdjListForMergeGraph(
 
     // now we delete the firstFace adj list pair
     adjList.delete(secondFaceId);
+
+
+    return problemEdgesToReturnTo;
   }
 
 
-
-/**
- * Delete outsideFace -> [ogFaceId] in the adjency list
- * @param outsideFace - the face to look for connections in adj list
- * @param ogFaceId - the face to remove for in list of connections
- * @returns void
- */
-function deleteValue(outsideFace:bigint, ogFaceId: bigint) {
-  let outsideFacesPairs: EdgesAdjList[] | undefined = adjList.get(outsideFace);
-  if (outsideFacesPairs === undefined) {
-    throw new Error();
-  }
-  for(let i = 0; i < outsideFacesPairs.length; i++) {
-    if (outsideFacesPairs[i].idOfOtherFace === ogFaceId) {
-      // found the outdated value
-      adjList.get(outsideFace)?.splice(i, 1);
-      return;
-    }
-  }
-}
 
 /**
  * Given two faces that are connected, update the angle between them
@@ -684,3 +834,17 @@ export function printAdjList() {
 
 
 
+export function findValueBasedOnIds(faceId1: bigint, faceId2: bigint) {
+  const valueList = adjList.get(faceId1);
+  if (valueList === undefined) {
+    throw new Error();
+  }
+
+
+  for(const itemPair of valueList) {
+    if (itemPair.angleBetweenThem === faceId2) {
+      return itemPair;
+    }
+  }
+
+}

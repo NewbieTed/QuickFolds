@@ -388,52 +388,6 @@ async function onMouseDown(event : MouseEvent) {
 		}
 		// current issue: all faces are being captured, i'm crossing the boundary
 		console.log(input.getFoldAngleState());
-		if (false && 	input.getFoldButtonState().state.step === 4) {
-
-
-
-			foldButtonState = input.getFoldButtonState();
-
-			if (foldButtonState.state.point1Id !== -1n &&
-				foldButtonState.state.point2Id !== -1n &&
-				foldButtonState.state.stationaryPoint) {
-
-				// Remove illustration line
-				const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
-				if (existingLine) {
-					SceneManager.getScene().remove(existingLine);
-					(existingLine as THREE.Line).geometry.dispose();
-					if (Array.isArray((existingLine as THREE.Line).material)) {
-						((existingLine as THREE.Line).material as THREE.Material[]).forEach(mat => mat.dispose());
-					} else {
-						((existingLine as THREE.Line).material as THREE.Material).dispose();
-					}
-				}
-
-				// First create the split
-				const result = await createMultiFoldBySplitting(
-					foldButtonState.state.point1Id,
-					foldButtonState.state.point2Id,
-					foldButtonState.state.faceId,
-					foldButtonState.state.stationaryPoint,
-					100n
-				);
-
-				// Log all face IDs
-				const allFaces = SceneManager.getFaceObjects();
-				console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
-				console.log("aaaaaaaa");
-
-				if (typeof result === 'string') {
-					addlogfeedMessage("red", "Error: ", result);
-				}
-			}
-
-
-			// Reset the fold state
-			input.resetFoldButton();
-			input.resetFoldAngleState();
-		}
 
 	}
 }
@@ -442,6 +396,8 @@ document.getElementById('confirm-fold')?.addEventListener('click', activateFoldS
 
 async function activateFoldStep() {
 	const foldButtonState = input.getFoldButtonState();
+	const foldAngleInput = document.getElementById("fold-angle") as HTMLInputElement;
+	const foldAngle: number = parseFloat(foldAngleInput.value) || 90;
 
 	// Remove illustration line
 	const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
@@ -461,7 +417,7 @@ async function activateFoldStep() {
 		foldButtonState.state.point2Id,
 		foldButtonState.state.faceId,
 		foldButtonState.state.stationaryPoint,
-		100n
+		BigInt(foldAngle)
 	);
 
 	// Log all face IDs

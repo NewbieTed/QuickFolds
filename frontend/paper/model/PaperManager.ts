@@ -34,6 +34,20 @@ export type ProblemEdgeInfo = {
 };
 
 
+// contains information about edge that are created that split down the middle
+// of a face, giving the info needed to update during merge
+export type ProblemEdgeInfoMerge = {
+  sideA: {
+    faceIdOfMyFaceA: bigint;
+    edgeIdOfMyFaceA: bigint;
+
+  }
+  sideB: bigint
+
+};
+
+
+
 
 const HOW_CLOSE_DO_EDGES_NEED_BE_DIRECTION_WISE_TO_MERGE = -0.97;
 const DISTANCE_TO_ALLOW_MERGING_POINTS = 0.05;
@@ -56,6 +70,10 @@ export function graphAddAnnotationPoint(
   face2D.addAnnotatedPoint(point2d);
   return true;
 }
+
+
+// todo: udpate merge and split step so that they don't
+// update db/add points if not wanted
 
 
 /**
@@ -281,7 +299,7 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
   const vertexBeforeFace2StartOfFoldEdge = face2Obj2d.getPoint((face2Obj2d.N - 1n + face2EdgeMerge) % face2Obj2d.N);
   const vertexForFace1AfterStartEdgePoint = face1Obj2d.getPoint((face1EdgeMerge + 2n) % face1Obj2d.N);
 
-
+  // todo: check to make sure this is perpindicular
   const startEdgebasis1 = createPoint2D(
     vertexBeforeFace2StartOfFoldEdge.x - startEdgePoint.x,
     vertexBeforeFace2StartOfFoldEdge.y - startEdgePoint.y,
@@ -783,11 +801,13 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
 
   // add the og points, stopping at our new line
   for(let i = firstEdgeId + 1n; i <= secondEdgeId; i++) {
+    theEdgeInTheRightFaceThatComesFromFolding = BigInt(listOfVertexForRightFace.length);
     mapOfOgPointIdsToNewPointIdsForRightFace.set(i, BigInt(listOfVertexForRightFace.length));
     listOfVertexForRightFace.push(face2D.getPoint(i));
     listOfVertexForRightFace3d.push(face3D.getPoint(i));
-    theEdgeInTheRightFaceThatComesFromFolding = i;
   }
+
+  console.log("zzz", theEdgeInTheRightFaceThatComesFromFolding);
 
   // only if the end fold point isn't on the vertex do we add it
   // (since otherwise we've alreaded added it during the for loop)
@@ -806,8 +826,8 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     throw new Error("SHOULD E");
   }
 
-
-
+  console.log("UPDATE FLEAS",  theEdgeInTheLeftFaceThatComesFromFolding);
+  console.log("UPDATE FLEAS",  theEdgeInTheRightFaceThatComesFromFolding);
 
   return [[leftFace,  leftFace3d,  mapOfOgPointIdsToNewPointIdsForLeftFace,  theEdgeInTheLeftFaceThatComesFromFolding],
           [rightFace, rightFace3d, mapOfOgPointIdsToNewPointIdsForRightFace, theEdgeInTheRightFaceThatComesFromFolding],
