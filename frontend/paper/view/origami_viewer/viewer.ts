@@ -35,14 +35,7 @@ const nextStepButton = document.getElementById('next-step-button');
 if (nextStepButton !== null) {
     nextStepButton.addEventListener('click', () => {
       isForward = true;
-      if (curStep === 1n) {
-        playNextStep1();
-      } else if (curStep === 2n) {
-        playNextStep2();
-        console.log("curStep32232323323333");
-      } else if (curStep === 3n) {
-        playNextStep3();
-      }
+      playNextStep();
       console.log("curStep", curStep);
       curStep = curStep + 1n;
   });
@@ -56,22 +49,12 @@ async function playPrevStep() {
     }
 }
 
-async function playNextStep1() {
+async function playNextStep() {
     console.log("playNextStep1");
     const result : string | true = await displayAnnotations(curStep, curStep + 1n, isForward);
     if (result !== true) {
       console.error("Error playing next step:", result);
     }
-}
-
-async function playNextStep2() {
-  console.log("playNextStep2");
-  const result2 : string | true = await displayAnnotations(curStep, curStep + 1n, isForward);
-}
-
-async function playNextStep3() {
-  console.log("playNextStep3");
-  const result3 : string | true = await displayAnnotations(curStep, curStep + 1n, isForward);
 }
 
 function animate() {

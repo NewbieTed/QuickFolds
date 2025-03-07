@@ -5,13 +5,13 @@
 
 import * as THREE from 'three';
 import * as input from './editorInputCapture.js';
-import * as settings from "./globalSettings";
-import * as SceneManager from "../SceneManager"
-import {CameraManager} from "../CameraManager"
-import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine, createANewFoldBySplitting, updateAnExistingFold} from "../../controller/Controller"
-import { createPoint3D } from '../../geometry/Point';
-import { Face3D } from '../../geometry/Face3D';
-import { addlogfeedMessage } from './errordisplay/usererror';
+import * as settings from "./globalSettings.js";
+import * as SceneManager from "../SceneManager.js"
+import {CameraManager} from "../CameraManager.js"
+import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine, createANewFoldBySplitting, updateAnExistingFold} from "../../controller/Controller.js"
+import { createPoint3D } from '../../geometry/Point.js';
+import { Face3D } from '../../geometry/Face3D.js';
+import { addlogfeedMessage } from './errordisplay/usererror.js';
 
 
 document.addEventListener('keydown', onKeyDown);
