@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.Face;
+import com.quickfolds.backend.geometry.model.dto.response.FaceWithDetailsDTO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -80,4 +81,28 @@ public interface FaceMapper {
      */
     int deleteByIds(@Param("ids") List<Long> ids,
                     @Param("deletedStepId") long deletedStepId);
+
+    /**
+     * Retrieves the id_in_origami value for a specific face ID
+     *
+     * @param faceId The database ID of the face
+     * @return The ID in origami for the specified face
+     */
+    Integer getIdInOrigamiByFaceId(@Param("faceId") Long faceId);
+
+    /**
+     * Gets the list of faces (by their id_in_origami) that were deleted in a specific step
+     *
+     * @param stepId The ID of the step that deleted the faces
+     * @return List of id_in_origami values for deleted faces
+     */
+    List<Integer> getDeletedFaceIdsByStepId(@Param("stepId") Long stepId);
+
+    /**
+     * Retrieves all faces created in a specific step with their details
+     *
+     * @param stepId The ID of the step where the faces were created
+     * @return List of FaceWithDetailsDTO containing face ID and id_in_origami
+     */
+    List<FaceWithDetailsDTO> getFacesCreatedInStep(@Param("stepId") Long stepId);
 }

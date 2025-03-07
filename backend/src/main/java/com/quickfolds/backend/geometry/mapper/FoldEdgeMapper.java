@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.FoldEdge;
+import com.quickfolds.backend.geometry.model.dto.response.EdgeResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -47,11 +48,21 @@ public interface FoldEdgeMapper {
                         @Param("deletedStepId") long deletedStepId);
 
     /**
-     * Retreives the ID in the specified face of a fold edge
+     * Retrieves the ID in the specified face of a fold edge
      *
-     * @param edgeId the specifc edge to get the id in face of.
+     * @param edgeId the specific edge to get the id in face of.
      * @param faceId the face the edge is in.
      * @return the Integer value of the edge's id in face, or Null if could not be found.
      */
     Integer getEdgeIdInFace(@Param("edgeId") long edgeId, @Param("faceId") long faceId);
+
+    /**
+     * Gets all fold edges for a specific face
+     *
+     * @param faceId The ID of the face
+     * @param origamiId The ID of the origami model
+     * @return List of edge responses containing fold edge details
+     */
+    List<EdgeResponse> getFoldEdgesByFaceId(@Param("faceId") Long faceId,
+                                            @Param("origamiId") long origamiId);
 }
