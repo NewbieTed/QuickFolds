@@ -12,6 +12,7 @@ import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnno
 import { Point3D, createPoint3D, distance } from '../../geometry/Point.js';
 import { Face3D } from '../../geometry/Face3D.js';
 import { addlogfeedMessage } from './errordisplay/usererror.js';
+import { getIsSplittingInsteadOfMerging } from './editorInputCapture.js';
 
 
 document.addEventListener('keydown', onKeyDown);
@@ -239,7 +240,7 @@ async function onMouseDown(event : MouseEvent) {
 			faceId2 = -1n;
 			input.resetDoubleButtonPressed(); // Reset the delete button state
 		}
-	} else if (foldButtonState.isPressed) {
+	} else if (foldButtonState.isPressed && getIsSplittingInsteadOfMerging()) {
 		// Handle fold button interaction
 		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -392,6 +393,168 @@ async function onMouseDown(event : MouseEvent) {
 		// current issue: all faces are being captured, i'm crossing the boundary
 		console.log(input.getFoldAngleState());
 
+	} else if (foldButtonState.isPressed && !getIsSplittingInsteadOfMerging()) {
+		// note: the state used here is going be the same as the split state
+		//       THE NAMES OF THE STATES DO NOT CORRESPOND TO WHAT THEY MEAN FOR MERING
+		//       point1Id acutally means face1Id of the edge I split
+		//       point2Id acutally means face2Id of the edge I split
+		//       faceId actually means the stationary face of the edge I split
+		// it's not great, but it will merge into our system better
+
+		// Handle fold button interaction
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+
+		if (foldButtonState.state.step === 1) {
+
+			// first point select
+			[closestPoint1, faceId1] = getClosestPointViaRaycast();
+
+			const face3d : Face3D | undefined = SceneManager.getFace3DByID(faceId1);
+			if (face3d === undefined) {
+				return;
+			}
+
+			if (closestPoint1 === -1n) {
+				return;
+			}
+
+
+			input.updateFoldState({
+				...foldButtonState.state,
+				point1Id: closestPoint1,
+				faceId: faceId1,
+				step: 2
+			});
+
+		} else if (foldButtonState.state.step === 2) {
+			// second point select
+			[closestPoint2, faceId2] = getClosestPointViaRaycast();
+
+			const face3d : Face3D | undefined = SceneManager.getFace3DByID(faceId2);
+			if (face3d === undefined) {
+				return;
+			}
+
+			if (closestPoint2 === -1n) {
+				return;
+			}
+
+			input.updateFoldState({
+				...foldButtonState.state,
+				point2Id: closestPoint2,
+				faceId: faceId2,
+				step: 3
+			});
+
+			// they have to be on different faces
+			if (faceId1 === faceId2) {
+				input.resetFoldButton();
+				closestPoint1 = -1n;
+				faceId1 = -1n;
+				closestPoint2 = -1n;
+				faceId2 = -1n;
+				return;
+			}
+
+			// Create dashed line illustration
+			const face3d1 = SceneManager.getFace3DByID(faceId1);
+			const face3d2 = SceneManager.getFace3DByID(faceId2);
+			if (face3d1 && face3d2) {
+				const point1 = face3d1.getPoint(closestPoint1);
+				const point2 = face3d2.getPoint(closestPoint2);
+
+				// Create dashed line material
+				const dashLineMaterial = new THREE.LineDashedMaterial({
+					color: 0xff0000,
+					dashSize: 0.5,
+					gapSize: 0.25,
+					linewidth: 1,
+					scale: 1,
+					opacity: 1.0,
+					transparent: true,
+					depthTest: false,   // ensures it draws on top
+					depthWrite: false,
+				});
+
+				// Create line geometry
+				const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+					new THREE.Vector3(point1.x, point1.y, point1.z),
+					new THREE.Vector3(point2.x, point2.y, point2.z),
+				]);
+
+				// Create the line
+				const dashLine = new THREE.Line(lineGeometry, dashLineMaterial);
+				// Make sure dashed effect is calculated
+				dashLine.computeLineDistances();
+
+				// Optional: Render on top of everything
+				dashLine.renderOrder = 999;
+				dashLine.name = 'foldIllustrationLine';
+
+				// Remove any existing 'foldIllustrationLine'
+				const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
+				if (existingLine) {
+					SceneManager.getScene().remove(existingLine);
+					(existingLine as THREE.Line).geometry.dispose();
+
+					// Dispose of old material(s)
+					if (Array.isArray((existingLine as THREE.Line).material)) {
+					((existingLine as THREE.Line).material as THREE.Material[]).forEach(mat => mat.dispose());
+					} else {
+					((existingLine as THREE.Line).material as THREE.Material).dispose();
+					}
+				}
+
+				// Finally, add the new line
+				SceneManager.getScene().add(dashLine);
+			}
+
+		} else if (foldButtonState.state.step === 3) {
+			raycaster.setFromCamera(mouse, cameraManager.getCamera());
+			const intersects = raycaster.intersectObjects(SceneManager.getFaceObjects());
+
+			if (intersects.length > 0) {
+
+				const intersect = intersects[0];
+				const object3dHit = intersect.object;
+				const point = createPoint3D(
+					intersect.point.x,
+					intersect.point.y,
+					intersect.point.z
+				);
+				raySphere.position.set(point.x, point.y, point.z);
+
+				const face3d = SceneManager.getFace3D(object3dHit);
+				if (face3d === undefined) {
+					return;
+				}
+
+				// here is where we do the mismatch
+				input.updateFoldState({
+					...foldButtonState.state,
+					point1Id: faceId1,
+					point2Id: faceId2,
+					faceId: face3d.ID,
+					step: 4
+				});
+
+				// Verify the state update by getting the current state
+				const currentState = input.getFoldButtonState();
+
+				// Show angle popup
+				const anglePopup = document.querySelector('.angle-popup');
+				if (anglePopup) {
+					(anglePopup as HTMLElement).style.display = 'block';
+					(anglePopup as HTMLElement).style.left = event.clientX + 'px';
+					(anglePopup as HTMLElement).style.top = event.clientY + 'px';
+				}
+			}
+
+		}
+		// current issue: all faces are being captured, i'm crossing the boundary
+		console.log(input.getFoldAngleState());
 	}
 }
 
@@ -414,30 +577,55 @@ async function activateFoldStep() {
 		}
 	}
 
-	// First create the split
-	const result = await createMultiFoldBySplitting(
-		foldButtonState.state.point1Id,
-		foldButtonState.state.point2Id,
-		foldButtonState.state.faceId,
-		foldButtonState.state.stationaryPoint,
-		BigInt(foldAngle)
-	);
+	if (!getIsSplittingInsteadOfMerging()) {
+		// ie we are actually merging, so we do that
+		// First create the split, again note mismatch
+		console.log("face1" + foldButtonState.state.point1Id);
+		console.log("face2" + foldButtonState.state.point2Id);
+		console.log("stat face" + foldButtonState.state.faceId);
+		const result = await updateExistingMultiFold(
+			foldButtonState.state.point1Id,
+			foldButtonState.state.point2Id,
+			foldButtonState.state.faceId,
+			BigInt(foldAngle)
+		);
 
-	// Log all face IDs
-	const allFaces = SceneManager.getFaceObjects();
-	console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
-	console.log("aaaaaaaa");
+		// Log all face IDs
+		const allFaces = SceneManager.getFaceObjects();
+		console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
+		console.log("aaaaaaaa");
 
-	if (typeof result === 'string') {
-		addlogfeedMessage("red", "Error: ", result);
+		if (typeof result === 'string') {
+			addlogfeedMessage("red", "Error: ", result);
+		}
+	} else {
+		// First create the split
+		const result = await createMultiFoldBySplitting(
+			foldButtonState.state.point1Id,
+			foldButtonState.state.point2Id,
+			foldButtonState.state.faceId,
+			foldButtonState.state.stationaryPoint,
+			BigInt(foldAngle)
+		);
+
+		// Log all face IDs
+		const allFaces = SceneManager.getFaceObjects();
+		console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
+		console.log("aaaaaaaa");
+
+		if (typeof result === 'string') {
+			addlogfeedMessage("red", "Error: ", result);
+		}
 	}
-
 
 
 	// Reset the fold state
 	input.resetFoldButton();
+	console.log("was reset")
 	input.resetFoldAngleState();
 }
+
+
 
 
 

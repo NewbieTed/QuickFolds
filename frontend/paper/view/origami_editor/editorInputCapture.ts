@@ -7,7 +7,7 @@ import { Point3D } from "../../geometry/Point.js";
 import * as SceneManager from "../SceneManager.js";
 import * as THREE from 'three';
 
-
+let isFoldingInsteadOfMerging = true;
 let isFocalPointVisible = true;
 let isShiftKeyPressed = false;
 let isLeftMousePressed = false;
@@ -109,6 +109,17 @@ document.getElementById('del-line-button')?.addEventListener('click', () => {
 const foldButton = document.getElementById('fold-button');
 if (foldButton !== null) {
   foldButton.addEventListener('click', () => {
+    isFoldingInsteadOfMerging = true;
+    isFoldButtonPressed = true;
+    foldState.step = 1;
+  });
+}
+
+
+const foldButtonMerge = document.getElementById('fold-button-merge');
+if (foldButtonMerge !== null) {
+  foldButtonMerge.addEventListener('click', () => {
+    isFoldingInsteadOfMerging = false;
     isFoldButtonPressed = true;
     foldState.step = 1;
   });
@@ -116,6 +127,11 @@ if (foldButton !== null) {
 
 let addLineState = false;
 let deleteLineState = false;
+
+export function getIsSplittingInsteadOfMerging() {
+  return isFoldingInsteadOfMerging;
+}
+
 
 export function getAddLineButton() {
   return addLineState
