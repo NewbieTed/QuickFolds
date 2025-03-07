@@ -45,7 +45,7 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
 
     const token = localStorage.getItem('userToken');
     const userId = localStorage.getItem('userId');
-    const data = { userId, origamiName: newOrigamiName };
+    const data = { userId, origamiName: newOrigamiName, isPublic:true };
 
 
     const response = await fetch(url, {
