@@ -8,7 +8,7 @@ import * as input from './editorInputCapture.js';
 import * as settings from "./globalSettings.js";
 import * as SceneManager from "../SceneManager.js"
 import {CameraManager} from "../CameraManager.js"
-import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine, createANewFoldBySplitting, updateAnExistingFold, createMultiFoldBySplitting} from "../../controller/Controller.js"
+import {addAnnotationPoint, deleteAnnotationPoint, addAnnotationLine, deleteAnnotationLine, createMultiFoldBySplitting, updateExistingMultiFold} from "../../controller/Controller.js"
 import { Point3D, createPoint3D, distance } from '../../geometry/Point.js';
 import { Face3D } from '../../geometry/Face3D.js';
 import { addlogfeedMessage } from './errordisplay/usererror.js';
@@ -61,25 +61,28 @@ function onKeyDown(event: KeyboardEvent) {
   	} else if (event.key === settings.TOGGLE_FOCAL_PT_KEY) {
 		cameraManager.toggleFocalPointVisible();
 	} else if (event.key === "s") {
-		// Temporary key to fold the paper in half.
-		addAnnotationPoint(
-			createPoint3D(-3, 0, 0),
-			0n, //face ID
-			0n // edge 0
-		);
-		addAnnotationPoint(
-			createPoint3D(3, 0, 0),
-			0n, // face ID
-			2n  // edge 2
-		);
-		createANewFoldBySplitting(
-			4n, // first point ID
-			5n, // second point ID
-			0n, // face ID
-			createPoint3D(-3, 0, -3), // vertex of anchored face
-			90n // angle between the faces.
-		)
-		updateAnExistingFold(1n, 2n, 1n, 90n);
+		updateExistingMultiFold(1n, 2n, 1n, -100n);
+
+
+		// // Temporary key to fold the paper in half.
+		// addAnnotationPoint(
+		// 	createPoint3D(-3, 0, 0),
+		// 	0n, //face ID
+		// 	0n // edge 0
+		// );
+		// addAnnotationPoint(
+		// 	createPoint3D(3, 0, 0),
+		// 	0n, // face ID
+		// 	2n  // edge 2
+		// );
+		// createANewFoldBySplitting(
+		// 	4n, // first point ID
+		// 	5n, // second point ID
+		// 	0n, // face ID
+		// 	createPoint3D(-3, 0, -3), // vertex of anchored face
+		// 	90n // angle between the faces.
+		// )
+		// updateAnExistingFold(1n, 2n, 1n, 90n);
 
 	}
 

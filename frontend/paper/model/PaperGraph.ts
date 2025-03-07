@@ -19,7 +19,7 @@ export type EdgesAdjList = {
 
 /**
  * stores the values of the adjacency list when doing folds
- * used for sending data back up for mergin
+ * used for sending data back up for merging
  */
 export type EdgesAdjListMerging = {
   readonly idOfMyFace: bigint;
@@ -29,6 +29,23 @@ export type EdgesAdjListMerging = {
   readonly edgeIdOfOtherFace: bigint;
 }
 
+
+/**
+ * treat is as it you are doing
+ * set.has({face1, face2})
+ * ts has reference semantics issues so we do it manually
+ * @param face1
+ * @param face2
+ */
+function edgeSetHas(set: Set<{face1Id:bigint, face2Id:bigint}>, face1:bigint, face2:bigint) {
+  for(const edge of set) {
+    if ((edge.face1Id === face1 && edge.face2Id === face2) || (edge.face1Id === face2 && edge.face2Id === face1)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 /**
  * Delete outsideFace -> [ogFaceId] in the adjency list
@@ -114,7 +131,7 @@ function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;fa
       result.add(currentVertex);
 
       const neighborsRecord = adjList.get(currentVertex) || [];
-      const neighbors = [];
+      const neighbors: bigint[] = [];
       neighborsRecord.forEach(item => neighbors.push(item.idOfOtherFace));
       for (const neighbor of neighbors) {
           // standard bfs given its's a new neighbor and we don't use the edges not to cross
@@ -137,21 +154,36 @@ function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;fa
  */
 export function getDisjointSetEdge(face1Id: bigint, face2Id: bigint): Set<{face1Id:bigint, face2Id:bigint}> {
   for(const set of disjointSet) {
-    if (set.has({face1Id: face1Id, face2Id: face2Id}) ||
-       set.has({face1Id: face2Id, face2Id: face1Id})) {
+    if (edgeSetHas(set, face1Id, face2Id)) {
       return set;
     }
   }
-
+  console.log(disjointSet);
   throw new Error("no set found for edge: " +  face1Id +"-" + face2Id);
 }
 
 
+/**
+ * returns the set of edges that are connected to the provided face1-face2 edge
+ * or an error if no connection found,
+ * also deletes from set after found
+ * @param face1Id
+ * @param face2Id
+ */
+export function getDisjointSetEdgeAndDelete(face1Id: bigint, face2Id: bigint): Set<{face1Id:bigint, face2Id:bigint}> {
 
-function removeAllConnectionsFromSetInDS() {
+  for(let i = 0; i < disjointSet.length; i++) {
+    const set = disjointSet[i];
+    if (edgeSetHas(set, face1Id, face2Id)) {
+      const cpyOfSet = new Set(set);
+      disjointSet.splice(i, 1);
+      return cpyOfSet;
+    }
+  }
 
+
+  throw new Error("no set found for edge: " +  face1Id +"-" + face2Id);
 }
-
 
 
 /**
@@ -241,6 +273,28 @@ export function isConnectionInAdjList(faceId1: bigint, faceId2: bigint) {
 
   return false;
 
+}
+
+/**
+ * returns the connection between faceid1 -> faceid2
+ * from adj list. throws error if not found
+ * @param faceId1
+ * @param faceId2
+ * @returns
+ */
+export function getConnectionInAdjList(faceId1: bigint, faceId2: bigint) {
+  const listConnections = adjList.get(faceId1);
+  if (listConnections === undefined) {
+    throw new Error("no adj list for faceid:" + faceId1);
+  }
+
+  for (const item of listConnections) {
+    if (item.idOfOtherFace === faceId2) {
+      return item;
+    }
+  }
+
+  throw new Error("no connection for:" + faceId1 + " -> " + faceId2 + " in adj list");
 }
 
 
@@ -447,6 +501,11 @@ export function updateAdjListForSplitGraph(
         }
 
         adjList.get(currentItem.idOfOtherFace)?.push(valueForTheOutsideValue);
+        // also update connection for DS
+        ReplaceExistingConnectionWithNewConnections(
+          {aFaceId:ogFaceId , bFaceId:currentItem.idOfOtherFace}, // old
+          [{face1Id:leftFaceId , face2Id:currentItem.idOfOtherFace}]  // new swap a1 for a
+        );
       } else if (Array.from(ogPoingIdsToRightPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
         // right face has the connection
         const theEdgeForTheSplitFace: bigint | undefined = ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace);
@@ -473,6 +532,11 @@ export function updateAdjListForSplitGraph(
         }
 
         adjList.get(currentItem.idOfOtherFace)?.push(valueForTheOutsideValue);
+        // also update connection for DS
+        ReplaceExistingConnectionWithNewConnections(
+          {aFaceId:ogFaceId , bFaceId:currentItem.idOfOtherFace}, // old
+          [{face1Id:rightFaceId , face2Id:currentItem.idOfOtherFace}]  // new swap a1 for a
+        );
       } else {
         throw new Error("one should have happened, saying there is an old connection from A to outside face, but A1 A2 don't have the old edge mapped to either one");
       }
@@ -542,6 +606,11 @@ export function updateAdjListForMergeGraph(
 
         // we know this exists from very top of method, so ? syntax is ok
         adjList.get(mergedFaceId)?.push(myFaceUpdatedValues);
+        // also update connection for DS
+        ReplaceExistingConnectionWithNewConnections(
+          {aFaceId:firstFaceId , bFaceId:item.idOfOtherFace}, // old
+          [{face1Id:mergedFaceId , face2Id:item.idOfOtherFace}]  // new swap a1 for a
+        ); // todo, update for face 2 (and also twice for split, one for each face)
       } else if (item.idOfOtherFace !== secondFaceId && problemFacesICantUdpateYet.includes(item.idOfOtherFace)) {
         // this is the face where we have a match with problem edge
         // we'll make a note of storing a1 -> b1
@@ -582,6 +651,11 @@ export function updateAdjListForMergeGraph(
 
         // we know this exists from very top of method, so ? syntax is ok
         adjList.get(mergedFaceId)?.push(myFaceUpdatedValues);
+        // also update connection for DS
+        ReplaceExistingConnectionWithNewConnections(
+          {aFaceId:secondFaceId , bFaceId:item.idOfOtherFace}, // old
+          [{face1Id:mergedFaceId , face2Id:item.idOfOtherFace}]  // new swap a1 for a
+        );
       } else if (item.idOfOtherFace !== firstFaceId && problemFacesICantUdpateYet.includes(item.idOfOtherFace)) {
         // this is the face where we have a match with problem edge
         // we'll make a note of storing a1 -> b1
@@ -707,6 +781,8 @@ export function updateRelativePositionBetweenFacesIndependentOfRelativeChange(fa
   for(let i = 0; i < lookingAtFace1Connections.length; i++) {
     if (lookingAtFace1Connections[i].idOfOtherFace === faceId2) {
       // found the outdated value
+      console.log("OG VALUE:" + lookingAtFace1Connections[i].angleBetweenThem);
+
       const updatedAngles: EdgesAdjList = {
         idOfOtherFace: lookingAtFace1Connections[i].idOfOtherFace,
         angleBetweenThem: lookingAtFace1Connections[i].angleBetweenThem + relativeChange,

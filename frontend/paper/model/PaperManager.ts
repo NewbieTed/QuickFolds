@@ -385,10 +385,10 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
  * @param faceId - the id of the face this happens at
  * @param angle - the angle between the faces
  * @param pointThatShouldKeepFaceStationary - a point on the side of the face that shouldn't move
- * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary]
+ * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary, leftFaceObj, rightFaceObj]
  */
 export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D)
-  : [Face2D,Face2D,bigint, ProblemEdgeInfo[], Point2D, Point2D] | false {
+  : [Face2D,Face2D,bigint, ProblemEdgeInfo[], Point2D, Point2D, Face3D, Face3D] | false {
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     console.log(`Cannot find face 2D ${faceId}`);
@@ -604,19 +604,15 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   const rightFace3dAnnoRes: AnnotationUpdate3D = copyAllAnnotationsFrom2dTo3d(faceId, rightFace);
   rightFace3d.updateAnnotations(rightFace3dAnnoRes);
 
-
-  // add planes to scene manager (for now, hady will do later)
-  addFace(leftFace3d);
-  addFace(rightFace3d);
-  deleteFace(faceId); // does the render deletion
-
   add2dFaceToPaperGraph(leftFace);
   add2dFaceToPaperGraph(rightFace);
   delete2dFaceToPaperGraph(faceId);
 
 
   // return the created faces back to the controller so that we can send these to backend
-  return [leftFace, rightFace, whichFaceIsStationary, problemIssuesEdges, vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine];
+  return [leftFace, rightFace, whichFaceIsStationary, problemIssuesEdges, vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine,
+          leftFace3d, rightFace3d
+  ];
 }
 
 

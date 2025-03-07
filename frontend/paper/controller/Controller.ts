@@ -9,9 +9,9 @@ import * as THREE from 'three';
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance, dotProduct } from "../geometry/Point.js";
-import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
-import {AddNewEdgeToDisjointSet, addValueToAdjList, BFS, EdgesAdjList, EdgesAdjListMerging, getAdjList, getAllFaceIds, getDisjointSetEdge, getFace2dFromId, isConnectionInAdjList, print2dGraph, printAdjList, ReplaceExistingConnectionsBasedOnFirstWithNewConnections, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
-import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
+import {addRotationListToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
+import {AddNewEdgeToDisjointSet, addValueToAdjList, BFS, EdgesAdjList, EdgesAdjListMerging, getAdjList, getAllFaceIds, getConnectionInAdjList, getDisjointSetEdge, getDisjointSetEdgeAndDelete, getFace2dFromId, isConnectionInAdjList, print2dGraph, printAdjList, ReplaceExistingConnectionsBasedOnFirstWithNewConnections, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
+import { getFace3DByID, incrementStepID, print3dGraph, animateFold, deleteFace, addFace } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo, ProblemEdgeInfoMerge } from '../model/PaperManager.js';
 
@@ -30,7 +30,7 @@ const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
  *                         normal vector direction for faces
  * @returns true/ or an error message
  */
-export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
   if (faceId1 === faceId2) {
     return "Faces are the same";
   }
@@ -45,7 +45,14 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
     animateFold(stationaryFace, edgeIDs[1], Number(relativeChange), faceId1);
   }
 
+
+
+
+
   // backend needs a simple update angle step
+
+
+
 
   // print2dGraph();
   // print3dGraph();
@@ -101,12 +108,13 @@ function getOriginVectorPointingInDirectionOfTargetFromCutEdge(stationaryFaceId:
 
 
 
-export function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+export async function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
   if (faceId1 === faceId2) {
     return "Faces are the same";
   }
 
   const getAllEdgesThatAreApartOfTheFace1Face2Connection = getDisjointSetEdge(faceId1, faceId2);
+
 
 
   let startMovingFace: bigint = -1n;
@@ -146,6 +154,7 @@ export function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, statio
   }
 
 
+
   // safety check that makes sure all faces were caught
   for(const faceId of getAllFaceIds()) {
     if (!allMovingFaces.has(faceId) && !allStatFaces.has(faceId)) {
@@ -153,14 +162,11 @@ export function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, statio
     }
   }
 
-
-  const pointOfStationarySide: Point3D = getFace3DByID(stationaryFace).getAveragePoint();
-
   // get edge id of rotation for animation
   let edgeIdOfRot: bigint = -1n;
 
   const edgeIDsStart = updateRelativePositionBetweenFacesIndependentOfRelativeChange(
-    faceId1, faceId2, relativeChange
+    faceId1, faceId2, -relativeChange
   );
 
   if (stationaryFace === faceId1) {
@@ -172,28 +178,84 @@ export function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, statio
   }
 
 
+
   // update face value
   for(const edge of getAllEdgesThatAreApartOfTheFace1Face2Connection) {
+    if ((edge.face1Id == faceId1 && edge.face2Id == faceId2) ||
+        (edge.face1Id == faceId2 && edge.face2Id == faceId1)) {
+          continue;  // don't want to update the clicked edge id twice. already did this above
+    }
+
+
     updateRelativePositionBetweenFacesIndependentOfRelativeChange(
       edge.face1Id, edge.face2Id, relativeChange
     );
   }
-  // todo fix: deal with if first for loop iteration doesn't split
-
-  // then i need to check if new connection is 180,
-  // if so i need to merge and not update db and call merge method
-  // otherwise i need to just update db
 
   animateFold(stationaryFace, edgeIdOfRot, Number(relativeChange), ...allMovingFaces);
 
 
-  // todo: get moving faces of all children split by
-  // taking the average point of the face and projecting it to first
-  // split and seeing what side it's one of edge
+  await sleep(5000);
 
+  // now we see what the new value is
+  const newAngleBetweenDSEdge: bigint = getConnectionInAdjList(faceId1, faceId2).angleBetweenThem;
+  console.log("new angle: " + newAngleBetweenDSEdge);
+  if (newAngleBetweenDSEdge === 180n) {
+    // we need to do our merge
+    console.log("begin merge");
+    const result = await mergeMultiFaces(faceId1, faceId2, stationaryFace);
+    console.log(result);
+    print2dGraph();
 
+  } else {
+    const listOfAllMovingFacesInDsSet: {moveFace:bigint, statFace:bigint}[] = []
+    for(const movingFace of allMovingFaces) {
+      const isInMyEdge = getPairingInsideDSEdgeSet(movingFace, getAllEdgesThatAreApartOfTheFace1Face2Connection);
+      if (isInMyEdge !== undefined) {
+        listOfAllMovingFacesInDsSet.push(isInMyEdge);
+      }
+    }
+
+    // it's just a regular no merge update, update backend via /rotate
+    await addRotationListToDB(listOfAllMovingFacesInDsSet);
+  }
+
+  return true;
 }
 
+/**
+ * mimics java classes Thread.sleep(ms) since TS uses event based design
+ * to use this method, do
+ * await sleep(miliseconds);
+ * @param ms
+ * @returns
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * goal is to return the connection to faceIdTarget in provided set. undefined if no connection found
+ * @param faceIdTarget
+ * @param getAllEdgesThatAreApartOfTheFace1Face2Connection
+ */
+function getPairingInsideDSEdgeSet(faceIdTarget: bigint, getAllEdgesThatAreApartOfTheFace1Face2Connection: Set<{
+  face1Id: bigint;
+  face2Id: bigint;
+}>) {
+
+  for(const edge of getAllEdgesThatAreApartOfTheFace1Face2Connection) {
+    // idea is i give the moving face, so return it first
+    if (edge.face1Id === faceIdTarget) {
+      return {moveFace:edge.face1Id, statFace:edge.face2Id};
+    }
+    if (edge.face2Id === faceIdTarget) {
+      return {moveFace:edge.face2Id, statFace:edge.face1Id};
+    }
+  }
+
+  return undefined;
+}
 
 
 /**
@@ -201,47 +263,60 @@ export function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, statio
  * @param faceId1
  * @param faceId2
  */
-async function mergeMultiFaces(faceId1: bigint, faceId2: bigint) {
+async function mergeMultiFaces(faceId1: bigint, faceId2: bigint, stationaryFaceId: bigint) {
   // get all edges that should be merged together
   const dsEdges: {face1Id: bigint,face2Id: bigint}[] = Array.from(getDisjointSetEdge(faceId1, faceId2));
 
-  // first we need to create the new faces
-  // with their annotation points and lines
-  // with all the "non problematic connections"
-
-  // todo: updtae Ds edges so that we have "merged" edges too
-  // use this to update ds edges
-  const dsMapping: Map<{face1: bigint, face2: bigint}, bigint> = new Map<{face1: bigint, face2: bigint}, bigint>();
+  // use this to update ds edges that should be merged (problem edges)
+  const listOfDsEdgesThatNeedToBeMerged: {face1: bigint, face2: bigint}[] = [];
 
   // takes dsmappping and breaks it up into 2 kv pairs
   const mapOfChildFacesToMergedFaces: Map<bigint, bigint> = new Map<bigint, bigint>();
-  // list of all the a1 b1, a2 b2 connection but NEVER b1 a1 in the same list
+
+  // list of all the a1 b1, a2 b2 connection (ie problem edges) but NEVER b1 a1 in the same list
   const listOfAllChildEdges: EdgesAdjListMerging[] = [];
 
-
+  // renderer information
+  const allFacesCreated: bigint[] = [];
+  const allFacesDeleted: bigint[] = [];
+  console.log("GOT HERE");
   // go thru all children faces and merge them, update the
   // adj list,
   for (let i = 0; dsEdges.length; i++) {
     // actually create the new face and partially update
     // the adj list
+    console.log("GOT HERE 2");
     const currentEdge = dsEdges[i];
+    if (currentEdge == undefined) { // this is a hot fix, find out why ds edge has undefined value in it
+      break;
+    }
     const resultForOneFace = await createANewFoldByMerging(currentEdge.face1Id, currentEdge.face2Id);
     if (typeof(resultForOneFace) === "string") {
       throw new Error(resultForOneFace);
     }
 
-    // update fields for problem edge resolving
+    // udpate fields needed for after face creation
+    // update fields for adj list for problem edge
     mapOfChildFacesToMergedFaces.set(currentEdge.face1Id, resultForOneFace.mergedFaceId);
     mapOfChildFacesToMergedFaces.set(currentEdge.face2Id, resultForOneFace.mergedFaceId);
     listOfAllChildEdges.push(...resultForOneFace.edgesToUpdate);
 
-    // update DSedges fields
-    dsMapping.set({face1: currentEdge.face1Id, face2:currentEdge.face2Id}, resultForOneFace.mergedFaceId);
+    // update DSedges fields that are problem edges
+    resultForOneFace.edgesToUpdate.forEach(item => {
+      listOfDsEdgesThatNeedToBeMerged.push({face1:item.idOfMyFace, face2:item.idOfOtherFace});
+    });
+
+    // update renderer fields
+    allFacesDeleted.push(currentEdge.face1Id);
+    allFacesDeleted.push(currentEdge.face2Id);
+    allFacesCreated.push(resultForOneFace.mergedFaceId);
+
   }
 
-
+  console.log("GOT HERE 3");
   // now we update the rest of the adj list with problem child edges
   for(const item of listOfAllChildEdges) {
+    console.log("GOT HERE 4");
     const mergedFaceAId = mapOfChildFacesToMergedFaces.get(item.idOfMyFace);
     const mergedFaceBId = mapOfChildFacesToMergedFaces.get(item.idOfOtherFace);
 
@@ -269,27 +344,78 @@ async function mergeMultiFaces(faceId1: bigint, faceId2: bigint) {
   }
 
 
-  // now we update the DS edges
-  // for (const [childPair, mergedId] of dsMapping.entries()) {
-  //   childPair.face1
-  //   ReplaceExistingConnectionsBasedOnFirstWithNewConnections(
-  //     [],
-  //     [{
-  //       face1Id:
-  //       Face2Id:
-  //     }]
-  //   );
+  // now we update the DS edges to be merged
+  // a1-b1, a2-b2 --> a-b
 
-  // }
+  // idea here is to save if added so the second child
+  // one doesn't cause any issues, don't want double a-b connections
+  const setOfMergedProblemFacesUpdatedInDS: Set<{f1: bigint, f2: bigint}> = new Set<{f1: bigint, f2: bigint}>();
+  for (const childPair of listOfDsEdgesThatNeedToBeMerged) {
+    console.log("GOT HERE 5");
+    if (mapOfChildFacesToMergedFaces.get(childPair.face1) === undefined ||
+        mapOfChildFacesToMergedFaces.get(childPair.face2) === undefined) {
+          throw new Error("merged face(s) not found");
+    }
 
-  // update renderer with animation
-  // this is more of a check that i delete
-  // all child faces and add the merged face
-  // one at a time
+    // check to make sure that there won't be a "duplicate request"
+    // ie a1-b1 and a2-b2 would make 2 copies of a-b connection
+    const mergedAFaceId = mapOfChildFacesToMergedFaces.get(childPair.face1);
+    const mergedBFaceId = mapOfChildFacesToMergedFaces.get(childPair.face2);
+    for(const mergedConnection of setOfMergedProblemFacesUpdatedInDS) {
+      if ((mergedConnection.f1 === mergedAFaceId && mergedConnection.f2 === mergedBFaceId) ||
+      (mergedConnection.f1 === mergedBFaceId && mergedConnection.f2 === mergedAFaceId)) {
+        continue;  // we've found a duplicate copy, just don't do request again
+      }
+    }
+
+    // update ds edge
+    ReplaceExistingConnectionsBasedOnFirstWithNewConnections(
+      [{
+        aFaceId: childPair.face1,
+        bFaceId: childPair.face2
+      }],
+      [{
+        face1Id:mapOfChildFacesToMergedFaces.get(childPair.face1),
+        face2Id:mapOfChildFacesToMergedFaces.get(childPair.face2)
+      }]
+    );
+
+    // add to set so no duplicates requests are done
+    setOfMergedProblemFacesUpdatedInDS.add(
+      {f1:mapOfChildFacesToMergedFaces.get(childPair.face1),
+       f2:mapOfChildFacesToMergedFaces.get(childPair.face2)
+      }
+    );
+  }
 
   // update lug
 
+  // rendering
+  allFacesDeleted;
+  allFacesCreated;
+
+  console.log("GOT HERE 6");
+  // backend
+  const allFacesCreatedObjs : Face2D[] = [];
+  allFacesCreated.forEach(item => {
+    const face = getFace2dFromId(item);
+    if (face === undefined) {
+      throw new Error("face not found for id:" + item);
+
+    }
+    allFacesCreatedObjs.push(face);
+  })
+
+  // todo: make button to do the multimerge, then test split, then merge back again
+
+  console.log("GOT HERE 7");
+  let result: boolean = await addSplitFacesToDB(allFacesCreatedObjs, allFacesDeleted, stationaryFaceId);
+  if (result === false) {
+    throw new Error("error with db");
+  }
+  console.log("GOT HERE 8");
   incrementStepID();
+  return true;
 }
 
 
@@ -308,7 +434,7 @@ async function mergeMultiFaces(faceId1: bigint, faceId2: bigint) {
  * @param angle - the angle to start between them. should be 180
  * @returns {stationaryFaceId:bigint, rotationFaceId:bigint}/ or a string of error msg
  */
-export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
   if (point1Id == point2Id) {
     return "Points cannot be same";
   }
@@ -367,7 +493,7 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
   }
 
                                                                   //vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine
-  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint,ProblemEdgeInfo[], Point2D, Point2D] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
+  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint,ProblemEdgeInfo[], Point2D, Point2D, Face3D, Face3D] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
 
   // do a quick double check later that it's ok to delete adjlist/mapping of old faces, assuming it splits
 
@@ -387,7 +513,8 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
             rotationFaceId:resultOfUpdatingPaperGraph[1].ID,
             problemEdgesForFace:resultOfUpdatingPaperGraph[3],
             perpindicularVectorPointTowardsLeftSpaceDirection: resultOfUpdatingPaperGraph[4],
-            perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5]
+            perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5],
+            splitFaceObjs:[resultOfUpdatingPaperGraph[6], resultOfUpdatingPaperGraph[7]] // stat, rot obj
     };
   }
 
@@ -396,7 +523,8 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
           rotationFaceId:resultOfUpdatingPaperGraph[0].ID,
           problemEdgesForFace:resultOfUpdatingPaperGraph[3],
           perpindicularVectorPointTowardsLeftSpaceDirection: resultOfUpdatingPaperGraph[4],
-          perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5]
+          perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5],
+          splitFaceObjs:[resultOfUpdatingPaperGraph[7], resultOfUpdatingPaperGraph[6]] // stat, rot obj
         };
 }
 
@@ -549,11 +677,9 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
   // for renderer
   const allMovingFaces : bigint[]  = [];
-  // current tasks:
-  // do DB management of making only one call
-  // recheck adj/ds list reasoning, not trying to get something that doesn't exist anymore
-  // make test request?
-  // see if you can create order to items
+  const mapOfnewFaceIdsToNewObjects: Map<bigint, Face3D> = new Map<bigint, Face3D>();
+
+
 
   // will be set during the first iteration of the for loop
   // needed for any planes that don't intersect the cut
@@ -573,6 +699,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const listOfStationaryFacesInLug: bigint[] = [];
   const mapFromOgIdsToSplitFaces: Map<bigint, {face1Id:bigint, face2Id:bigint}> = new Map<bigint, {face1Id:bigint, face2Id:bigint}>();
 
+  // for loop that first only does the split faces
+  // then copy paste this loop but update so that we continue on null returns
   // split all of the faces that need to split,
   // and update adj list with this information
   for(let i = 0; i < faceIdToUpdate.length; i++) {
@@ -591,30 +719,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     }
 
     const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+    // we only want to do the case where we split first
     if (points == null) {
-      // line doesn't intersect plane, so just skip the splitting todo: don't delete og face until after this for loop since i need it here
-      // is either static or rotating
-      const planePointOnStartFace = startFaceObj.projectToFace(face3d.getAveragePoint());
-      const planePoint2dVersion = translate3dTo2d(planePointOnStartFace, startFaceObj.ID);
-
-      const directionToPlanePoint = createPoint2D(
-        planePoint2dVersion.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
-        planePoint2dVersion.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
-      );
-
-      // i can check if im on left side if they point in the same direction
-      const amIonLeftSide = dotProduct(directionToPlanePoint, perpindicularVectorPointTowardsLeftSpaceDirection) > 0;
-
-      let amIRotating = (isLeftSideRotating && amIonLeftSide) ||
-                        (!isLeftSideRotating && !amIonLeftSide);
-
-      // im not rotating, so add it to list for hady
-      if (!amIRotating) {
-        listOfStationaryFacesInLug.push(currFaceId);
-      } else {
-        allMovingFaces.push(currFaceId);
-      }
-
       continue;
     }
 
@@ -623,7 +729,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     // note this also updates the adjlist of edges
     const projectedVertexStationaryOnNewFace = face3d.projectToFace(vertexOfFaceStationary);
     const targetPointOn2dSpace = translate3dTo2d(projectedVertexStationaryOnNewFace, face3d.ID);
-    const resultFromSplitting = await createANewFoldBySplitting(idOnCurrFaceToSplit1, idOnCurrFaceToSplit2, currFaceId, projectedVertexStationaryOnNewFace, angle); // todo: update backend so that we don't add a step here
+    const resultFromSplitting = await createANewFoldBySplitting(idOnCurrFaceToSplit1, idOnCurrFaceToSplit2, currFaceId, projectedVertexStationaryOnNewFace, 180n - angle);
 
     if (typeof(resultFromSplitting) === 'string') {
       console.error("error creating split of a face");
@@ -671,6 +777,11 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     });
     allMovingFaces.push(resultFromSplitting.rotationFaceId);
 
+    // values for rendered by linking ids to objects when creating the faces
+    resultFromSplitting.splitFaceObjs.forEach(face => {
+      mapOfnewFaceIdsToNewObjects.set(face.ID, face);
+    })
+
 
     // add faces to DB request
     if(getFace2dFromId(resultFromSplitting.stationaryFaceId) === undefined ||
@@ -692,6 +803,57 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
     // add new line to DS. this is my a1-a2 connection
     newSetOfEdgesForDS.add({face1Id:resultFromSplitting.stationaryFaceId , face2Id:resultFromSplitting.rotationFaceId})
+  }
+
+  // update faces, but only the ones that aren't split via the line
+  for(let i = 0; i < faceIdToUpdate.length; i++) {
+    // get face
+    const currFaceId: bigint = faceIdToUpdate[i];
+    const face3d = getFace3DByID(currFaceId);
+    if (face3d === undefined) {
+      throw new Error("couldn't find face");
+    }
+
+    if (getFace2dFromId(currFaceId) === undefined) {
+      continue; //this means we actually have a split,  which means this face has already been "done"
+    }
+
+
+    const projectedP1 = translate3dTo2d(face3d.projectToFace(p1), currFaceId);
+    const projectedP2 = translate3dTo2d(face3d.projectToFace(p2), currFaceId);
+
+    if (projectedP1 === null || projectedP2 === null) {
+      throw new Error("error getting split point")
+    }
+
+    const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+    // only do it if the plane we are looking at ISN"T being cut by the face
+    if (points == null) {
+      // line doesn't intersect plane, so just skip the splitting todo: don't delete og face until after this for loop since i need it here
+      // is either static or rotating
+      const planePointOnStartFace = startFaceObj.projectToFace(face3d.getAveragePoint());
+      const planePoint2dVersion = translate3dTo2d(planePointOnStartFace, startFaceObj.ID);
+
+      const directionToPlanePoint = createPoint2D(
+        planePoint2dVersion.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
+        planePoint2dVersion.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
+      );
+
+      // i can check if im on left side if they point in the same direction
+      const amIonLeftSide = dotProduct(directionToPlanePoint, perpindicularVectorPointTowardsLeftSpaceDirection) > 0;
+
+      let amIRotating = (isLeftSideRotating && amIonLeftSide) ||
+                        (!isLeftSideRotating && !amIonLeftSide);
+
+      // im not rotating, so add it to list for hady
+      if (!amIRotating) {
+        listOfStationaryFacesInLug.push(currFaceId);
+      } else {
+        allMovingFaces.push(currFaceId);
+      }
+
+      continue;
+    }
   }
 
 
@@ -869,6 +1031,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     // mark this completed in set
     listOfAllEdgesFixed.add(aFaceId + "-" + bFaceId);
   }
+
+
   // update disjointset: keep in mind i just need to know what goes together
   // i can use the lug to find out what things should be stationary by looking
   // thru the "set"
@@ -876,36 +1040,45 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // 1) add a new set that comes from all the split lines
   // 2) update the trouble edges by removing OG connection A-B and replacing it
   //    with new connections A1-B1/B2 and vice versa
-  // UpdateDisjointSetOfEdges();
   // add new edge: newSetOfEdgesForDS
   // update all existing edges that have split. come from problem children
   AddNewEdgeToDisjointSet(newSetOfEdgesForDS);
 
 
+
+  // do lug
+  // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces);
+
+  // do rendering
+  for(const [ogFaceID, splitFaceIds] of mapFromOgIdsToSplitFaces) {
+      // add planes to scene manager (for now, hady will do later)
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds.face1Id));
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds.face2Id));
+      deleteFace(ogFaceID); // does the render deletion
+  }
+
   // update renderer with animation
   // all set - stationary
   // todo: include all moving faces from BFS in this list
   const allFacesThatMoveForAnyReason: bigint[] = Array.from(BFS(allMovingFaces, newSetOfEdgesForDS));
-  console.log(getFace3DByID(allFacesThatMoveForAnyReason[0]));
+
   animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
     ...allFacesThatMoveForAnyReason
   );
 
+  // update backend
   let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);
-
   if (result === false) {
     throw new Error("error with db");
   }
 
-  // todo: update the lug
-  // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces);
 
-
-
+  // debug info
   print2dGraph();
   print3dGraph();
   printAdjList();
 
+  // update step counter
   incrementStepID();
 }
 
@@ -974,8 +1147,8 @@ export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) 
     return msg;
   }
 
-  // get all edges from DS and put into list
-  const dsEdges: {face1Id: bigint,face2Id: bigint}[] = Array.from(getDisjointSetEdge(faceId1, faceId2));
+  // get all edges from DS and put into list, deleting isolated copy
+  const dsEdges: {face1Id: bigint,face2Id: bigint}[] = Array.from(getDisjointSetEdgeAndDelete(faceId1, faceId2));
   const listOfDsEdges : bigint[] = [];
 
   dsEdges.forEach(item => {
@@ -989,13 +1162,8 @@ export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) 
   // i get back the update adj list except for problem child
   const edgesINeedToUdpate: EdgesAdjListMerging[] = updateAdjListForMergeGraph(mergedFace.ID, faceId1, faceId2, listOfDsEdges, leftFacePointIdsToNewIds,rightFacePointIdsToNewIds);
 
-  let result: boolean = await addMergeFoldToDB(faceId1, faceId2, mergedFace);
 
-  // print2dGraph();
-  // print3dGraph();
-  printAdjList();
 
-  // incrementStepID();
   return {mergedFaceId:mergedFace.ID, edgesToUpdate:edgesINeedToUdpate};
 }
 
