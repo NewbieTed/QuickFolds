@@ -116,7 +116,7 @@ if (foldButton !== null) {
 }
 
 
-const foldButtonMerge = document.getElementById('fold-button-merge');
+const foldButtonMerge = document.getElementById('fold-split-faces-button');
 if (foldButtonMerge !== null) {
   foldButtonMerge.addEventListener('click', () => {
     isFoldingInsteadOfMerging = false;

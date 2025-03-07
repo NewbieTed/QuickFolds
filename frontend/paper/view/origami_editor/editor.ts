@@ -13,6 +13,7 @@ import { Point3D, createPoint3D, distance } from '../../geometry/Point.js';
 import { Face3D } from '../../geometry/Face3D.js';
 import { addlogfeedMessage } from './errordisplay/usererror.js';
 import { getIsSplittingInsteadOfMerging } from './editorInputCapture.js';
+import { getAdjList, getConnectionInAdjList } from '../../model/PaperGraph.js';
 
 
 document.addEventListener('keydown', onKeyDown);
@@ -478,10 +479,14 @@ async function onMouseDown(event : MouseEvent) {
 					depthWrite: false,
 				});
 
+				const pointsOfEdgeConnection = getConnectionInAdjList(faceId1, faceId2);
+				const point1Line3d = face3d1.getPoint(pointsOfEdgeConnection.edgeIdOfMyFace);
+				const point2Line3d = face3d1.getPoint((pointsOfEdgeConnection.edgeIdOfMyFace + 1n) % face3d1.N);
+
 				// Create line geometry
 				const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-					new THREE.Vector3(point1.x, point1.y, point1.z),
-					new THREE.Vector3(point2.x, point2.y, point2.z),
+					new THREE.Vector3(point1Line3d.x, point1Line3d.y, point1Line3d.z),
+					new THREE.Vector3(point2Line3d.x, point2Line3d.y, point2Line3d.z),
 				]);
 
 				// Create the line
