@@ -56,4 +56,11 @@
         );
     </insert>
 
+    <!-- Get anchored face ID for a fold step -->
+    <select id="getAnchoredFaceIdByStepId" resultType="java.lang.Long">
+        SELECT anchored_face_id
+        FROM fold_step
+        WHERE step_id = #{stepId}
+    </select>
+
 </mapper>

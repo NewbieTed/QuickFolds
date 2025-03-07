@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * DTO (Data Transfer Object) representing the response for a face in an origami model.
  * <p>
@@ -28,5 +30,8 @@ public class FaceResponse {
      */
     private Integer idInOrigami;
 
+    private List<VertexResponse> vertices;
+    private List<EdgeResponse> edges;
 
 }
+
