@@ -33,7 +33,7 @@ import java.util.List;
 public class StepResponse {
 
     /**
-     * TODO
+     * The type of step, combined with the direction (e.g., "annotate forward", "fold forward").
      */
     private String stepType;
 
@@ -47,5 +47,10 @@ public class StepResponse {
      */
     private List<FaceAnnotateResponse> annotations;
 
-    // TODO: fold steps
+    /**
+     * Fold information for fold steps.
+     * Contains details about faces, edges, and vertices in a fold operation.
+     * Populated only for fold steps.
+     */
+    private FoldForwardResponse fold;
 }
