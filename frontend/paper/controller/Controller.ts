@@ -833,6 +833,7 @@ export async function processAnnotationStep(result: any) : Promise<string | true
       linesDeleted.push(BigInt(result.annotations[i].deletedLines[j]));
     }
 
+    // update the face2d
     const update2d: AnnotationUpdate2D = {
       status: "NORMAL",
       pointsAdded: newPointsMap2d,
@@ -841,6 +842,7 @@ export async function processAnnotationStep(result: any) : Promise<string | true
       linesDeleted: linesDeleted
     }
 
+    // update the face3d
     const update3d: AnnotationUpdate3D = {
       pointsAdded: newPointsMap3d,
       pointsDeleted: pointsDeleted,
