@@ -216,10 +216,10 @@ public class GeometryService {
 
         // Sets the step ID to query based on step direction
         if (isForward) {
-            step.setIsForward(true);
+            direction = "forward";
             stepId = stepMapper.getIdByIdInOrigami(origamiId, endStep);
         } else {
-            step.setIsForward(false);
+            direction = "backward";
             stepId = stepMapper.getIdByIdInOrigami(origamiId, startStep);
         }
         if (stepId == null) {
@@ -241,7 +241,7 @@ public class GeometryService {
                 throw new DbException("Error in DB, no annotations found for annotate step");
             }
 
-            step.setStepType("annotate");
+            step.setStepType("annotate " + direction);
             step.setAnnotations(annotations);
         } else if (stepType.equals(StepType.FOLD)) {
             // For fold steps, get the fold information
