@@ -3,46 +3,68 @@
  *  + create new origami
  *  + look at public origami
  */
+const USER_ID = 1;
 
+// Global variable to store the list of origami profiles
+let origamiProfiles: OrigamiProfile[] = [];
 
 // this is the type of data that backend sends when loading all public origami
 type OrigamiProfile = {
   origamiId: number,
   origamiName: string,
   author: string,
-  ratings: number};
+  ratings: number
+};
+
+/**
+ * Redirects the user to the specified URL
+ * @param url
+ */
+const redirectTo = (url: string) => {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+};
 
 
 /**
  * This is the function that runs when the user creates a new origami
+ * @see frontend/community/communityboard.html
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const fetchCreatingOrigamiAndGoToEditor = async () => {
   try {
-    const popupInput : HTMLInputElement | null = document.getElementById("popupInput") as HTMLInputElement;
+    const popupInput = document.getElementById("popupInput") as HTMLInputElement | null;
     if (popupInput === null) {
-      throw new Error("No popup button");
+      throw new Error("No popup input found");
     }
-
     const newOrigamiName = popupInput.value;
-
     const url = 'http://localhost:8080/origami/new';
-    const data = {
-      userId: 1,
-      origamiName:newOrigamiName
-    }
+
+    const token = localStorage.getItem('userToken');
+    const userId = localStorage.getItem('userId');
+    const data = { userId, origamiName: newOrigamiName };
 
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        "Content-Type" : "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify(data)
     });
 
-
     if (!response.ok) {
-      throw new Error("Failed to fetch data");
+      if (response.status === 403) {
+        alert("Your login session has expired. Please log in again.");
+        redirectTo("http://localhost:5173/frontend/user/login");
+      } else {
+        console.error("Failed to fetch data");
+      }
+      return;
     }
     const result = await response.json();
     console.log(result);
@@ -53,12 +75,11 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
     clearUserInputForName();
 
     // Navigate to editor
-    window.location.href = "http://localhost:5173/frontend/paper/view/origami_editor/editor.html";
+    redirectTo("http://localhost:5173/frontend/paper/view/origami_editor/editor.html");
   } catch (err) {
     console.error("Error fetching data:", err);
   }
 };
-
 
 /**
  * This is the function that runs when the user loads all public origami
@@ -66,54 +87,72 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
 const getAllPublicOrigami = async () => {
   try {
     const url = 'http://localhost:8080/origami/list';
-
+    const token = localStorage.getItem('userToken');
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        "Content-Type" : "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       }
     });
 
-
     if (!response.ok) {
-      throw new Error("Failed to fetch data");
+      if (response.status === 403) {
+        alert("Your login session has expired. Please log in again.");
+        redirectTo("http://localhost:5173/frontend/user/login");
+      } else {
+        console.error("Failed to fetch data");
+      }
+      return;
     }
     const result = await response.json();
     console.log(result);
 
-    createAllOrigamiDomObjects(result.data.origamis);
-
+    // Store the list in the global variable
+    origamiProfiles = result.data.origamis;
+    // Render the list of origami cards
+    renderOrigamiCards(origamiProfiles);
 
   } catch (err) {
     console.error("Error fetching data:", err);
   }
 };
 
-
 /**
- * this creates all the origami profiles and adds them to the webpage
- * @param listOfPublicOrigami the list of origmai profiles to add
+ * Renders the origami cards from the provided list
+ * @param profiles List of origami profiles to render
  */
-function createAllOrigamiDomObjects(listOfPublicOrigami: OrigamiProfile[]) {
-  console.log(listOfPublicOrigami);
-  for(let i = 0; i < listOfPublicOrigami.length; i++) {
-    let oneProfileDom = createProfile(listOfPublicOrigami[i]);
-    document.getElementById("main-board")?.appendChild(oneProfileDom);
-  }
+function renderOrigamiCards(profiles: OrigamiProfile[]) {
+  const mainBoard = document.getElementById("main-board");
+  if (!mainBoard) return;
+
+  // Clear the container
+  mainBoard.innerHTML = "";
+
+  // Create and append each profile card
+  profiles.forEach(profile => {
+    const cardElement = createProfile(profile);
+    mainBoard.appendChild(cardElement);
+  });
 }
 
-
 /**
- * This creates a single profile HTMl element
- * @param profile - the profile to create an HTMl element from
- * @returnsteh html profile element
+ * This creates a single profile HTML element (card)
+ * @param profile - the profile to create an HTML element from
+ * @returns the HTML element for the profile card
  */
-function createProfile(profile: OrigamiProfile) : HTMLElement {
+function createProfile(profile: OrigamiProfile): HTMLElement {
   const base = document.createElement("div");
   base.classList.add("card");
 
-  // generate children elements
+  // Image element
+  const image = document.createElement("img");
+  image.src = "crane_blue.png";
+  image.alt = `${profile.origamiName} image`;
+  image.classList.add("origami-image");
+
+  // Generate children elements
   const title = document.createElement("p");
   title.textContent = profile.origamiName;
   title.classList.add("title");
@@ -124,43 +163,48 @@ function createProfile(profile: OrigamiProfile) : HTMLElement {
   author.textContent = profile.author;
 
   const ratings = document.createElement("p");
+  ratings.textContent = "Rating: " + stars(profile.ratings);
 
-  ratings.textContent = "Rating:" + stars(profile.ratings);
-
-  // attach to base
+  // Attach to base
+  base.appendChild(image);
   base.appendChild(title);
   base.appendChild(lineBreak);
   base.appendChild(author);
   base.appendChild(ratings);
 
-
   return base;
 }
 
 /**
- * returns the floored amount of starts as a string
+ * Returns a string of stars representing the rating
  * @param amount - the floored amount of stars
- * @returns a string of floor amount of stars
+ * @returns a string of stars
  */
-function stars(amount : number) {
+function stars(amount: number): string {
   let result = "★";
   for (let i = 0; i < amount; i++) {
     result += "★";
   }
-
   return result;
 }
 
-// Open Popups
+/*
+ * Open Popups
+ * @see frontend/community/communityboard.html
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function openPopup() {
   const exists = document.getElementById("popup");
   if (exists !== null) {
     exists.style.display = "flex";
   }
-
 }
 
-// Close Popups
+/*
+ * Close Popups
+ * @see frontend/community/communityboard.html
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function closePopup() {
   const exists = document.getElementById("popup");
   if (exists !== null) {
@@ -169,16 +213,30 @@ function closePopup() {
   }
 }
 
-// resets the text input when creating a new origami
+// Resets the text input when creating a new origami
 function clearUserInputForName() {
-  const popupInput : HTMLInputElement | null = document.getElementById("popupInput") as HTMLInputElement;
+  const popupInput = document.getElementById("popupInput") as HTMLInputElement | null;
   if (popupInput === null) {
-    throw new Error("No popup button");
+    throw new Error("No popup input found");
   }
-
   popupInput.value = "";
-
 }
 
-// load in public origami
+// Add search functionality to filter origami cards by author
+const searchInput = document.getElementById("search") as HTMLInputElement | null;
+if (searchInput) {
+  searchInput.addEventListener("input", (event) => {
+    const query = (event.target as HTMLInputElement).value.toLowerCase();
+
+    // Filter the global list of origami profiles by author
+    const filteredProfiles = origamiProfiles.filter(profile =>
+        profile.author.toLowerCase().includes(query)
+    );
+
+    // Re-render the cards based on the filtered list
+    renderOrigamiCards(filteredProfiles);
+  });
+}
+
+// Load public origami when the page is ready
 getAllPublicOrigami();

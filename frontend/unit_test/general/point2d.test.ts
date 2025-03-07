@@ -13,7 +13,7 @@ import * as assert from 'assert';
   subtract,
   scalarMult,
   scalarDiv
-} from '../../paper/geometry/Point';
+} from '../../paper/geometry/Point.js';
 
 
 

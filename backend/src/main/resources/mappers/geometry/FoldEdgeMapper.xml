@@ -41,16 +41,18 @@
         LIMIT 1;
     </select>
 
-    <select id="getObjByFaceIdPair">
+    <select id="getObjByFaceIdPair" resultMap="FoldEdgeMap">
         SELECT
         edge_id, face_1_id, face_2_id, angle,
         id_in_face_1, id_in_face_2,
         created_by, updated_by, created_at, updated_at
         from fold_edge
-        WHERE face_1_id = #{face1Id}
-        AND face_2_id = #{face2Id}
-        ORDER BY ID DESC
-        LIMIT 1;
+        WHERE (face_1_id = #{face1Id}
+        AND face_2_id = #{face2Id})
+        OR (face_1_id = #{face2Id}
+        AND face_2_id = #{face1Id})
+        ORDER BY edge_id DESC
+        LIMIT 1
     </select>
 
     <!--

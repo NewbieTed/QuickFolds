@@ -117,7 +117,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(user)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Signup success"));
+                .andExpect(jsonPath("$.message").value("User registered successfully"));
     }
 
     /**
@@ -142,7 +142,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(user)))
                 .andExpect(status().isConflict())
-                .andExpect(content().string("Username already exists"));
+                .andExpect(jsonPath("$.message").value("Username already exists"));
     }
 
     /**
@@ -157,18 +157,30 @@ class UserControllerTest {
     @Test
     void testLoginSuccess() throws Exception {
         String dummyToken = "dummy-token";
-        when(userService.login("testUser", "password")).thenReturn(dummyToken);
 
+        // Create a dummy user with an id and username.
+        User dummyUser = new User();
+        dummyUser.setId(1L);
+        dummyUser.setUsername("testUser");
+
+        // Setup mock expectations: the login method returns a token,
+        // and findByUsername returns our dummy user.
+        when(userService.login("testUser", "password")).thenReturn(dummyToken);
+        when(userService.findByUsername("testUser")).thenReturn(dummyUser);
+
+        // Prepare the credentials map.
         Map<String, String> credentials = new HashMap<>();
         credentials.put("username", "testUser");
         credentials.put("password", "password");
 
+        // Perform the POST request and check that the response returns the expected token and userId.
         mockMvc.perform(post("/user/login")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(credentials)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value(dummyToken));
+                .andExpect(jsonPath("$.token").value(dummyToken))
+                .andExpect(jsonPath("$.userId").value(1));
     }
 
     /**

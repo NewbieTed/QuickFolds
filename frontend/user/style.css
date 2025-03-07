@@ -1,0 +1,56 @@
+/* White-based background styling */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff; /* Main background color */
+    color: #333333;           /* Main text color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+/* Card container for the sign-in form */
+.card {
+    background-color: #f0f0f0;  /* Subtle gray for a “luxury” feel */
+    border: 1px solid #cccccc;  /* Subtle border */
+    border-radius: 8px;
+    padding: 2rem;
+    width: 350px;
+}
+
+/* Headline spacing */
+.card h2 {
+    margin-bottom: 1.5rem;
+}
+
+/* Adjust form labels */
+.form-label {
+    color: #333333;
+}
+
+/* Light form controls */
+.form-control {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #cccccc;
+}
+
+/* Checkbox style */
+.form-check-input {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+}
+.form-check-label {
+    color: #333333;
+}
+
+/* Keep the same green primary button from original “vars” */
+.btn-primary {
+    background-color: #238636;
+    border-color: #238636;
+}
+.btn-primary:hover {
+    background-color: #2ea043;
+    border-color: #2ea043;
+}

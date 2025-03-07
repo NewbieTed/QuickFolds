@@ -36,7 +36,7 @@
    -->
     <resultMap id="AnnotatePointMap" type="com.quickfolds.backend.geometry.model.dto.request.AnnotatePointRequest">
         <result property="faceId" column="face_id"/>
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
+        <result property="faceIdInOrigami" column="faceIdInOrigami"/>
         <result property="idInFace" column="id_in_face"/>
         <result property="x" column="x"/>
         <result property="y" column="y"/>
@@ -56,8 +56,8 @@
         - `id_in_face`: Maps to `idInFace` in the DTO.
     -->
     <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
-        <result property="faceIdInOrigami" column="f.id_in_origami"/>
-        <result property="idInFace" column="o.id_in_face"/>
+        <result property="faceIdInOrigami" column="faceIdInOrigami"/>
+        <result property="idInFace" column="idInFace"/>
     </resultMap>
 
     <!--
@@ -108,7 +108,7 @@
             face ID in origami of the face the point is in, and type of edge and edge id if on an edge.
     -->
     <select id="getAnnotatedPointsByStepIdForward" resultMap="AnnotatePointMap">
-        SELECT o.id_in_face, o.x_pos AS x, o.y_pos AS y, o.face_id, f.id_in_origami, a.on_edge_id, e.edge_type_name
+        SELECT o.id_in_face, o.x_pos AS x, o.y_pos AS y, o.face_id, f.id_in_origami AS faceIdInOrigami, a.on_edge_id, e.edge_type_name
         FROM origami_point o
         INNER JOIN face f ON o.face_id = f.id
         INNER JOIN annotated_point a ON o.id = a.point_id
@@ -132,7 +132,7 @@
             face ID in origami of the face the point is in, and type of edge and edge id if on an edge.
     -->
     <select id="getAnnotatedPointsByStepIdBackward" resultMap="AnnotatePointMap">
-        SELECT o.id_in_face, o.x_pos AS x, o.y_pos AS y, o.face_id, f.id_in_origami, a.on_edge_id, e.edge_type_name
+        SELECT o.id_in_face, o.x_pos AS x, o.y_pos AS y, o.face_id, f.id_in_origami AS faceIdInOrigami, a.on_edge_id, e.edge_type_name
         FROM origami_point o
                  INNER JOIN face f ON o.face_id = f.id
                  INNER JOIN annotated_point a ON o.id = a.point_id
@@ -156,7 +156,7 @@
             and face ID in origami of the face the point is in.
     -->
     <select id="getDeleteAnnotatedPointsByStepIdForward" resultMap="DeletedIdInFaceMap">
-        SELECT o.id_in_face, f.id_in_origami
+        SELECT o.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami
         FROM origami_point o
         INNER JOIN annotated_point a ON o.id = a.point_id
         INNER JOIN face f ON o.face_id = f.id
@@ -178,7 +178,7 @@
             and face ID in origami of the face the point is in.
     -->
     <select id="getDeleteAnnotatedPointsByStepIdBackward" resultMap="DeletedIdInFaceMap">
-        SELECT o.id_in_face, f.id_in_origami
+        SELECT o.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami
         FROM origami_point o
         INNER JOIN annotated_point a ON o.id = a.point_id
         INNER JOIN face f ON o.face_id = f.id
