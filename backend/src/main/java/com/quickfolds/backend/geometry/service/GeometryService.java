@@ -211,6 +211,8 @@ public class GeometryService {
         StepResponse step = new StepResponse();
         // ID in database of step to query
         Long stepId;
+        // string representation of step direction to reduce redundant conditionals
+        String direction;
 
         // Sets the step ID to query based on step direction
         if (isForward) {
