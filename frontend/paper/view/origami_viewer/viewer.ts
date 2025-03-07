@@ -3,7 +3,7 @@ import * as SceneManager from "../SceneManager.js";
 import {CameraManager} from "../CameraManager.js";
 import { displayAnnotations } from '../../controller/Controller.js';
 
-let curStep = 1n;
+let curStep = 0n;
 let isForward = true;
 
 
@@ -50,7 +50,7 @@ async function playPrevStep() {
 }
 
 async function playNextStep() {
-    console.log("playNextStep1");
+    console.log("playNextStep");
     const result : string | true = await displayAnnotations(curStep, curStep + 1n, isForward);
     if (result !== true) {
       console.error("Error playing next step:", result);

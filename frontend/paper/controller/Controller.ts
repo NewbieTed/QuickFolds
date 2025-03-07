@@ -753,7 +753,6 @@ export async function displayAnnotations(startStep: bigint, endStep: bigint, isF
  * @returns either true, or a message about while the action failed
  */
 export async function processAnnotationStep(result: any) : Promise<string | true> {
-  
   for (let i = 0; i < result.annotations.length; i++) {
     const newPointsMap2d = new Map<bigint, AnnotatedPoint2D>();
     const newPointsMap3d = new Map<bigint, AnnotatedPoint3D>();
@@ -762,9 +761,7 @@ export async function processAnnotationStep(result: any) : Promise<string | true
     const linesDeleted: bigint[] = [];
     //update for face i
 
-    console.log("result", result);
     const faceId : bigint = BigInt(result.annotations[i].idInOrigami);
-    console.log("faceId", faceId);
 
     // get the face2d object
     const face2d: Face2D | undefined = getFace2dFromId(faceId);
