@@ -4,7 +4,7 @@
 
 
 import * as THREE from 'three';
-import * as input from './editorInputCapture';
+import * as input from './editorInputCapture.js';
 import * as settings from "./globalSettings";
 import * as SceneManager from "../SceneManager"
 import {CameraManager} from "../CameraManager"

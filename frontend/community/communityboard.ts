@@ -146,6 +146,11 @@ function createProfile(profile: OrigamiProfile): HTMLElement {
   const base = document.createElement("div");
   base.classList.add("card");
 
+  // Add click event to the card
+  base.addEventListener("click", () => {
+    openOrigamiViewer(profile.origamiId);
+  });
+
   // Image element
   const image = document.createElement("img");
   image.src = "crane_blue.png";
@@ -165,6 +170,7 @@ function createProfile(profile: OrigamiProfile): HTMLElement {
   const ratings = document.createElement("p");
   ratings.textContent = "Rating: " + stars(profile.ratings);
 
+
   // Attach to base
   base.appendChild(image);
   base.appendChild(title);
@@ -173,6 +179,20 @@ function createProfile(profile: OrigamiProfile): HTMLElement {
   base.appendChild(ratings);
 
   return base;
+}
+
+/**
+ * Opens the origami viewer for the selected origami
+ * @param origamiId - The ID of the origami to view
+ */
+function openOrigamiViewer(origamiId: number) {
+  console.log(`Opening origami viewer for origami ID: ${origamiId}`);
+  
+  // Store the origami ID in localStorage for the viewer to access
+  localStorage.setItem("currentOrigamiIdForViewer", origamiId.toString());
+  
+  // Redirect to the viewer page
+  redirectTo("http://localhost:5173/frontend/paper/view/origami_viewer/viewer.html");
 }
 
 /**

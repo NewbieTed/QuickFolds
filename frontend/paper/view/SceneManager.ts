@@ -15,8 +15,20 @@ import { Animation } from './animation/Animation.js';
 import { FoldAnimation } from './animation/FoldAnimation.js';
 
 let stepID = 1n;
-//const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
-const origamiID = 1n;
+// Get the origami ID from localStorage based on context (editor or viewer)
+const origamiID = (() => {
+  // Check if we're in the editor or viewer context
+  const path = window.location.pathname;
+  if (path.includes('origami_editor')) {
+    const editorId = localStorage.getItem("currentOrigamiIdForEditor");
+    return editorId ? BigInt(editorId) : 1n;
+  } else if (path.includes('origami_viewer')) {
+    const viewerId = localStorage.getItem("currentOrigamiIdForViewer");
+    return viewerId ? BigInt(viewerId) : 1n;
+  }
+  return 1n; // Default fallback
+})();
+
 if (origamiID === null) {
     throw new Error("The ID of the current origami is null.");
 }

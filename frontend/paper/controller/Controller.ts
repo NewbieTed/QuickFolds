@@ -748,10 +748,8 @@ export async function displayAnnotations(startStep: bigint, endStep: bigint, isF
 }
 
 /**
- * Given a provided line, and a face id, updates all frontend systems and backend systems
- * with adding a new annotation point
- * @param point - the point to be added [note: will be projected onto face]
- * @param faceId - the face to add the point to
+ * given a result from the backend, process the annotation step
+ * @param result - the update result from the backend
  * @returns either true, or a message about while the action failed
  */
 export async function processAnnotationStep(result: any) : Promise<string | true> {
@@ -857,5 +855,10 @@ export async function processAnnotationStep(result: any) : Promise<string | true
     face3d.updateAnnotations(update3d);
     
   }
+}
+
+export async function processFoldStep(result: any) : Promise<string | true> {
+  console.log("result", result);
+  return true;
 }
 

@@ -262,7 +262,7 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
       ]
     }
 
-    if (result.stepType === "ANNOTATE") {
+    if (result.stepType === "annotate") {
       if (result.annotations.length === 0) {
         console.log("No annotations found");
         return false;
@@ -281,6 +281,8 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
             processAnnotationStep(result3);
         }
       }
+    } else if (result.stepType === "fold") {
+      console.log("fold");
     }
     
     console.log('Response:', result);
