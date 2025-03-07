@@ -141,6 +141,9 @@ public class GeometryService {
         // Insert the fold edge entry
         foldEdgeMapper.addByObj(foldEdge);
 
+        // Create fold step with the anchored face
+        createFoldStep(stepId, anchoredFaceId);
+
         return BaseResponse.success();
     }
 
