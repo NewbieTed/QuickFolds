@@ -1,9 +1,11 @@
 package com.quickfolds.backend.geometry.controller;
 
 import com.quickfolds.backend.dto.BaseResponse;
-import com.quickfolds.backend.geometry.model.dto.AnnotationRequest;
-import com.quickfolds.backend.geometry.model.dto.FaceAnnotateRequest;
-import com.quickfolds.backend.geometry.model.dto.FoldRequest;
+import com.quickfolds.backend.geometry.model.dto.request.RotateRequest;
+import com.quickfolds.backend.geometry.model.dto.response.StepResponse;
+import com.quickfolds.backend.geometry.model.dto.request.AnnotationRequest;
+import com.quickfolds.backend.geometry.model.dto.request.FaceAnnotateRequest;
+import com.quickfolds.backend.geometry.model.dto.request.FoldRequest;
 import com.quickfolds.backend.geometry.service.GeometryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +68,25 @@ public class GeometryController {
     }
 
     /**
+     * Handles the rotating operation for an origami structure.
+     * <p>
+     * This endpoint receives a {@link RotateRequest} containing the necessary fold instructions.
+     * It validates the request, ensures it is not null, and delegates the processing
+     * to the {@link GeometryService#rotate(RotateRequest)} (FoldRequest)} method.
+     *
+     * @param request The fold request containing the necessary transformations.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success or failure.
+     * @throws IllegalArgumentException If the request body is null.
+     */
+    @PostMapping("/rotate")
+    public ResponseEntity<BaseResponse<Boolean>> rotate(@Valid @RequestBody RotateRequest request) {
+        if (request == null) {
+            return BaseResponse.failure(HttpStatus.BAD_REQUEST.value(), "No request body provided");
+        }
+        return geometryService.rotate(request);
+    }
+
+    /**
      * Handles annotation requests for an origami structure.
      * <p>
      * This endpoint receives an {@link AnnotationRequest} containing face annotations.
@@ -75,7 +96,7 @@ public class GeometryController {
      *     <li>Non-null step ID</li>
      *     <li>Non-empty list of face annotations</li>
      * </ul>
-     * If the validation passes, the request is processed by {@link GeometryService#annotate(AnnotationRequest)}.
+     * If the validation passes, the request is processed by {@link GeometryService#annotate(AnnotationRequest, Long)} (AnnotationRequest, null)}.
      *
      * @param request The annotation request containing face modifications.
      * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success or failure.
@@ -104,18 +125,46 @@ public class GeometryController {
     }
 
     /**
-     * Retrieves a specific step in the origami folding process.
+     * Retrieves necessary data to go forward or backward one step in the origami folding process.
      * <p>
-     * This endpoint expects a long value representing the step ID.
-     * It currently returns a success response as a placeholder, with the actual
-     * retrieval logic to be implemented in the future.
+     * This endpoint expects a long value representing the origami ID,
+     * an int value representing the step ID in the origami of the starting step,
+     * an int value representing the step ID in the origmi of the ending step,
+     * and a boolean value indicating if the step is going forward.
+     * It verifies that:
+     * <ul>
+     *     <li>the parameters are not null</li>
+     *     <li>startStep and endStep are exactly 1 appart</li>
+     *     <li>startStep < endStep if isForward = true</li>
+     *     <li>startStep > endStep if isForward = false</li>
+     * </ul>
+     * If verification succeeds, delegates processing to {@link GeometryService#getStep(long, int, int, boolean)}.
      *
-     * @param request The ID of the step to retrieve.
-     * @return {@link ResponseEntity} with a {@link BaseResponse} indicating success.
+     * @param origamiId The ID in the database of the origami the step is in.
+     * @param startStep The ID in the origami of the starting step.
+     * @param endStep The ID in the origami of the ending step.
+     * @param isForward Indicates if the step is going forward or not.
+     * @return {@link ResponseEntity} with a {@link BaseResponse} containing the step details,
+     *      wrapped in a {@link StepResponse}.
      */
-    @GetMapping("/get/step")
-    public ResponseEntity<BaseResponse<Boolean>> getStep(@RequestBody long request) {
-        // TODO: Implement logic to retrieve and return the requested step.
-        return BaseResponse.success();
+    @GetMapping("/getStep/{origamiId}/{startStep}/{endStep}/{isForward}")
+    public ResponseEntity<BaseResponse<StepResponse>> getStep(@PathVariable long origamiId,
+                                                         @PathVariable int startStep,
+                                                         @PathVariable int endStep, @PathVariable boolean isForward) {
+
+        int a = Math.abs(startStep - endStep);
+        if (a != 1) {
+            throw new IllegalArgumentException("Can only go between 1 step at a time. Tried to go between " + a + " steps");
+        }
+
+        if (startStep > endStep && isForward == true) {
+            throw new IllegalArgumentException("Start step cannot be greater than end step when going forward");
+        }
+
+        if (startStep < endStep && isForward == false) {
+            throw new IllegalArgumentException("Start step cannot be less than end step when going backward");
+        }
+
+        return geometryService.getStep(origamiId, startStep, endStep, isForward);
     }
 }

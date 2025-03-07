@@ -31,6 +31,7 @@ CREATE TABLE origami (
     origami_name TEXT NOT NULL DEFAULT 'Untitled',
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
     ratings DOUBLE PRECISION NOT NULL DEFAULT 0.0 CHECK (ratings >= 0.0 AND ratings <= 5.0),
+    num_ratings INTEGER NOT NULL DEFAULT 0,
 
     created_by TEXT DEFAULT NULL,
     updated_by TEXT DEFAULT NULL,
@@ -49,6 +50,32 @@ COMMENT ON COLUMN origami.created_by IS 'Identifier of the user who created this
 COMMENT ON COLUMN origami.updated_by IS 'Identifier of the user who last updated this origami record.';
 COMMENT ON COLUMN origami.created_at IS 'Timestamp when this origami record was created.';
 COMMENT ON COLUMN origami.updated_at IS 'Timestamp when this origami record was last updated.';
+
+
+-- Create Rating History Table
+CREATE TABLE rating_history (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    origami_id BIGINT NOT NULL REFERENCES origami(id),
+    rating DOUBLE PRECISION NOT NULL DEFAULT 0.0 CHECK (rating >= 0.0 AND rating <= 5.0),
+
+    created_by TEXT DEFAULT NULL,
+    updated_by TEXT DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+COMMENT ON TABLE origami IS 'Stores details about origami models created by users.';
+
+COMMENT ON COLUMN rating_history.id IS 'Unique identifier for the origami.';
+COMMENT ON COLUMN rating_history.user_id IS 'Foreign key referencing the user who rated the origami.';
+COMMENT ON COLUMN rating_history.origami_id IS 'Foreign key referencing the origami that is rated.';
+COMMENT ON COLUMN rating_history.rating IS 'Rating for the origami model by the user.';
+
+COMMENT ON COLUMN rating_history.created_by IS 'Identifier of the user who created this rating record.';
+COMMENT ON COLUMN rating_history.updated_by IS 'Identifier of the user who last updated this rating record.';
+COMMENT ON COLUMN rating_history.created_at IS 'Timestamp when this rating record was created.';
+COMMENT ON COLUMN rating_history.updated_at IS 'Timestamp when this rating record was last updated.';
 
 
 -- Create Step Type Table
@@ -398,6 +425,10 @@ CREATE INDEX idx_users_username ON users(username);
 -- Origami table
 CREATE INDEX idx_origami_user_id ON origami(user_id);
 CREATE INDEX idx_origami_is_public ON origami(is_public);
+
+-- Rating History table
+CREATE INDEX idx_rating_history_user_id ON rating_history(user_id);
+CREATE INDEX idx_rating_history_origami_id ON rating_history(origami_id);
 
 -- Step table
 CREATE INDEX idx_step_origami_id ON step(origami_id);

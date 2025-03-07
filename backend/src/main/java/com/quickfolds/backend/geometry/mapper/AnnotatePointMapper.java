@@ -1,6 +1,8 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.AnnotatedPoint;
+import com.quickfolds.backend.geometry.model.dto.request.AnnotatePointRequest;
+import com.quickfolds.backend.geometry.model.dto.DeletedIdInFace;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -29,4 +31,46 @@ public interface AnnotatePointMapper {
      * @param annotatedPoint The {@link AnnotatedPoint} entity representing the annotation.
      */
     void addByObj(@Param("annotatedPoint") AnnotatedPoint annotatedPoint);
+
+    /**
+     * Retreives a list of annotated points created in a specific step
+     * <p>
+     * This method returns the details of each annotated point created in the given step,
+     * formated as an {@link AnnotatePointRequest} object.
+     *
+     * @param stepId The specific step to get the annotated points of.
+     * @return A list of {@link AnnotatePointRequest} objects representing an annotated point,
+     * or an empty list if no annotated points were created in the given step.
+     */
+    List<AnnotatePointRequest> getAnnotatedPointsByStepIdForward(@Param("stepId") long stepId);
+
+    /**
+     * Retreives a list of annotated points deleted in a specific step
+     * <p>
+     * This method returns the details of each annotated point deleted in the given step,
+     * formated as an {@link AnnotatePointRequest} object.
+     *
+     * @param stepId The specific step to get the annotated points of.
+     * @return A list of {@link AnnotatePointRequest} objects representing an annotated point,
+     * or an empty list if no annotated points were deleted in the given step.
+     */
+    List<AnnotatePointRequest> getAnnotatedPointsByStepIdBackward(@Param("stepId") long stepId);
+
+    /**
+     * Retreives a list of IDs corresponding to annotated points deleted in a specific step.
+     *
+     * @param stepId the specific step to get the deleted points of.
+     * @return a list of {@link DeletedIdInFace} objects representing a deleted ID,
+     * or an empty list if no annotated points were deleted in the given step
+     */
+    List<DeletedIdInFace> getDeleteAnnotatedPointsByStepIdForward(@Param("stepId") long stepId);
+
+    /**
+     * Retreives a list of IDs corresponding to annotated points created in a specific step.
+     *
+     * @param stepId the specific step to get the created points of.
+     * @return a list of {@link DeletedIdInFace} objects representing a created ID,
+     * or an empty list if no annotated points were created in the given step
+     */
+    List<DeletedIdInFace> getDeleteAnnotatedPointsByStepIdBackward(@Param("stepId") long stepId);
 }

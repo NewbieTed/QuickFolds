@@ -59,4 +59,12 @@ public interface StepMapper {
                      @Param("idInOrigami") int idInOrigami,
                      @Param("createdBy") String createdBy,
                      @Param("updatedBy") String updatedBy);
+
+    /**
+     * Retrieves the step type of a step based on its ID.
+     *
+     * @param stepId The ID in the database of the step to retrieve the step type of.
+     * @return the name of the step type corresponding to the specific step, or {@code null} if not found.
+     */
+    String getTypeByStepId(@Param("stepId") long stepId);
 }

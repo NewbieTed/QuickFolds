@@ -45,12 +45,15 @@ public class NewOrigamiRequest {
      * <p>
      * This field allows users to assign a meaningful name to their origami creation.
      * It is required to ensure that each origami model is properly identified.
-     * <p>
-     * Validation:
-     * <ul>
-     *     <li>Must be non-null.</li>
-     * </ul>
      */
-    @NotNull(message = "Field 'origamiName' in New Origami Request must not be null")
     private String origamiName;
+
+
+    /**
+     * Whether the origami model is set to public.
+     * <p>
+     * This field allows users to determine whether the origami is public (visible by others).
+     * It is required to ensure that the origami models are properly displayed in the community board.
+     */
+    private Boolean isPublic;
 }
