@@ -44,4 +44,11 @@ public class FoldForwardResponse {
      * This list can be empty if no faces were deleted.
      */
     private List<Integer> deletedFaces;
+
+    /**
+     * List of face IDs that should be hidden as part of the fold operation.
+     * <p>
+     * This list can be empty if no faces were hidden.
+     */
+    private List<FaceAnnotateResponse> annotations;
 }

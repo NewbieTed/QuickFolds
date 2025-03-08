@@ -1338,9 +1338,12 @@ public class GeometryService {
 
     /**
      * Helper method to retrieve forward fold information.
+     *
+     * @param origamiId The ID of the origami.
+     * @param stepIdInOrigami The step number within the origami context.
+     * @return The fold forward response containing details about the fold operation.
      */
     private FoldForwardResponse getFoldForwardHelper(long origamiId, int stepIdInOrigami) {
-        // This is our existing implementation from before
         Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
         if (stepId == null) {
             throw new IllegalArgumentException("Could not find the requested step");
@@ -1371,12 +1374,20 @@ public class GeometryService {
         List<FaceResponse> createdFaces = getFacesCreatedInStep(stepId, origamiId);
         response.setFaces(createdFaces);
 
+        // Get annotations for this step
+        List<FaceAnnotateResponse> annotations = annotateStep(stepId, true);
+        response.setAnnotations(annotations);
+
         return response;
     }
 
     /**
      * Helper method to retrieve backward fold information.
      * This handles the undo operation for a fold step.
+     *
+     * @param origamiId The ID of the origami.
+     * @param stepIdInOrigami The step number within the origami context.
+     * @return The fold backward response containing details about the fold operation.
      */
     private FoldBackwardResponse getFoldBackwardHelper(long origamiId, int stepIdInOrigami) {
         Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
@@ -1399,6 +1410,10 @@ public class GeometryService {
         // Get faces deleted by this step (these need to be restored with full geometry)
         List<FaceResponse> facesToRestore = getFacesDeletedInStep(stepId, origamiId);
         response.setFacesToRestore(facesToRestore);
+
+        // Get annotations for this step (backward direction)
+        List<FaceAnnotateResponse> annotations = annotateStep(stepId, false);
+        response.setAnnotations(annotations);
 
         return response;
     }

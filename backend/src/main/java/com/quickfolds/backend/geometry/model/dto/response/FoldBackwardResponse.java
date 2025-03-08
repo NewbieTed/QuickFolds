@@ -19,4 +19,9 @@ public class FoldBackwardResponse {
      * IDs of faces to hide (created during the fold)
      */
     private List<Integer> facesToDelete;
+
+    /**
+     * Annotations to remove
+     */
+    private List<FaceAnnotateResponse> annotations;
 }
