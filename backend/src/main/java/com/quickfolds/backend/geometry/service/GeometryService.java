@@ -1403,6 +1403,15 @@ public class GeometryService {
 
         FoldBackwardResponse response = new FoldBackwardResponse();
 
+        // Get the anchored face ID (same as in forward response)
+        Long anchoredFaceId = foldStepMapper.getAnchoredFaceIdByStepId(stepId);
+        if (anchoredFaceId == null) {
+            throw new DbException("Error in DB, could not find anchored face for fold step");
+        }
+
+        Integer anchoredFaceIdInOrigami = faceMapper.getIdInOrigamiByFaceId(anchoredFaceId);
+        response.setAnchoredFaceIdInOrigami(anchoredFaceIdInOrigami);
+
         // Get faces created in this step (these will be "deleted" in backward navigation)
         List<Integer> facesCreatedInStep = faceMapper.getFaceIdsInOrigamiCreatedInStep(stepId);
         response.setFacesToDelete(facesCreatedInStep);

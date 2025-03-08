@@ -11,6 +11,13 @@ import java.util.List;
 @AllArgsConstructor
 public class FoldBackwardResponse {
     /**
+     * The ID of the anchor face in the origami model that serves as the pivot for folding.
+     * <p>
+     * This ID serves to identify the anchor face within a specific origami model.
+     */
+    private Integer anchoredFaceIdInOrigami;
+
+    /**
      * Original faces to restore with their complete geometry
      */
     private List<FaceResponse> facesToRestore;
