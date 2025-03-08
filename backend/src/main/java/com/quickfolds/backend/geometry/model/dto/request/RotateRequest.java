@@ -1,12 +1,16 @@
 package com.quickfolds.backend.geometry.model.dto.request;
 
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
+
 
 /**
  * DTO (Data Transfer Object) representing a request to perform a rotate operation on an origami model.
@@ -42,34 +46,16 @@ public class RotateRequest {
     @Positive(message = "Field 'stepIdInOrigami' in RotateRequest must be positive")
     private Integer stepIdInOrigami;
 
-    /**
-     * The ID of the anchor face in the origami model that serves as the pivot for rotating.
-     * <p>
-     * - Must be non-null.
-     * - Must be zero or positive (no negative values allowed).
-     */
-    @NotNull(message = "Field 'anchoredFaceIdInOrigami' in RotateRequest must not be null")
-    @PositiveOrZero(message = "Field 'anchoredFaceIdInOrigami' in RotateRequest must be non-negative")
-    private Integer anchoredFaceIdInOrigami;
-
 
     /**
-     * The ID of the rotate face in the origami model.
+     * List of faces to be rotated as part of the rotate operation.
      * <p>
-     * - Must be non-null.
-     * - Must be zero or positive (no negative values allowed).
+     * - Must not be null.
+     * - Must contain at least one face.
+     * - Each face is validated using `FaceRotateRequest`.
      */
-    @NotNull(message = "Field 'rotatedFaceIdInOrigami' in RotateRequest must not be null")
-    @PositiveOrZero(message = "Field 'rotatedFaceIdInOrigami' in RotateRequest must be non-negative")
-    private Integer rotatedFaceIdInOrigami;
-
-
-    /**
-     * The angle of the fold edge relative to its face.
-     * <p>
-     * - Must be non-null.
-     * - No explicit validation on angle values (consider adding range validation if needed).
-     */
-    @NotNull(message = "Field 'angle' in RotateRequest must not be null")
-    private Double angle;
+    @Valid
+    @NotNull(message = "Field 'faces' in RotateRequest must not be null")
+    @Size(min = 1, message = "Faces list in RotateRequest cannot be empty")
+    private List<@Valid FaceRotateRequest> faces;
 }

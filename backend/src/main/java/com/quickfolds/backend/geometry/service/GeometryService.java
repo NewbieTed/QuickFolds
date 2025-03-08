@@ -112,37 +112,39 @@ public class GeometryService {
         int stepIdInOrigami = request.getStepIdInOrigami();
         long stepId = createStep(origamiId, StepType.FOLD, stepIdInOrigami);
 
-        // Retrieve the ID of the faces
-        long anchoredFaceId = getFaceIdByIdInFace(origamiId, request.getAnchoredFaceIdInOrigami(), "Anchored");
-        long rotatedFaceId = getFaceIdByIdInFace(origamiId, request.getRotatedFaceIdInOrigami(), "Rotated");
+        for (FaceRotateRequest face : request.getFaces()) {
+            // Retrieve the ID of the faces
+            long anchoredFaceId = getFaceIdByIdInFace(origamiId, face.getAnchoredFaceIdInOrigami(), "Anchored");
+            long rotatedFaceId = getFaceIdByIdInFace(origamiId, face.getRotatedFaceIdInOrigami(), "Rotated");
 
-        // Retrieve the related fold edge
-        FoldEdge foldEdge = foldEdgeMapper.getObjByFaceIdPair(anchoredFaceId, rotatedFaceId);
+            // Create fold step with the anchored face
+            createFoldStep(stepId, anchoredFaceId);
 
-        // Deleted the edge
-        int deletedRows = edgeMapper.deleteById(foldEdge.getEdgeId(), stepId);
+            // Retrieve the related fold edge
+            FoldEdge foldEdge = foldEdgeMapper.getObjByFaceIdPair(anchoredFaceId, rotatedFaceId);
 
-        if (deletedRows != 1) {
-            throw  new DbException("Number of deleted fold edges is incorrect, expected: 1, actual: " + deletedRows +
-                    " Verify if DB is correct");
+            // Deleted the edge
+            int deletedRows = edgeMapper.deleteById(foldEdge.getEdgeId(), stepId);
+
+            if (deletedRows != 1) {
+                throw  new DbException("Number of deleted fold edges is incorrect, expected: 1, actual: " + deletedRows +
+                        " Verify if DB is correct");
+            }
+
+            // Create a new edge
+            long edgeId = createEdge(stepId, getEdgeTypeId(EdgeType.FOLD));
+
+            // Update fields of the new fold edge
+            foldEdge.setEdgeId(edgeId);
+            foldEdge.setAngle(face.getAngle());
+            foldEdge.setCreatedBy(null);
+            foldEdge.setUpdatedBy(null);
+            foldEdge.setCreatedAt(null);
+            foldEdge.setUpdatedAt(null);
+
+            // Insert the fold edge entry
+            foldEdgeMapper.addByObj(foldEdge);
         }
-
-        // Create a new edge
-        long edgeId = createEdge(stepId, getEdgeTypeId(EdgeType.FOLD));
-
-        // Update fields of the new fold edge
-        foldEdge.setEdgeId(edgeId);
-        foldEdge.setAngle(request.getAngle());
-        foldEdge.setCreatedBy(null);
-        foldEdge.setUpdatedBy(null);
-        foldEdge.setCreatedAt(null);
-        foldEdge.setUpdatedAt(null);
-
-        // Insert the fold edge entry
-        foldEdgeMapper.addByObj(foldEdge);
-
-        // Create fold step with the anchored face
-        createFoldStep(stepId, anchoredFaceId);
 
         return BaseResponse.success();
     }
