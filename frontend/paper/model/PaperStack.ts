@@ -58,8 +58,8 @@ import * as SceneManager from "../view/SceneManager.js"
 class FaceNode {
 
     readonly faceID: bigint;
-    readonly upLinks: Set<bigint>;
-    readonly downLinks: Set<bigint>;
+    upLinks: Set<bigint>;
+    downLinks: Set<bigint>;
 
     constructor(faceID: bigint) {
         this.faceID = faceID;
@@ -465,6 +465,9 @@ function partition(
 
     }
 
+    // Flip the layer order of the mobile component.
+    invert(mobileComponent);
+
     // Return the stationary component and mobile component.
     return [stationaryComponent, mobileComponent];
 }
@@ -756,6 +759,36 @@ function merge(
 
     // Return the stationary component and mobile component.
     return mergedComponent;
+}
+
+
+/**
+ * Flips the component's layers upside down, in place.
+ * TODO: doc comment
+ */
+export function invert(component: PaperComponent) {
+
+    const numLayers = BigInt(component.layers.length);
+    component.layers.reverse();
+    for (let i = 0n; i < numLayers; i++) {
+ 
+        for (const faceID of component.layers[Number(i)].keys()) {
+
+            // Invert uplinks and downlinks for each node.
+            const node = component.layers[Number(i)].get(faceID);
+            const up = node.upLinks;
+            const down = node.downLinks;
+            node.upLinks = down;
+            node.downLinks = up;
+
+            // Invert the layer mapping using simple math.
+            component.layerMap.set(
+                faceID, numLayers - 1n - component.layerMap.get(faceID)
+            );
+        }
+
+    }
+
 }
 
 
