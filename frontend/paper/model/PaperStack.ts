@@ -6,7 +6,9 @@
 
 /** 
  * Some terminology to help understand the kinds of folds and implementation of this file:
+ * 
  * "Stable" angles refer to an angle between two faces of 0, 180, or 360.
+ * 
  * Folds are classified by how they change the angles between faces as follows.
  * A fold is "complete" when its both start and end angle are stable.
  * A fold is "partial" when its start angle is stable, but its end angle is not.
@@ -37,9 +39,12 @@
  * Complete Merge: 0 or 360 -> 180. Components are Partitioned and Merged.
  * Partial Split: 180 -> nonstable. Component is Split.
  * Resolved Merge: nonstable -> 180. Components are Partitioned and Merged.
+ * Complete Align: 0 or 360 -> 360 or 0. Components are Partitioned and Stacked.
  * Partial Align: 0 or 360 -> nonstable. Components are Partitioned.
  * Resolved Align: nonstable -> 0 or 360. Components are Partitioned and Stacked.
  * Adjusted Align: nonstable -> nonstable. Nothing happens to the component.
+ * 
+ * (Any other combinations of the above vocabulary are impossible.)
  */
 
 
@@ -459,6 +464,9 @@ function partition(
     // Return the stationary component and mobile component.
     return [stationaryComponent, mobileComponent];
 }
+
+
+
 
 
 function getNextComponentID() {

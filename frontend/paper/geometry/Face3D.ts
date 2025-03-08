@@ -735,7 +735,6 @@ export class Face3D {
     }
 
 
-
     // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
 }

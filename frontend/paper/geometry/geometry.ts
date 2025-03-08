@@ -6,7 +6,8 @@
 
 import {Face3D} from "./Face3D.js"
 import * as pt from "./Point.js"
-
+import * as SceneManager from "../view/SceneManager.js"
+import * as THREE from 'three';
 
 /**
  * Represents an orthonomormal basis for a plane in 3D space. Specified
@@ -28,7 +29,7 @@ export type PlaneBasis3D = {
  * underlying plane of the Face3D.
  * @param face The Face3D to get a basis for.
  * @returns The plane basis whose:
- *            - origin is the given face's pivot,
+ *            - origin is the given face's pivot (centroid),
  *            - normal is the principal normal, 
  *            - first axis is from the pivot to vertex 0 of the face,
  *            - second axis is orthogonal to the first and the normal
@@ -220,4 +221,141 @@ export function computeFaceIntersection(
 
     // Every shadow computed overlaps; the faces must intersect.
     return true;
+}
+
+
+/**
+ * Finds the axis for the crease line specified by the ID of the anchored
+ * face during some fold and the ID of the edge in the anchored face which 
+ * is being folded.
+ * @param anchoredFaceID The ID of the face that doesn't move.
+ * @param foldEdgeID The ID of the edge in the anchored face being folded.
+ * @returns The "vector" specifying the axis of rotation, from the first
+ * point to the second point. An angle of rotation with respect to this axis
+ * is interpreted as positive being CCW according to the right hand rule.
+ * @throws Error when the direction of the fold is unresolvable. This usually
+ * is an indication that the geometry is badly corrupted somehow.
+ */
+export function resolveFoldDirection(
+            anchoredFaceID: bigint,
+            foldEdgeID: bigint,
+            ): [pt.Point3D, pt.Point3D] {
+
+
+    const anchored = SceneManager.getFace3DByID(anchoredFaceID);
+    if (anchored === undefined) {
+        throw new Error(`No Face3D with ID ${anchoredFaceID} exists.`);
+    }
+
+    // Get three points, the first two of which are on the fold edge.
+    const vertex1 = anchored.getPoint(foldEdgeID);
+    const vertex2 = anchored.getPoint((foldEdgeID + 1n) % anchored.N);
+    const vertex3 = anchored.getPoint((foldEdgeID + 2n) % anchored.N);
+
+    const dir12 = pt.normalize(pt.subtract(vertex2, vertex1));
+    const dir23 = pt.normalize(pt.subtract(vertex3, vertex2));
+    const similarity: number = pt.dotProduct(
+        anchored.getPrincipleNormal(), pt.crossProduct(dir12, dir23)
+    );
+
+    let axisPoint1: pt.Point3D;
+    let axisPoint2: pt.Point3D;
+
+    if (similarity < 0) {
+        // The correct direction for the Right-Hand-Rule is 1 to 2.
+        axisPoint1 = vertex1;
+        axisPoint2 = vertex2;
+    } else if (similarity > 0) {
+        // The correct direction for the Right-Hand-Rule is 2 to 1.
+        axisPoint1 = vertex2;
+        axisPoint2 = vertex1;
+    } else {
+        // This should never ever happen, as the principle normal and the
+        // cross product above should be mathematically both unit vectors
+        // which point exactly the same direction or opposite directions.
+        throw new Error("Could not resolve fold direction.");
+    }
+
+    return [axisPoint1, axisPoint2];
+}
+
+
+// Does the same thing as rotateFace in Face3D but only on a given set
+// points and an axis/angle.
+// TODO: doc comment
+export function rotateVertices(
+            vertices: pt.Point3D[],
+            axisPoint1: pt.Point3D,
+            axisPoint2: pt.Point3D,
+            deltaAngle: number
+            ): pt.Point3D[] {
+
+    // Compute the normalized direction vector of the axis.
+    const axis: pt.Point3D = pt.normalize(
+        pt.subtract(axisPoint2, axisPoint1)
+    );
+
+    // Create the translation and quaternion to be applied.
+    const shift: THREE.Vector3 = new THREE.Vector3(
+        axisPoint1.x, axisPoint1.y, axisPoint1.z
+    );
+    const q: THREE.Quaternion = new THREE.Quaternion();
+    q.setFromAxisAngle(
+        new THREE.Vector3(axis.x, axis.y, axis.z), deltaAngle
+    );
+
+    const result: pt.Point3D[] = [];
+    // Rotate every point.
+    for (let i = 0n; i < vertices.length; i++) {
+
+        const oldVertex = vertices[Number(i)];
+        const vertexVec = new THREE.Vector3(
+            oldVertex.x,
+            oldVertex.y,
+            oldVertex.z,
+        )
+
+        vertexVec.sub(shift);
+        vertexVec.applyQuaternion(q);
+        vertexVec.add(shift);
+
+        result.push(pt.createPoint3D(
+            vertexVec.x, vertexVec.y, vertexVec.z, "Vertex"
+        ));
+
+    }
+
+    return result;
+}
+
+// Does the same thing as getPlaneBasis but for a given set of vertices.
+// TODO: doc comment
+export function getPlaneBasisFromVertices(
+            vertices: pt.Point3D[],
+            principalNormal: pt.Point3D,
+            ): PlaneBasis3D {
+
+    // Origin of the plane.
+    const origin: pt.Point3D = pt.average(vertices);
+
+    // Normal.
+    const normal: pt.Point3D = pt.copyPoint(principalNormal);
+
+    // First axis.
+    const axis1: pt.Point3D = pt.normalize(
+        pt.subtract(vertices[0], origin)
+    );
+
+    // Second axis.
+    const axis2: pt.Point3D = pt.crossProduct(principalNormal, axis1);
+
+    // Create the basis object.
+    const basis: PlaneBasis3D = {
+        origin: origin,
+        normal: principalNormal,
+        axis1: axis1,
+        axis2: axis2
+    }
+
+    return basis;
 }
