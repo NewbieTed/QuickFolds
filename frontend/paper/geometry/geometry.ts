@@ -359,3 +359,70 @@ export function getPlaneBasisFromVertices(
 
     return basis;
 }
+
+
+/**
+ * Does the same thing as computeFaceIntersection except already given
+ * the vertices in 2D.
+ * TODO: doc comment
+ */
+export function faceIntersectionByVertices(
+            setA: pt.Point2D[], 
+            setB: pt.Point2D[]
+            ): boolean {
+
+    // First, assuming that these Face3D are coplanar,
+    // we project them onto the 2D plane basis and obtain
+    // 2D coordinates for all of the vertices. This
+    // simplifies the problem to detecting whether two
+    // normal old convex polygons intersect.
+
+    // Suppose Face A has N sides, and Face B has M sides.
+    // For each of these N + M different sides, compute the
+    // (2D) normal vectors. Each of these vectors is a potential
+    // line to project onto and check for "shadow overlap".
+    // By the Separating Axis Theorem, we have that if even one
+    // of the shadows do not overlap, these polygons don't intersect.
+    // On the other hand, if the shadows overlap in every case,
+    // the polygons must intersect.
+
+    const N = BigInt(setA.length);
+    const M = BigInt(setB.length);
+
+    // Check the normals for face A.
+    for (let i = 0n; i < N; i++) {
+    const firstVertex = setA[Number(i)];
+    const secondVertex = setA[Number((i + 1n) % N)];
+    const edgeDirection = pt.subtract(secondVertex, firstVertex);
+    const normal = pt.createPoint2D(
+        edgeDirection.y,
+        edgeDirection.x * -1
+    ); // Opposite reciprocal.
+
+    // Check for shadow overlap.
+    if (!computeShadowOverlap(setA, setB, normal)) {
+        // Some shadow doesn't overlap; the faces are separable.
+        return false;
+    }
+    }
+
+    // Check the normals for face B.
+    for (let i = 0n; i < M; i++) {
+    const firstVertex = setB[Number(i)];
+    const secondVertex = setB[Number((i + 1n) % M)];
+    const edgeDirection = pt.subtract(secondVertex, firstVertex);
+    const normal = pt.createPoint2D(
+        edgeDirection.y,
+        edgeDirection.x * -1
+    ); // Opposite reciprocal.
+
+    // Check for shadow overlap.
+    if (!computeShadowOverlap(setA, setB, normal)) {
+        // Some shadow doesn't overlap; the faces are separable.
+        return false;
+    }
+    }
+
+    // Every shadow computed overlaps; the faces must intersect.
+    return true;
+}

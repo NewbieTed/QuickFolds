@@ -3,6 +3,10 @@
  * structure which tracks how layers of the paper stack on top of each other.
  */
 
+import * as pt from "../geometry/Point.js"
+import * as geo from "../geometry/geometry.js"
+import * as SceneManager from "../view/SceneManager.js"
+
 
 /** 
  * Some terminology to help understand the kinds of folds and implementation of this file:
@@ -466,10 +470,168 @@ function partition(
 }
 
 
+/**
+ * Joins two paper component by stacking the second on TOP of the first.
+ * @param botComponent The component to stack on the bottom.
+ * @param topComponent The component to invert and stack on the top.
+ * @returns The modified botComponent (which now has topComponent stacked).
+ * TODO: doc comment
+ */
+function stack(
+            botComponent: PaperComponent,
+            topComponent: PaperComponent,
+            anchoredFaceID: bigint,
+            foldEdgeID: bigint,
+            deltaAngle: number
+            ): PaperComponent {
 
 
+    // Transform all of the top faces by the rotation.
+    const [foldStart, foldEnd] = geo.resolveFoldDirection(
+                                     anchoredFaceID, foldEdgeID);
+    const rotatedFaces = new Map<bigint, pt.Point3D[]>();
+    for (const faceID of topComponent.layerMap.keys()) {
+        const rotatedVertices = geo.rotateVertices(
+            SceneManager.getFace3DByID(faceID).vertices,
+            foldStart,
+            foldEnd,
+            deltaAngle
+        );
+        rotatedFaces.set(faceID, rotatedVertices);
+    }
+
+    // Get a basis and turn every face into that 2D basis.
+    const facesIn2D = new Map<bigint, pt.Point2D[]>;
+    const firstFaceID: bigint = topComponent.layerMap.keys().next().value;
+    const basis = geo.getPlaneBasisFromVertices(
+        rotatedFaces.get(firstFaceID),
+        SceneManager.getFace3DByID(firstFaceID).getPrincipleNormal()
+    );
+    for (const faceID of rotatedFaces.keys()) {
+        facesIn2D.set(
+            faceID,
+            geo.projectToPlane(basis, 
+                ...rotatedFaces.get(faceID)),
+        );
+    }
+    for (const faceID of botComponent.layerMap.keys()) {
+        facesIn2D.set(
+            faceID,
+            geo.projectToPlane(basis,
+                ...SceneManager.getFace3DByID(faceID).vertices
+            ),
+        );
+    }
+
+    // First, we find the index of "bounding" layer in bot; this is the
+    // layer right below where we could begin placing top.
+
+    let boundLayer = 0n;
+    const topOfBot = BigInt(botComponent.layers.length) - 1n;
+    const topOfTop = BigInt(topComponent.layers.length) - 1n;
+
+    // Descend from the top layer of the top component.
+    for (let i = topOfTop; i >= 0; i--) {
+
+        // Check every face of this layer in the top component.
+        for (const topFaceID of topComponent.layers[Number(i)].keys()) {
+
+            // Descend from the top until the face intersects some layer.
+            for (let j = topOfBot; j >= boundLayer; j--) {
+                
+                // Does the face intersect this layer?
+                let intersectsLayer = false;
+                for (const botFaceID of botComponent.layers[Number(j)].keys()) {
+                    // Check every face in this layer.
+                    const intersectsFace = geo.faceIntersectionByVertices(
+                        facesIn2D.get(topFaceID), facesIn2D.get(botFaceID)
+                    );
+
+                    // Stop once one bot face intersects this top face.
+                    if (intersectsFace) {
+                        intersectsLayer = true;
+                        break;
+                    }
+
+                }
+
+                // Stop once we found the bounding layer for the top face.
+                if (intersectsLayer) {
+                    boundLayer = j - (topOfTop - i);
+                    break;
+                }
+
+            }
+
+            // If the bounding layer is already the topmost layer, stop.
+            if (boundLayer === topOfBot) {
+                break;
+            }
+
+        }
+
+        // If the bounding layer is already the topmost layer, stop.
+        if (boundLayer === topOfBot) {
+            break;
+        }
+    }
+
+    
+    // Now we do the stacking, starting at the bound layer and moving up.
+    for (let i = 0n; i < topOfTop; i++) {
+
+        // Assume the layers from boundLayer to the top of bottom correspond
+        // one to one with the layers of the top component.
+        // (That is, they have been compressed already, no empty layers)
+        
+        // Add new layer to bottom component if necessary.
+        if (boundLayer + i + 1n === topOfBot) {
+            botComponent.layers.push(new Map<bigint, FaceNode>());
+        }
+
+        // Iterate the top component's faces in this layer.
+        for (const topFaceID of topComponent.layers[Number(topOfTop - i)].keys()) {
+
+            // Add the face to the layer, update layer mapping.
+            botComponent.layers[Number(boundLayer + i + 1n)]
+                .set(topFaceID, new FaceNode(topFaceID));
+            botComponent.layerMap.set(topFaceID, boundLayer + i + 1n);
+
+            // Iterate the bot component's faces in the corresponding layer.
+            for (const botFaceID of botComponent.layers[Number(boundLayer + i)].keys()) {
+                // Check every face in this layer.
+                const intersectsFace = geo.faceIntersectionByVertices(
+                    facesIn2D.get(topFaceID), facesIn2D.get(botFaceID)
+                );
+
+                // Create uplinks/downlinks.
+                if (intersectsFace) {
+                    addUplink(botComponent, botFaceID, topFaceID);
+                    addDownlink(botComponent, topFaceID, botFaceID);
+                }
+
+            }
+
+        }
+        
+
+    }
+    
+    return botComponent;
+}
+
+
+// TODO: merging is just like splitting but easier, exactly one descendant per node.
+// just be careful not to re-duplicate creation of that descendant node.
 
 function getNextComponentID() {
     // TODO
     return 0n;
 }
+
+
+
+// TODO: Stack and Partition are incomplete / buggy in some cases: they both
+// assume that the components involved are fully compressed, with no possible
+// empty layers of paper in the middle. In the future, stack needs to compress
+// the layers of the one being stacked, and partition needs to decompress those.
