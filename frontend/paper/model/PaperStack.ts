@@ -426,7 +426,7 @@ function partition(
     setLayerMap(stationaryComponent);
     setLayerMap(mobileComponent);
 
-// Finally, set all of the uplinks and downlinks in each component, based
+    // Finally, set all of the uplinks and downlinks in each component, based
     // on the layer mappings and stationary set.
     // Iterate layer by layer and connect up the nodes in the same set. 
     for (let layer = 0n; layer < component.layers.length; layer++) {
@@ -621,8 +621,144 @@ function stack(
 }
 
 
-// TODO: merging is just like splitting but easier, exactly one descendant per node.
-// just be careful not to re-duplicate creation of that descendant node.
+
+/**
+ * Merges two paper components, given the mapping of ancestor face IDs
+ * to descendant face IDs, which must contain every face in the two components
+ * as a key.
+ * @param componentA The first LUG component to merge.
+ * @param componentB The second LUG component to merge.
+ * @param descendants Mapping of ancestor to descendant faces. If a face is
+ *                    its own descendant, the map entry should <id, [id]>.
+ * @returns The new merged component.
+ */
+function merge(
+    componentA: PaperComponent,
+    componentB: PaperComponent,
+    descendants: Map<bigint, bigint>,
+    ): PaperComponent {
+
+    const mergedComponent = new PaperComponent(getNextComponentID());
+
+    // Create the correct number of layers for the merged component.
+    const numLayers =  Math.max(componentA.layers.length, componentB.layers.length);
+    for (let i = 0n; i < numLayers; i++) {
+        mergedComponent.layers.push(new Map<bigint, FaceNode>());
+    }
+
+    // Iterate first component layer by layer and turn ancestors into descendants.
+    for (let layer = 0n; layer < componentA.layers.length; layer++) {
+
+        // Consider one node, find its descendant.
+        for (const faceID of componentA.layers[Number(layer)].keys()) {
+
+            // Create descendant in merged component if not already existing.
+            const descID = descendants.get(faceID);
+            if (!mergedComponent.layers[Number(layer)].has(descID)) {
+                mergedComponent.layers[Number(layer)].set(
+                    descID, new FaceNode(descID)
+                );
+            }
+
+        }
+
+    }
+
+    // Iterate second component and turn ancestors into descendants.
+    for (let layer = 0n; layer < componentB.layers.length; layer++) {
+
+        // Consider one node, find its descendant.
+        for (const faceID of componentB.layers[Number(layer)].keys()) {
+
+            // Create descendant in merged component if not already existing.
+            const descID = descendants.get(faceID);
+            if (!mergedComponent.layers[Number(layer)].has(descID)) {
+                mergedComponent.layers[Number(layer)].set(
+                    descID, new FaceNode(descID)
+                );
+            }
+
+        }
+
+    }
+
+    // Now clean the component: Remove empty layers from the top and bottom.
+    clean(mergedComponent);
+
+    // Next we set the maps from face IDS to which layer the face is in.
+    setLayerMap(mergedComponent);
+
+    // Finally, set all of the uplinks and downlinks in each component, based
+    // on the descendant mapping and layer mappings.
+
+    // Iterate layer by layer of the first component and connect up descendants togethers.
+    for (let layer = 0n; layer < componentA.layers.length; layer++) {
+
+        const oldLayer = componentA.layers[Number(layer)];
+        // Consider one node, iterate its uplinks and downlinks.
+        for (const faceID of oldLayer.keys()) {
+
+            // Set all of the downlinks.
+            for (const downID of oldLayer.get(faceID).downLinks) {
+
+                const desc1 = descendants.get(faceID);
+                const desc2 = descendants.get(downID);
+
+                addDownlink(mergedComponent, desc1, desc2);
+
+            }
+
+            // Set all of the uplinks similarly.
+            for (const upID of oldLayer.get(faceID).upLinks) {
+
+                const desc1 = descendants.get(faceID);
+                const desc2 = descendants.get(upID);
+
+                addUplink(mergedComponent, desc1, desc2);
+
+            }
+
+        }
+
+    }
+
+    // Iterate layer by layer of the second component and connect up descendants togethers.
+    for (let layer = 0n; layer < componentB.layers.length; layer++) {
+
+        const oldLayer = componentB.layers[Number(layer)];
+        // Consider one node, iterate its uplinks and downlinks.
+        for (const faceID of oldLayer.keys()) {
+
+            // Set all of the downlinks.
+            for (const downID of oldLayer.get(faceID).downLinks) {
+
+                const desc1 = descendants.get(faceID);
+                const desc2 = descendants.get(downID);
+
+                addDownlink(mergedComponent, desc1, desc2);
+
+            }
+
+            // Set all of the uplinks similarly.
+            for (const upID of oldLayer.get(faceID).upLinks) {
+
+                const desc1 = descendants.get(faceID);
+                const desc2 = descendants.get(upID);
+
+                addUplink(mergedComponent, desc1, desc2);
+
+            }
+
+        }
+
+    }
+
+
+    // Return the stationary component and mobile component.
+    return mergedComponent;
+}
+
+
 
 function getNextComponentID() {
     // TODO
