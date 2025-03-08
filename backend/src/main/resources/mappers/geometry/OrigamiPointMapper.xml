@@ -118,6 +118,16 @@
         ORDER BY op.id_in_face
     </select>
 
+    <!-- Get vertices for a face that was deleted -->
+    <select id="getVerticesForDeletedFace" resultType="com.quickfolds.backend.geometry.model.dto.response.VertexResponse">
+        SELECT op.id_in_face as idInFace, op.x_pos as x, op.y_pos as y
+        FROM origami_point op
+                 INNER JOIN point_type pt ON op.point_type_id = pt.id
+        WHERE op.face_id = #{faceId}
+          AND pt.point_type_name = 'vertex'
+        ORDER BY op.id_in_face
+    </select>
+
     <!--
         Inserts a new origami point into the database.
 

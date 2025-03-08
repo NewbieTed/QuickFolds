@@ -247,13 +247,18 @@ public class GeometryService {
             step.setStepType("annotate " + direction);
             step.setAnnotations(annotations);
         } else if (stepType.equals(StepType.FOLD)) {
-            // For fold steps, get the fold information
-            FoldForwardResponse foldResponse = getFold(origamiId, isForward ? endStep : startStep);
-
             step.setStepType("fold " + direction);
-            step.setFold(foldResponse);
-        }
-        else {
+
+            if (isForward) {
+                // For forward fold steps
+                FoldForwardResponse foldResponse = getFoldForwardHelper(origamiId, endStep);
+                step.setFoldForward(foldResponse);
+            } else {
+                // For backward fold steps
+                FoldBackwardResponse foldResponse = getFoldBackwardHelper(origamiId, startStep);
+                step.setFoldBackward(foldResponse);
+            }
+        } else {
             throw new IllegalArgumentException("Unsupported step type: " + stepType);
         }
 
@@ -1332,18 +1337,13 @@ public class GeometryService {
     }
 
     /**
-     * Helper method to retrieve fold information for a specific step.
-     *
-     * @param origamiId The ID of the origami model
-     * @param stepIdInOrigami The ID of the step in the origami model
-     * @return The fold information for the specified step
+     * Helper method to retrieve forward fold information.
      */
-    private FoldForwardResponse getFold(long origamiId, int stepIdInOrigami) {
-        // Get step ID from database
+    private FoldForwardResponse getFoldForwardHelper(long origamiId, int stepIdInOrigami) {
+        // This is our existing implementation from before
         Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
         if (stepId == null) {
-            throw new IllegalArgumentException("Could not find the requested step, " +
-                    "verify if request is valid (no such step)");
+            throw new IllegalArgumentException("Could not find the requested step");
         }
 
         // Verify this is a fold step
@@ -1352,7 +1352,6 @@ public class GeometryService {
             throw new IllegalArgumentException("The requested step is not a fold step: " + stepType);
         }
 
-        // Create response object
         FoldForwardResponse response = new FoldForwardResponse();
 
         // Get the anchored face ID
@@ -1361,11 +1360,7 @@ public class GeometryService {
             throw new DbException("Error in DB, could not find anchored face for fold step");
         }
 
-        // Get anchored face's ID in origami
         Integer anchoredFaceIdInOrigami = faceMapper.getIdInOrigamiByFaceId(anchoredFaceId);
-        if (anchoredFaceIdInOrigami == null) {
-            throw new DbException("Error in DB, could not find origami ID for anchored face");
-        }
         response.setAnchoredFaceIdInOrigami(anchoredFaceIdInOrigami);
 
         // Get deleted faces
@@ -1377,5 +1372,78 @@ public class GeometryService {
         response.setFaces(createdFaces);
 
         return response;
+    }
+
+    /**
+     * Helper method to retrieve backward fold information.
+     * This handles the undo operation for a fold step.
+     */
+    private FoldBackwardResponse getFoldBackwardHelper(long origamiId, int stepIdInOrigami) {
+        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
+        if (stepId == null) {
+            throw new IllegalArgumentException("Could not find the requested step");
+        }
+
+        // Verify this is a fold step
+        String stepType = stepMapper.getTypeByStepId(stepId);
+        if (stepType == null || !stepType.equals(StepType.FOLD)) {
+            throw new IllegalArgumentException("The requested step is not a fold step: " + stepType);
+        }
+
+        FoldBackwardResponse response = new FoldBackwardResponse();
+
+        // Get faces created in this step (these will be "deleted" in backward navigation)
+        List<Integer> facesCreatedInStep = faceMapper.getFaceIdsInOrigamiCreatedInStep(stepId);
+        response.setFacesToDelete(facesCreatedInStep);
+
+        // Get faces deleted by this step (these need to be restored with full geometry)
+        List<FaceResponse> facesToRestore = getFacesDeletedInStep(stepId, origamiId);
+        response.setFacesToRestore(facesToRestore);
+
+        return response;
+    }
+
+
+    /**
+     * Helper method to retrieve full details of faces that were deleted in a specific step.
+     */
+    private List<FaceResponse> getFacesDeletedInStep(Long stepId, long origamiId) {
+        List<FaceWithDetailsDTO> deletedFaces = faceMapper.getFacesDeletedInStep(stepId);
+        List<FaceResponse> faceResponses = new ArrayList<>();
+
+        for (FaceWithDetailsDTO faceDetails : deletedFaces) {
+            FaceResponse faceResponse = new FaceResponse();
+            faceResponse.setIdInOrigami(faceDetails.getIdInOrigami());
+
+            // Get vertices for this face as they existed before deletion
+            List<VertexResponse> vertices = origamiPointMapper.getVerticesForDeletedFace(faceDetails.getFaceId());
+            faceResponse.setVertices(vertices);
+
+            // Get edges for this face as they existed before deletion
+            List<EdgeResponse> edges = getEdgesForDeletedFace(faceDetails.getFaceId(), origamiId);
+            faceResponse.setEdges(edges);
+
+            faceResponses.add(faceResponse);
+        }
+
+        return faceResponses;
+    }
+
+    /**
+     * Helper method to retrieve edges for a face that was deleted.
+     */
+    private List<EdgeResponse> getEdgesForDeletedFace(Long faceId, long origamiId) {
+        // Get side edges
+        List<EdgeResponse> sideEdges = sideEdgeMapper.getSideEdgesForDeletedFace(faceId);
+
+        // Get fold edges
+        List<EdgeResponse> foldEdges = foldEdgeMapper.getFoldEdgesForDeletedFace(faceId, origamiId);
+
+        // Combine and return
+        List<EdgeResponse> allEdges = new ArrayList<>();
+        allEdges.addAll(sideEdges);
+        allEdges.addAll(foldEdges);
+
+        return allEdges;
     }
 }

@@ -59,5 +59,10 @@ public class StepResponse {
      * Contains details about faces, edges, and vertices in a fold operation.
      * Populated only for fold steps.
      */
-    private FoldForwardResponse fold;
+    private FoldForwardResponse foldForward;
+
+    /**
+     * Backward fold information
+     */
+    private FoldBackwardResponse foldBackward;
 }

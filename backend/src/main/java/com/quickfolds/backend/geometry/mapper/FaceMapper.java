@@ -105,4 +105,18 @@ public interface FaceMapper {
      * @return List of FaceWithDetailsDTO containing face ID and id_in_origami
      */
     List<FaceWithDetailsDTO> getFacesCreatedInStep(@Param("stepId") Long stepId);
+
+    /**
+     * Retrieves all faces deleted in a specific step with their details
+     * @param stepId The ID of the step where the faces were deleted
+     * @return List of FaceWithDetailsDTO containing face ID and id_in_origami
+     */
+    List<FaceWithDetailsDTO> getFacesDeletedInStep(@Param("stepId") Long stepId);
+
+    /**
+     * Retrieves all faces created in a specific step with their details
+     * @param stepId The ID of the step where the faces were created
+     * @return List of face IDs created in the step
+     */
+    List<Integer> getFaceIdsInOrigamiCreatedInStep(@Param("stepId") Long stepId);
 }

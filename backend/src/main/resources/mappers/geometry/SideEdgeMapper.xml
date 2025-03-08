@@ -124,4 +124,22 @@
         ORDER BY se.id_in_face
     </select>
 
+    <!-- Get side edges for a face that was deleted -->
+    <select id="getSideEdgesForDeletedFace" resultType="com.quickfolds.backend.geometry.model.dto.response.EdgeResponse">
+        SELECT
+            se.id_in_face as idInFace,
+            'side' as edgeType,
+            op1.id_in_face as vertex1IdInFace,
+            op2.id_in_face as vertex2IdInFace,
+            null as otherFaceIdInOrigami,
+            null as idInOtherFace,
+            null as angle
+        FROM side_edge se
+                 INNER JOIN edge e ON se.edge_id = e.id
+                 INNER JOIN origami_point op1 ON se.vertex_1_id = op1.id
+                 INNER JOIN origami_point op2 ON se.vertex_2_id = op2.id
+        WHERE se.face_id = #{faceId}
+        ORDER BY se.id_in_face
+    </select>
+
 </mapper>

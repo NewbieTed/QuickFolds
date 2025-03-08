@@ -51,4 +51,12 @@ public interface SideEdgeMapper {
      * @return List of edge responses containing side edge details
      */
     List<EdgeResponse> getSideEdgesByFaceId(@Param("faceId") Long faceId);
+
+    /**
+     * Gets all side edges for a specific face that are not connected to any other face
+     *
+     * @param faceId The ID of the face
+     * @return List of edge responses containing side edge details
+     */
+    List<EdgeResponse> getSideEdgesForDeletedFace(@Param("faceId") Long faceId);
 }

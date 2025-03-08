@@ -92,4 +92,12 @@ public interface OrigamiPointMapper {
      * @return List of vertex responses with coordinates
      */
     List<VertexResponse> getVerticesByFaceId(@Param("faceId") Long faceId);
+
+    /**
+     * Gets all vertices for a specific face that was deleted in a specific step
+     *
+     * @param faceId The ID of the face
+     * @return List of vertex responses with coordinates
+     */
+    List<VertexResponse> getVerticesForDeletedFace(@Param("faceId") Long faceId);
 }

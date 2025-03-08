@@ -65,4 +65,12 @@ public interface FoldEdgeMapper {
      */
     List<EdgeResponse> getFoldEdgesByFaceId(@Param("faceId") Long faceId,
                                             @Param("origamiId") long origamiId);
+
+    /**
+     * Gets all fold edges for a specific face that are not connected to any other face
+     * @param faceId The ID of the face
+     * @param origamiId The ID of the origami model
+     * @return List of edge responses containing fold edge details
+     */
+    List<EdgeResponse> getFoldEdgesForDeletedFace(@Param("faceId") Long faceId, @Param("origamiId") long origamiId);
 }
