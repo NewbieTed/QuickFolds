@@ -1103,10 +1103,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // todo: include all moving faces from BFS in this list
   const allFacesThatMoveForAnyReason: bigint[] = Array.from(BFS(allMovingFaces, newSetOfEdgesForDS));
 
-  animateOffset(offsets);
   animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
     ...allFacesThatMoveForAnyReason
   );
+  animateOffset(offsets);
 
   console.log("FINAL RESULT OF OFFSETS", offsets);
 

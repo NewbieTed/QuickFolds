@@ -35,6 +35,7 @@ export class Face3D {
      * offset - the number of half-paper-thicknesses away from the underlying
      *          plane, positive is in the direction of the principal normal
      * faceObject -  the three JS object which appears in this scene.
+     * faceObjectCenter - the center of the three JS object for the face
      * pivot - the parent three JS object to all objects of this Face3D
      * nextLineID - the integer to be used as the id of the next created line
      * nextPointID - the integer to be used as the id of the next created point
@@ -44,6 +45,7 @@ export class Face3D {
      * startPosition - caches the position of this object if a rotation starts
      * startRotation - caches the rotation of this object if a rotation starts
      * startNormal - caches the principal normal vector if a rotation starts
+     * startOffset - caches the offset if a rotation starts.
      */
     public readonly ID: bigint;
     public readonly vertices: pt.Point3D[];
@@ -54,12 +56,14 @@ export class Face3D {
     private lineObjects: Map<bigint, THREE.Mesh>;
     private faceObject: THREE.Mesh;
     private pivot: THREE.Object3D;
+    private faceObjectCenter: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
     private startPosition: THREE.Vector3;
     private startRotation: THREE.Quaternion;
     private startNormal: pt.Point3D;
+    private startOffset: number;
 
     public constructor(
                 vertices: pt.Point3D[],
@@ -87,13 +91,21 @@ export class Face3D {
         // Create the initial face object and pivot.
         this.faceObject = this.createFaceObject();
         this.pivot = new THREE.Object3D();
+        this.faceObjectCenter = new THREE.Object3D();
         const center: pt.Point3D = pt.average(this.vertices);
         // Crucially: the pivot lies in the true plane, not with the
         // face object mesh which could be offset from the true plane.
         this.pivot.position.copy(new THREE.Vector3(
             center.x, center.y, center.z
         ));
-        this.pivot.attach(this.faceObject);
+        const offsetVector = new THREE.Vector3(
+            this.principalNormal.x * this.offset * this.paperThickness * 0.5,
+            this.principalNormal.y * this.offset * this.paperThickness * 0.5,
+            this.principalNormal.z * this.offset * this.paperThickness * 0.5
+        );
+        this.faceObjectCenter.position.copy(offsetVector.add(this.pivot.position));
+        this.pivot.attach(this.faceObjectCenter);
+        this.faceObjectCenter.attach(this.faceObject);
 
         // Set initial rotation/position and offset.
         this.startPosition = new THREE.Vector3();
@@ -101,6 +113,8 @@ export class Face3D {
         this.startRotation = new THREE.Quaternion();
         this.startRotation.copy(this.pivot.quaternion);
         this.startNormal = pt.copyPoint(this.principalNormal);
+
+        console.log("POSITION OF CREATED FACE MESH: ", this.faceObject.position);
     }
 
     public getThickness(): number {
@@ -312,7 +326,7 @@ export class Face3D {
             const lineObject = this.lineObjects.get(lineID);
             if (lineObject !== undefined) {
                 // Dispose of the object.
-                this.pivot.remove(lineObject);
+                this.faceObject.remove(lineObject);
                 lineObject.geometry.dispose();
                 if (Array.isArray(lineObject.material)) {
                     lineObject.material.forEach(mat => mat.dispose());
@@ -331,7 +345,7 @@ export class Face3D {
             const pointObject = this.pointObjects.get(pointID);
             if (pointObject !== undefined) {
                 // Dispose of the object.
-                this.pivot.remove(pointObject);
+                this.faceObject.remove(pointObject);
                 pointObject.geometry.dispose();
                 if (Array.isArray(pointObject.material)) {
                     pointObject.material.forEach(mat => mat.dispose());
@@ -349,7 +363,7 @@ export class Face3D {
                 this.annotatedPoints.set(pointID, point);
                 const pointObject = this.createPointObject(point.point);
                 this.pointObjects.set(pointID, pointObject);
-                this.pivot.attach(pointObject);
+                this.faceObject.attach(pointObject);
             }
         }
 
@@ -362,7 +376,7 @@ export class Face3D {
                 this.annotatedLines.set(lineID, line);
                 const lineObject = this.createLineObject(startPoint, endPoint);
                 this.lineObjects.set(lineID, lineObject);
-                this.pivot.attach(lineObject);
+                this.faceObject.attach(lineObject);
             }
         }
 
@@ -586,16 +600,31 @@ export class Face3D {
         this.startRotation.copy(this.pivot.quaternion);
     }
 
+
+    // Saves the offset of this Face3D so that it can be re-loaded with a call
+    // to resetOffset().
+    public saveOffset() {
+        this.startOffset = this.offset;
+    }
+
+    // Reloads the offset of this Face3D from the one last saved by saveOffset().
+    public resetOffset() {
+        this.offset = this.startOffset;
+    }
+
+
+
     // Changes the offset position of this Face3D.
     public changeOffset(deltaOffset: number) {
-        const shift = new THREE.Vector3(
-            this.principalNormal.x * deltaOffset * this.paperThickness * 0.5,
-            this.principalNormal.y * deltaOffset * this.paperThickness * 0.5,
-            this.principalNormal.z * deltaOffset * this.paperThickness * 0.5
-        );
 
-        this.faceObject.position.add(shift);
         this.offset += deltaOffset;
+        const offsetVector = new THREE.Vector3(
+            this.principalNormal.x * this.offset * this.paperThickness * 0.5,
+            this.principalNormal.y * this.offset * this.paperThickness * 0.5,
+            this.principalNormal.z * this.offset * this.paperThickness * 0.5
+        );
+        
+        this.faceObjectCenter.position.copy(offsetVector);
     }
 
     /**

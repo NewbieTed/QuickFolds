@@ -942,7 +942,13 @@ export function faceMutatingFold(
 
         // Update LUG components.
         LUG.delete(initialComponent.ID);
+        for (const faceID of initialComponent.layerMap.keys()) {
+            faceToComponent.delete(faceID);
+        }
         LUG.set(result.ID, result);
+        for (const faceID of result.layerMap.keys()) {
+            faceToComponent.set(faceID, result.ID);
+        }
 
     } else if (startAngle === 180n && endAngle === 0n) {
         // Complete Split Case 2.
@@ -986,7 +992,7 @@ export function faceMutatingFold(
 
         // Capture how the Face3D offsets should change.
         const statOffset = -1 * (result.layers.length - statNumLayers);
-        const mobOffset = (result.layers.length - mobNumLayers);
+        const mobOffset = -1 * (result.layers.length - mobNumLayers);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
             if (statLayerMap.has(faceID)) {
@@ -1006,7 +1012,13 @@ export function faceMutatingFold(
 
         // Update LUG components.
         LUG.delete(initialComponent.ID);
+        for (const faceID of initialComponent.layerMap.keys()) {
+            faceToComponent.delete(faceID);
+        }
         LUG.set(result.ID, result);
+        for (const faceID of result.layerMap.keys()) {
+            faceToComponent.set(faceID, result.ID);
+        }
 
     } else if (startAngle === 180n) {
         // Partial Split
@@ -1015,32 +1027,21 @@ export function faceMutatingFold(
             initialComponent, descendants, stationary
         );
 
-        // 0: The principal normals point towards from each other.
-        // So make both components have normals the same direction as the layering.
-        // Then stack the mobile on top of the stationary.
-        const statOrientation = getOrientation(stationaryComponent, refStationary);
-        const mobOrientation = getOrientation(mobileComponent, refMobile);
-
-        if (!statOrientation) {
-            invert(stationaryComponent);
-        }
-        if (!mobOrientation) {
-            invert(mobileComponent);
-        }
-
-        const result = stack(
-            stationaryComponent,  // Bottom (upright)
-            mobileComponent, // Top (inverted)
-            refStationary,
-            foldEdgeID,
-            Number(startAngle - endAngle)
-        );
-
         // Partial Splits don't cause changes to offset.
 
         // Update LUG components.
         LUG.delete(initialComponent.ID);
-        LUG.set(result.ID, result);
+        for (const faceID of initialComponent.layerMap.keys()) {
+            faceToComponent.delete(faceID);
+        }
+        LUG.set(stationaryComponent.ID, stationaryComponent);
+        for (const faceID of stationaryComponent.layerMap.keys()) {
+            faceToComponent.set(faceID, stationaryComponent.ID);
+        }
+        LUG.set(mobileComponent.ID, mobileComponent);
+        for (const faceID of mobileComponent.layerMap.keys()) {
+            faceToComponent.set(faceID, mobileComponent.ID);
+        }
 
     } else if (startAngle === 360n && endAngle === 180n) {
         // Complete Merge Case 1.
