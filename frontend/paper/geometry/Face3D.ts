@@ -95,7 +95,7 @@ export class Face3D {
         ));
         this.pivot.attach(this.faceObject);
 
-        // Set initial rotation/position.
+        // Set initial rotation/position and offset.
         this.startPosition = new THREE.Vector3();
         this.startPosition.copy(this.pivot.position);
         this.startRotation = new THREE.Quaternion();
@@ -276,8 +276,6 @@ export class Face3D {
 
         return glowingLine;
     }
-
-    // TODO: create constructor from Face2D + 3D annotations.
 
     /**
      * Gets the main parent object of all the geometry/meshes of this Face3D.
@@ -588,6 +586,19 @@ export class Face3D {
         this.startRotation.copy(this.pivot.quaternion);
     }
 
+    
+    // Changes the offset position of this Face3D.
+    public changeOffset(deltaOffset: number) {
+        const shift = new THREE.Vector3(
+            this.principalNormal.x * deltaOffset,
+            this.principalNormal.y * deltaOffset,
+            this.principalNormal.z * deltaOffset
+        );
+
+        this.faceObject.position.add(shift);
+        this.offset += deltaOffset;
+    }
+
     /**
      * Rotates the underlying objects in this Face3D without changing the
      * vertices of the Face3D yet. Useful for animation. Rotates this Face3D's
@@ -735,7 +746,6 @@ export class Face3D {
     }
 
 
-    // TODO: methods to change visibility and disable/enable raycasting thru this face.
     public getAveragePoint() : pt.Point3D {
         let xValue = 0.0;
         let yValue = 0.0;

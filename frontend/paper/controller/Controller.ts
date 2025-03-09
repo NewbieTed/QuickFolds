@@ -11,7 +11,7 @@ import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Fa
 import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance, dotProduct } from "../geometry/Point.js";
 import {addRotationListToDB, addSplitFacesToDB, addUpdatedAnnoationToDB} from "./RequestHandler.js";
 import {AddNewEdgeToDisjointSet, addValueToAdjList, BFS, EdgesAdjList, EdgesAdjListMerging, getAdjList, getAllFaceIds, getConnectionInAdjList, getDisjointSetEdge, getDisjointSetEdgeAndDelete, getFace2dFromId, isConnectionInAdjList, print2dGraph, printAdjList, ReplaceExistingConnectionsBasedOnFirstWithNewConnections, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
-import { getFace3DByID, incrementStepID, print3dGraph, animateFold, deleteFace, addFace } from '../view/SceneManager.js';
+import { getFace3DByID, incrementStepID, print3dGraph, animateFold, deleteFace, addFace, animateOffset } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo, ProblemEdgeInfoMerge } from '../model/PaperManager.js';
 import { faceMutatingFold, getOverlappingFaces } from '../model/PaperStack.js';
@@ -1089,16 +1089,14 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces); bak
   const offsets: Map<bigint, number>  = faceMutatingFold(stationaryFaceSpecifc, rotatingFaceSpecific, 180n, 180n - angle,
     edgeIdOfStationaryFace, mapFromOgIdsToSplitFaces, new Set<bigint>(listOfStationaryFacesInLug)
-  ); // bak
-
-
-
+  );
 
   // update renderer with animation
   // all set - stationary
   // todo: include all moving faces from BFS in this list
   const allFacesThatMoveForAnyReason: bigint[] = Array.from(BFS(allMovingFaces, newSetOfEdgesForDS));
 
+  animateOffset(offsets);
   animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
     ...allFacesThatMoveForAnyReason
   );

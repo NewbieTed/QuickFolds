@@ -13,6 +13,7 @@ import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.j
 import { createNewGraph } from '../model/PaperGraph.js';
 import { Animation } from './animation/Animation.js';
 import { FoldAnimation } from './animation/FoldAnimation.js';
+import { OffsetAnimation } from './animation/OffsetAnimation.js';
 
 let stepID = 1n;
 const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
@@ -279,5 +280,13 @@ export function animateFold(
 
     // Now create the animation and run it!
     const anim = new FoldAnimation(axisPoint1, axisPoint2, deltaAngle, ...faces);
+    animations.push(anim);
+}
+
+
+// Animates the offset of several faces given a map of face ids to the change in offset.
+export function animateOffset(offsets: Map<bigint, number>): void {
+
+    const anim = new OffsetAnimation(offsets);
     animations.push(anim);
 }

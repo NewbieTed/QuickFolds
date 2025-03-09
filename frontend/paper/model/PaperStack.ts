@@ -494,7 +494,7 @@ function partition(
  * @param botComponent The component to stack on the bottom.
  * @param topComponent The component to invert and stack on the top.
  * @returns The modified botComponent (which now has topComponent stacked).
- * TODO: doc comment
+ * ___
  */
 function stack(
             botComponent: PaperComponent,
@@ -789,7 +789,7 @@ function merge(
 
 /**
  * Flips the component's layers upside down, in place.
- * TODO: doc comment
+ * ___
  */
 export function invert(component: PaperComponent) {
 
@@ -821,7 +821,7 @@ export function invert(component: PaperComponent) {
 /**
  * Returns true if the principal normal of the given face is aligned with
  * the increasing-numbered layer direction of it's corresponding component.
- * TODO: doc comment
+ * ___
  */
 function getOrientation(component: PaperComponent, faceID: bigint): boolean {
     const layer = component.layerMap.get(faceID);
@@ -860,7 +860,7 @@ function getNextComponentID() {
 /**
  * Gets the list of faces that overlap the face with the given ID.
  * This list WILL include the requested face itself.
- * TODO: doc comment.
+ * ___
  */
 export function getOverlappingFaces(faceID: bigint): bigint[] {
     const component = LUG.get(faceToComponent.get(faceID));
@@ -876,7 +876,7 @@ export function getOverlappingFaces(faceID: bigint): bigint[] {
  * Perform a merge or split type fold. Alters faces, and so we do
  * require stationary set and descendant mapping. Returns a map of
  * face ID to how their offsets should change.
- * TODO: doc comment.
+ * ___
  */
 export function faceMutatingFold(
             refStationary: bigint, // A particular stationary face.

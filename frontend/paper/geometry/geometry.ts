@@ -282,7 +282,7 @@ export function resolveFoldDirection(
 
 // Does the same thing as rotateFace in Face3D but only on a given set
 // points and an axis/angle.
-// TODO: doc comment
+// ___
 export function rotateVertices(
             vertices: pt.Point3D[],
             axisPoint1: pt.Point3D,
@@ -329,7 +329,7 @@ export function rotateVertices(
 }
 
 // Does the same thing as getPlaneBasis but for a given set of vertices.
-// TODO: doc comment
+// ___
 export function getPlaneBasisFromVertices(
             vertices: pt.Point3D[],
             principalNormal: pt.Point3D,
@@ -364,7 +364,7 @@ export function getPlaneBasisFromVertices(
 /**
  * Does the same thing as computeFaceIntersection except already given
  * the vertices in 2D.
- * TODO: doc comment
+ * ___
  */
 export function faceIntersectionByVertices(
             setA: pt.Point2D[], 
