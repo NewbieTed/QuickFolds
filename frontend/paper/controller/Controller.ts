@@ -746,6 +746,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   point1Id = smallestPointId;
   point2Id = largestPointId;
 
+
   const startFaceObj = getFace3DByID(faceId);
   if (startFaceObj === undefined) {
     throw new Error("couldn't find face");
@@ -910,18 +911,35 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   }
 
 
+
+  // do rendering
+  for(const [ogFaceID, splitFaceIds] of mapFromOgIdsToSplitFaces) {
+    if (splitFaceIds.length === 1) {
+      continue; // skip if we don't split, since descendent is self
+    }
+
+
+      // add planes to scene manager (for now, hady will do later)
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[0]));
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[1]));
+      deleteFace(ogFaceID); // does the render deletion
+  }
+
+
+
+
   // update faces, but only the ones that aren't split via the line
   for(let i = 0; i < faceIdToUpdate.length; i++) {
     // get face
+
     const currFaceId: bigint = faceIdToUpdate[i];
     const face3d = getFace3DByID(currFaceId);
-    if (face3d === undefined) {
-      throw new Error("couldn't find face");
-    }
-
     if (getFace2dFromId(currFaceId) === undefined) {
+      i++;
       continue; //this means we actually have a split,  which means this face has already been "done"
     }
+
+    console.log("CURRENT FACE I AM WORKING WITH", faceIdToUpdate[i]);
 
     const projectedP1 = translate3dTo2d(face3d.projectToFace(p1), currFaceId);
     const projectedP2 = translate3dTo2d(face3d.projectToFace(p2), currFaceId);
@@ -938,9 +956,16 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     if (points == null) {
       // line doesn't intersect plane, so just skip the splitting todo: don't delete og face until after this for loop since i need it here
       // is either static or rotating
+      console.log("left/right child that comes from splitting", startFaceObj);
+      print3dGraph();
       const planePointOnStartFace = startFaceObj.projectToFace(face3d.getAveragePoint());
-      const planePoint2dVersion = translate3dTo2d(planePointOnStartFace, startFaceObj.ID);
+      console.log("looking for face", startFaceObj.ID);
+      print2dGraph();
+      console.log("left child?")
+      const planePoint2dVersion = translate3dTo2d(planePointOnStartFace, firstDescendentFaceIdThatStationary);
 
+
+      console.log(perpindicularVectorPointTowardsLeftSpaceOrigin);
       const directionToPlanePoint = createPoint2D(
         planePoint2dVersion.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
         planePoint2dVersion.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
@@ -1156,19 +1181,6 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   AddNewEdgeToDisjointSet(newSetOfEdgesForDS);
 
 
-
-  // do rendering
-  for(const [ogFaceID, splitFaceIds] of mapFromOgIdsToSplitFaces) {
-    if (splitFaceIds.length === 1) {
-      continue; // skip if we don't split, since descendent is self
-    }
-
-
-      // add planes to scene manager (for now, hady will do later)
-      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[0]));
-      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[1]));
-      deleteFace(ogFaceID); // does the render deletion
-  }
 
   // do lug
   console.log("HERE:____");
