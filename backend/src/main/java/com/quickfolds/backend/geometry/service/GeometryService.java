@@ -112,34 +112,39 @@ public class GeometryService {
         int stepIdInOrigami = request.getStepIdInOrigami();
         long stepId = createStep(origamiId, StepType.FOLD, stepIdInOrigami);
 
-        // Retrieve the ID of the faces
-        long anchoredFaceId = getFaceIdByIdInFace(origamiId, request.getAnchoredFaceIdInOrigami(), "Anchored");
-        long rotatedFaceId = getFaceIdByIdInFace(origamiId, request.getRotatedFaceIdInOrigami(), "Rotated");
+        for (FaceRotateRequest face : request.getFaces()) {
+            // Retrieve the ID of the faces
+            long anchoredFaceId = getFaceIdByIdInFace(origamiId, face.getAnchoredFaceIdInOrigami(), "Anchored");
+            long rotatedFaceId = getFaceIdByIdInFace(origamiId, face.getRotatedFaceIdInOrigami(), "Rotated");
 
-        // Retrieve the related fold edge
-        FoldEdge foldEdge = foldEdgeMapper.getObjByFaceIdPair(anchoredFaceId, rotatedFaceId);
+            // Create fold step with the anchored face
+            createFoldStep(stepId, anchoredFaceId);
 
-        // Deleted the edge
-        int deletedRows = edgeMapper.deleteById(foldEdge.getEdgeId(), stepId);
+            // Retrieve the related fold edge
+            FoldEdge foldEdge = foldEdgeMapper.getObjByFaceIdPair(anchoredFaceId, rotatedFaceId);
 
-        if (deletedRows != 1) {
-            throw  new DbException("Number of deleted fold edges is incorrect, expected: 1, actual: " + deletedRows +
-                    " Verify if DB is correct");
+            // Deleted the edge
+            int deletedRows = edgeMapper.deleteById(foldEdge.getEdgeId(), stepId);
+
+            if (deletedRows != 1) {
+                throw  new DbException("Number of deleted fold edges is incorrect, expected: 1, actual: " + deletedRows +
+                        " Verify if DB is correct");
+            }
+
+            // Create a new edge
+            long edgeId = createEdge(stepId, getEdgeTypeId(EdgeType.FOLD));
+
+            // Update fields of the new fold edge
+            foldEdge.setEdgeId(edgeId);
+            foldEdge.setAngle(face.getAngle());
+            foldEdge.setCreatedBy(null);
+            foldEdge.setUpdatedBy(null);
+            foldEdge.setCreatedAt(null);
+            foldEdge.setUpdatedAt(null);
+
+            // Insert the fold edge entry
+            foldEdgeMapper.addByObj(foldEdge);
         }
-
-        // Create a new edge
-        long edgeId = createEdge(stepId, getEdgeTypeId(EdgeType.FOLD));
-
-        // Update fields of the new fold edge
-        foldEdge.setEdgeId(edgeId);
-        foldEdge.setAngle(request.getAngle());
-        foldEdge.setCreatedBy(null);
-        foldEdge.setUpdatedBy(null);
-        foldEdge.setCreatedAt(null);
-        foldEdge.setUpdatedAt(null);
-
-        // Insert the fold edge entry
-        foldEdgeMapper.addByObj(foldEdge);
 
         return BaseResponse.success();
     }
@@ -212,12 +217,12 @@ public class GeometryService {
         // ID in database of step to query
         Long stepId;
 
+        step.setIsForward(isForward);
+
         // Sets the step ID to query based on step direction
         if (isForward) {
-            step.setIsForward(true);
             stepId = stepMapper.getIdByIdInOrigami(origamiId, endStep);
         } else {
-            step.setIsForward(false);
             stepId = stepMapper.getIdByIdInOrigami(origamiId, startStep);
         }
         if (stepId == null) {
@@ -241,10 +246,77 @@ public class GeometryService {
 
             step.setStepType("annotate");
             step.setAnnotations(annotations);
+        } else if (stepType.equals(StepType.FOLD)) {
+            step.setStepType("fold");
+
+            if (isForward) {
+                // For forward fold steps
+                FoldForwardResponse foldResponse = getFoldForwardHelper(origamiId, endStep);
+                step.setFoldForward(foldResponse);
+            } else {
+                // For backward fold steps
+                FoldBackwardResponse foldResponse = getFoldBackwardHelper(origamiId, startStep);
+                step.setFoldBackward(foldResponse);
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported step type: " + stepType);
         }
 
         return BaseResponse.success(step);
     }
+
+//    /**
+//     * Retrieves detailed information about a fold step for viewer reproduction.
+//     *
+//     * @param origamiId The ID of the origami model
+//     * @param stepIdInOrigami The ID of the fold step within the origami
+//     *
+//     * @return ResponseEntity containing fold details for reproduction
+//     *
+//     * @throws IllegalArgumentException if the step is not a fold step
+//     * @throws DbException if database errors occur
+//     */
+//    @Transactional(readOnly = true)
+//    public ResponseEntity<BaseResponse<FoldForwardResponse>> getFold(long origamiId, int stepIdInOrigami) {
+//        // Get step ID from database
+//        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
+//        if (stepId == null) {
+//            throw new IllegalArgumentException("Could not find the requested step, " +
+//                    "verify if request is valid (no such step)");
+//        }
+//
+//        // Verify this is a fold step
+//        String stepType = stepMapper.getTypeByStepId(stepId);
+//        if (stepType == null || !stepType.equals(StepType.FOLD)) {
+//            throw new IllegalArgumentException("The requested step is not a fold step: " + stepType);
+//        }
+//
+//        // Create response object
+//        FoldForwardResponse response = new FoldForwardResponse();
+//
+//        // Get the anchored face ID
+//        Long anchoredFaceId = foldStepMapper.getAnchoredFaceIdByStepId(stepId);
+//        if (anchoredFaceId == null) {
+//            throw new DbException("Error in DB, could not find anchored face for fold step");
+//        }
+//
+//        // Get anchored face's ID in origami
+//        Integer anchoredFaceIdInOrigami = faceMapper.getIdInOrigamiByFaceId(anchoredFaceId);
+//        if (anchoredFaceIdInOrigami == null) {
+//            throw new DbException("Error in DB, could not find origami ID for anchored face");
+//        }
+//        response.setAnchoredFaceIdInOrigami(anchoredFaceIdInOrigami);
+//
+//        // Get deleted faces
+//        List<Integer> deletedFaceIdsInOrigami = faceMapper.getDeletedFaceIdsByStepId(stepId);
+//        response.setDeletedFaces(deletedFaceIdsInOrigami);
+//
+//        // Get faces created in this step
+//        List<FaceResponse> createdFaces = getFacesCreatedInStep(stepId, origamiId);
+//        response.setFaces(createdFaces);
+//
+//        return BaseResponse.success(response);
+//    }
 
 
     /* -----------------------------------------------------------------------------------------------
@@ -931,7 +1003,7 @@ public class GeometryService {
 
         if (rowsUpdated < 3 * faceIds.size()) {
             throw new DbException("Invalid number of points deleted, " +
-                    "verify if DB state is correct (too little edges deleted)");
+                    "verify if DB state is correct (too few edges deleted)");
         }
     }
 
@@ -951,10 +1023,10 @@ public class GeometryService {
         int rowsFoldUpdated = foldEdgeMapper.deleteByFaceIds(faceIds, stepId);
 
 
-        if (rowsSideUpdated + rowsFoldUpdated < 3 * faceIds.size()) {
-            throw new DbException("Invalid number of edges deleted, " +
-                    "verify if DB state is correct (too little edges deleted)");
-        }
+//        if (rowsSideUpdated + rowsFoldUpdated < 3 * faceIds.size()) {
+//            throw new DbException("Invalid number of edges deleted, " +
+//                    "verify if DB state is correct (too little edges deleted)");
+//        }
     }
 
 
@@ -1219,5 +1291,183 @@ public class GeometryService {
             // Store edge connection in the database.
             sideEdgeMapper.addByObj(sideEdge);
         }
+    }
+
+    /**
+     * Helper method to retrieve faces created in a specific step along with their vertices and edges.
+     */
+    private List<FaceResponse> getFacesCreatedInStep(Long stepId, long origamiId) {
+        List<FaceWithDetailsDTO> facesWithDetails = faceMapper.getFacesCreatedInStep(stepId);
+        List<FaceResponse> faceResponses = new ArrayList<>();
+
+        for (FaceWithDetailsDTO faceDetails : facesWithDetails) {
+            FaceResponse faceResponse = new FaceResponse();
+            faceResponse.setIdInOrigami(faceDetails.getIdInOrigami());
+
+            // Get vertices for this face
+            List<VertexResponse> vertices = origamiPointMapper.getVerticesByFaceId(faceDetails.getFaceId());
+            faceResponse.setVertices(vertices);
+
+            // Get edges for this face
+            List<EdgeResponse> edges = getEdgesForFace(faceDetails.getFaceId(), origamiId);
+            faceResponse.setEdges(edges);
+
+            faceResponses.add(faceResponse);
+        }
+
+        return faceResponses;
+    }
+
+    /**
+     * Helper method to retrieve all edges for a face, including fold and side edges.
+     */
+    private List<EdgeResponse> getEdgesForFace(Long faceId, long origamiId) {
+        // Get side edges
+        List<EdgeResponse> sideEdges = sideEdgeMapper.getSideEdgesByFaceId(faceId);
+
+        // Get fold edges
+        List<EdgeResponse> foldEdges = foldEdgeMapper.getFoldEdgesByFaceId(faceId, origamiId);
+
+        // Combine and return
+        List<EdgeResponse> allEdges = new ArrayList<>();
+        allEdges.addAll(sideEdges);
+        allEdges.addAll(foldEdges);
+
+        return allEdges;
+    }
+
+    /**
+     * Helper method to retrieve forward fold information.
+     *
+     * @param origamiId The ID of the origami.
+     * @param stepIdInOrigami The step number within the origami context.
+     * @return The fold forward response containing details about the fold operation.
+     */
+    private FoldForwardResponse getFoldForwardHelper(long origamiId, int stepIdInOrigami) {
+        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
+        if (stepId == null) {
+            throw new IllegalArgumentException("Could not find the requested step");
+        }
+
+        // Verify this is a fold step
+        String stepType = stepMapper.getTypeByStepId(stepId);
+        if (stepType == null || !stepType.equals(StepType.FOLD)) {
+            throw new IllegalArgumentException("The requested step is not a fold step: " + stepType);
+        }
+
+        FoldForwardResponse response = new FoldForwardResponse();
+
+        // Get the anchored face ID
+        Long anchoredFaceId = foldStepMapper.getAnchoredFaceIdByStepId(stepId);
+        if (anchoredFaceId == null) {
+            throw new DbException("Error in DB, could not find anchored face for fold step");
+        }
+
+        Integer anchoredFaceIdInOrigami = faceMapper.getIdInOrigamiByFaceId(anchoredFaceId);
+        response.setAnchoredFaceIdInOrigami(anchoredFaceIdInOrigami);
+
+        // Get deleted faces
+        List<Integer> deletedFaceIdsInOrigami = faceMapper.getDeletedFaceIdsByStepId(stepId);
+        response.setDeletedFaces(deletedFaceIdsInOrigami);
+
+        // Get faces created in this step
+        List<FaceResponse> createdFaces = getFacesCreatedInStep(stepId, origamiId);
+        response.setFaces(createdFaces);
+
+        // Get annotations for this step
+        List<FaceAnnotateResponse> annotations = annotateStep(stepId, true);
+        response.setAnnotations(annotations);
+
+        return response;
+    }
+
+    /**
+     * Helper method to retrieve backward fold information.
+     * This handles the undo operation for a fold step.
+     *
+     * @param origamiId The ID of the origami.
+     * @param stepIdInOrigami The step number within the origami context.
+     * @return The fold backward response containing details about the fold operation.
+     */
+    private FoldBackwardResponse getFoldBackwardHelper(long origamiId, int stepIdInOrigami) {
+        Long stepId = stepMapper.getIdByIdInOrigami(origamiId, stepIdInOrigami);
+        if (stepId == null) {
+            throw new IllegalArgumentException("Could not find the requested step");
+        }
+
+        // Verify this is a fold step
+        String stepType = stepMapper.getTypeByStepId(stepId);
+        if (stepType == null || !stepType.equals(StepType.FOLD)) {
+            throw new IllegalArgumentException("The requested step is not a fold step: " + stepType);
+        }
+
+        FoldBackwardResponse response = new FoldBackwardResponse();
+
+        // Get the anchored face ID (same as in forward response)
+        Long anchoredFaceId = foldStepMapper.getAnchoredFaceIdByStepId(stepId);
+        if (anchoredFaceId == null) {
+            throw new DbException("Error in DB, could not find anchored face for fold step");
+        }
+
+        Integer anchoredFaceIdInOrigami = faceMapper.getIdInOrigamiByFaceId(anchoredFaceId);
+        response.setAnchoredFaceIdInOrigami(anchoredFaceIdInOrigami);
+
+        // Get faces created in this step (these will be "deleted" in backward navigation)
+        List<Integer> facesCreatedInStep = faceMapper.getFaceIdsInOrigamiCreatedInStep(stepId);
+        response.setFacesToDelete(facesCreatedInStep);
+
+        // Get faces deleted by this step (these need to be restored with full geometry)
+        List<FaceResponse> facesToRestore = getFacesDeletedInStep(stepId, origamiId);
+        response.setFacesToRestore(facesToRestore);
+
+        // Get annotations for this step (backward direction)
+        List<FaceAnnotateResponse> annotations = annotateStep(stepId, false);
+        response.setAnnotations(annotations);
+
+        return response;
+    }
+
+
+    /**
+     * Helper method to retrieve full details of faces that were deleted in a specific step.
+     */
+    private List<FaceResponse> getFacesDeletedInStep(Long stepId, long origamiId) {
+        List<FaceWithDetailsDTO> deletedFaces = faceMapper.getFacesDeletedInStep(stepId);
+        List<FaceResponse> faceResponses = new ArrayList<>();
+
+        for (FaceWithDetailsDTO faceDetails : deletedFaces) {
+            FaceResponse faceResponse = new FaceResponse();
+            faceResponse.setIdInOrigami(faceDetails.getIdInOrigami());
+
+            // Get vertices for this face as they existed before deletion
+            List<VertexResponse> vertices = origamiPointMapper.getVerticesForDeletedFace(faceDetails.getFaceId());
+            faceResponse.setVertices(vertices);
+
+            // Get edges for this face as they existed before deletion
+            List<EdgeResponse> edges = getEdgesForDeletedFace(faceDetails.getFaceId(), origamiId);
+            faceResponse.setEdges(edges);
+
+            faceResponses.add(faceResponse);
+        }
+
+        return faceResponses;
+    }
+
+    /**
+     * Helper method to retrieve edges for a face that was deleted.
+     */
+    private List<EdgeResponse> getEdgesForDeletedFace(Long faceId, long origamiId) {
+        // Get side edges
+        List<EdgeResponse> sideEdges = sideEdgeMapper.getSideEdgesForDeletedFace(faceId);
+
+        // Get fold edges
+        List<EdgeResponse> foldEdges = foldEdgeMapper.getFoldEdgesForDeletedFace(faceId, origamiId);
+
+        // Combine and return
+        List<EdgeResponse> allEdges = new ArrayList<>();
+        allEdges.addAll(sideEdges);
+        allEdges.addAll(foldEdges);
+
+        return allEdges;
     }
 }

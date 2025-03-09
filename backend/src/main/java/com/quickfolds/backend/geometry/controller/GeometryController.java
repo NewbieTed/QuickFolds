@@ -1,11 +1,8 @@
 package com.quickfolds.backend.geometry.controller;
 
 import com.quickfolds.backend.dto.BaseResponse;
-import com.quickfolds.backend.geometry.model.dto.request.RotateRequest;
+import com.quickfolds.backend.geometry.model.dto.request.*;
 import com.quickfolds.backend.geometry.model.dto.response.StepResponse;
-import com.quickfolds.backend.geometry.model.dto.request.AnnotationRequest;
-import com.quickfolds.backend.geometry.model.dto.request.FaceAnnotateRequest;
-import com.quickfolds.backend.geometry.model.dto.request.FoldRequest;
 import com.quickfolds.backend.geometry.service.GeometryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +67,7 @@ public class GeometryController {
     /**
      * Handles the rotating operation for an origami structure.
      * <p>
-     * This endpoint receives a {@link RotateRequest} containing the necessary fold instructions.
+     * This endpoint receives a {@link FaceRotateRequest} containing the necessary fold instructions.
      * It validates the request, ensures it is not null, and delegates the processing
      * to the {@link GeometryService#rotate(RotateRequest)} (FoldRequest)} method.
      *

@@ -96,6 +96,39 @@
     </select>
 
     <!--
+        Get all vertices for a face
+
+        Purpose:
+        - Retrieves all vertices for a given face.
+        - Ensures that only vertices are returned by filtering on point type.
+
+        Parameters:
+        - `faceId`: The ID of the face containing the vertices.
+
+        Result:
+        - Returns a list of vertices for the specified face.
+    -->
+    <select id="getVerticesByFaceId" resultType="com.quickfolds.backend.geometry.model.dto.response.VertexResponse">
+        SELECT op.id_in_face as idInFace, op.x_pos as x, op.y_pos as y
+        FROM origami_point op
+                 INNER JOIN point_type pt ON op.point_type_id = pt.id
+        WHERE op.face_id = #{faceId}
+          AND pt.point_type_name = 'vertex'
+          AND op.deleted_step_id IS NULL
+        ORDER BY op.id_in_face
+    </select>
+
+    <!-- Get vertices for a face that was deleted -->
+    <select id="getVerticesForDeletedFace" resultType="com.quickfolds.backend.geometry.model.dto.response.VertexResponse">
+        SELECT op.id_in_face as idInFace, op.x_pos as x, op.y_pos as y
+        FROM origami_point op
+                 INNER JOIN point_type pt ON op.point_type_id = pt.id
+        WHERE op.face_id = #{faceId}
+          AND pt.point_type_name = 'vertex'
+        ORDER BY op.id_in_face
+    </select>
+
+    <!--
         Inserts a new origami point into the database.
 
         Purpose:

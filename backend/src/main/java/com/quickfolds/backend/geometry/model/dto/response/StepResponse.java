@@ -54,5 +54,15 @@ public class StepResponse {
      */
     private List<FaceAnnotateResponse> annotations;
 
-    // TODO: fold steps
+    /**
+     * Fold information for fold steps.
+     * Contains details about faces, edges, and vertices in a fold operation.
+     * Populated only for fold steps.
+     */
+    private FoldForwardResponse foldForward;
+
+    /**
+     * Backward fold information
+     */
+    private FoldBackwardResponse foldBackward;
 }
