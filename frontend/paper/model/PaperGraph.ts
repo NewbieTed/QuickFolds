@@ -366,9 +366,8 @@ export function updateAdjListForSplitGraph(
                     // and the OG id of the outside connection (B)
   const problemEdgesToReturnTo: ProblemEdgeInfo[] = [];
 
-
-
-
+  console.log("left face edge that id folds", leftFaceEdgeIdThatFolds);
+  console.log("right  face edge that id folds", rightFaceEdgeIdThatFolds);
   // create new list, since we are making new planes
   adjList.set(leftFaceId, []);
   adjList.set(rightFaceId, []);

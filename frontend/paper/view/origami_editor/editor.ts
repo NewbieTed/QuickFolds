@@ -125,9 +125,9 @@ async function onMouseDown(event : MouseEvent) {
 			if (face3d === undefined) {
 				return;
 			}
-			const [projectedEdgePoint, edgeId] = projectAndCreateEdgePoint(point, face3d);
-			const projectedPoint = face3d.projectToFace(projectedEdgePoint);
-			const result: string | true = await addAnnotationPoint(projectedPoint, face3d.ID, edgeId);
+			const projectedPoint = face3d.projectToFace(point);
+			const [projectedEdgePoint, edgeId] = projectAndCreateEdgePoint(projectedPoint, face3d);
+			const result: string | true = await addAnnotationPoint(projectedEdgePoint, face3d.ID, edgeId);
 			if (result !== true) {
 				addlogfeedMessage("red", "Error: ", result);
 			}

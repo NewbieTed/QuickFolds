@@ -606,6 +606,8 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
       p1, p2, face2d.getPoint(i), face2d.getPoint((i + 1n) % face2d.N)
     );
 
+    console.log("intersection point for vertex " + i + " of " +faceIdToUpdate + ": " +intersectionPointOfFaceEdgeAndUserLine.x, + intersectionPointOfFaceEdgeAndUserLine.y);
+
     // this just makes sure that we are on the edge (think of round off error)
     intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
     console.log("i:" + i + ":" + distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine));
@@ -869,6 +871,12 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     // add new line to DS. this is my a1-a2 connection
     newSetOfEdgesForDS.add({face1Id:resultFromSplitting.stationaryFaceId , face2Id:resultFromSplitting.rotationFaceId})
   }
+
+
+  if (perpindicularVectorPointTowardsLeftSpaceOrigin == null) {
+    throw new Error("should have saved the split face vector");
+  }
+
 
   // update faces, but only the ones that aren't split via the line
   for(let i = 0; i < faceIdToUpdate.length; i++) {
@@ -1280,7 +1288,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
 
-  let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
+  let flattedPoint: Point3D | null = face3d.projectToFace(point);
   if (flattedPoint == null) {
     console.error("Point creation isn't on plane");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";

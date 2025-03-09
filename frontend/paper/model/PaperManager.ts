@@ -449,13 +449,22 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
   // now that we have the basic faces split, it's time to update the adj list with the
   // update edges of the new faces
+  let sentFirstEdgeId = firstEdgeId;
+  if (sentFirstEdgeId === minEdgePointId) {
+    sentFirstEdgeId = -1n;
+  }
+
+  let sentSecondEdgeId = secondEdgeId;
+  if (sentSecondEdgeId === maxEdgePointId) {
+    sentSecondEdgeId = -1n;
+  }
 
   const problemIssuesEdges: ProblemEdgeInfo[]
   = updateAdjListForSplitGraph(
     faceId,
     [leftFace.ID, foldEdgeIdLeft, leftFacePointIdFromOG],
     [rightFace.ID, foldEdgeIdRight, rightFacePointIdFromOG],
-    angle, firstEdgeId, secondEdgeId
+    angle, sentFirstEdgeId, sentSecondEdgeId
   );      // feels weird putting this since it can be a annotation point id, but
           // that's ok since we only care about matches with OG face, which means
           // this will never triggers since pointIDs > vertex ids
