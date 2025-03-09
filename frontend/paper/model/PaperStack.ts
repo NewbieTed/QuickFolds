@@ -112,6 +112,8 @@ function split(
     const stationaryComponent = new PaperComponent(getNextComponentID());
     const mobileComponent = new PaperComponent(getNextComponentID());
 
+    console.log("COMPONENT BEING SPLIT: ", component);
+
     // Iterate layer by layer and turn ancestors into descendants.
     for (let layer = 0n; layer < component.layers.length; layer++) {
 
@@ -888,10 +890,13 @@ export function faceMutatingFold(
             ): Map<bigint, number> {
 
     const offsets = new Map<bigint, number>();
+    console.log("DESCENDANTS: ", descendants);
 
     if (startAngle === 180n && endAngle === 360n) {
         // Complete Split Case 1.
-        const initialComponent = LUG.get(descendants.keys().next().value);
+        const initialComponent = LUG.get(
+            faceToComponent.get(descendants.keys().next().value)
+        );
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
@@ -953,7 +958,9 @@ export function faceMutatingFold(
     } else if (startAngle === 180n && endAngle === 0n) {
         // Complete Split Case 2.
         console.log("sanity check: we get in if statement");
-        const initialComponent = LUG.get(descendants.keys().next().value);
+        const initialComponent = LUG.get(
+            faceToComponent.get(descendants.keys().next().value)
+        );
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
@@ -1022,7 +1029,9 @@ export function faceMutatingFold(
 
     } else if (startAngle === 180n) {
         // Partial Split
-        const initialComponent = LUG.get(descendants.keys().next().value);
+        const initialComponent = LUG.get(
+            faceToComponent.get(descendants.keys().next().value)
+        );
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
