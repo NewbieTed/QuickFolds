@@ -736,5 +736,20 @@ export class Face3D {
 
 
     // TODO: methods to change visibility and disable/enable raycasting thru this face.
+    public getAveragePoint() : pt.Point3D {
+        let xValue = 0.0;
+        let yValue = 0.0;
+        let zValue = 0.0;
 
+
+        for(let i = 0; i < this.N; i++) {
+            xValue += this.vertices[i].x;
+            yValue += this.vertices[i].y;
+            zValue += this.vertices[i].y;
+        }
+
+
+        return pt.createPoint3D(xValue/Number(this.N), yValue/Number(this.N), zValue/Number(this.N));
+
+    }
 }
