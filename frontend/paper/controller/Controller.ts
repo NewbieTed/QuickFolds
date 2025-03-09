@@ -15,6 +15,7 @@ import { getFace3DByID, incrementStepID, print3dGraph, animateFold, deleteFace, 
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo, ProblemEdgeInfoMerge } from '../model/PaperManager.js';
 import { faceMutatingFold, getOverlappingFaces } from '../model/PaperStack.js';
+import { off } from 'process';
 
 
 const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
@@ -1086,7 +1087,13 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   }
 
   // do lug
-  // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces); bak
+  console.log("HERE:____");
+  console.log(stationaryFaceSpecifc);
+  console.log(rotatingFaceSpecific);
+  console.log(mapFromOgIdsToSplitFaces);
+  console.log(180n - angle);
+  console.log(listOfStationaryFacesInLug);
+  console.log("END:____");
   const offsets: Map<bigint, number>  = faceMutatingFold(stationaryFaceSpecifc, rotatingFaceSpecific, 180n, 180n - angle,
     edgeIdOfStationaryFace, mapFromOgIdsToSplitFaces, new Set<bigint>(listOfStationaryFacesInLug)
   );
@@ -1100,6 +1107,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
     ...allFacesThatMoveForAnyReason
   );
+
+  console.log(offsets);
 
   // update backend
   let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);

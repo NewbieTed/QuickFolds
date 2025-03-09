@@ -8,17 +8,17 @@ import * as geo from "../geometry/geometry.js"
 import * as SceneManager from "../view/SceneManager.js"
 
 
-/** 
+/**
  * Some terminology to help understand the kinds of folds and implementation of this file:
- * 
+ *
  * "Stable" angles refer to an angle between two faces of 0, 180, or 360.
- * 
+ *
  * Folds are classified by how they change the angles between faces as follows.
  * A fold is "complete" when its both start and end angle are stable.
  * A fold is "partial" when its start angle is stable, but its end angle is not.
  * A fold is "resolved" when its start angle is unstable, but its end angle is stable.
  * A fold is "adjusted" when both start and end angle are unstable.
- * 
+ *
  * Folds can also be classified by the changes they cause to the faces themselves.
  * A fold is a "split" fold when it causes faces to split. The start angle is 180.
  * A fold is a "merge" fold when it causes faces to merge. The final angle is 180.
@@ -27,17 +27,17 @@ import * as SceneManager from "../view/SceneManager.js"
  * cannot be 180 either because then by definition there would not be two faces,
  * and we would need to split them.
  * Folds can only ever be exactly one of these three kinds.
- * 
+ *
  * A "component" in the LUG is a connected component which indicates that
  * all faces in the component are technically overlapping in 3D space, if
  * the paper was infinitely thin.
- * 
+ *
  * There are four operations on components - two divides, two joins.
  * "Split" is for dividing components when faces are being split.
  * "Partition" is for dividing components when faces are not being split.
  * "Stack" is for joining components on top/bottom of each other.
  * "Merge" is for joining components when faces are being merged.
- * 
+ *
  * We need to implement the following kinds of folds.
  * Complete Split: 180 -> 0 or 360. Component is Split and Stacked.
  * Complete Merge: 0 or 360 -> 180. Components are Partitioned and Merged.
@@ -47,13 +47,13 @@ import * as SceneManager from "../view/SceneManager.js"
  * Partial Align: 0 or 360 -> nonstable. Components are Partitioned.
  * Resolved Align: nonstable -> 0 or 360. Components are Partitioned and Stacked.
  * Adjusted Align: nonstable -> nonstable. Nothing happens to the component.
- * 
+ *
  * (Any other combinations of the above vocabulary are impossible.)
  */
 
 
 /**
- * One node in the LUG. 
+ * One node in the LUG.
  */
 class FaceNode {
 
@@ -81,7 +81,7 @@ class PaperComponent {
     readonly ID: bigint;
     readonly layerMap: Map<bigint, bigint>;
     readonly layers: Map<bigint, FaceNode>[];
-    
+
     constructor(ID: bigint) {
         this.ID = ID;
         this.layerMap = new Map<bigint, bigint>();
@@ -179,7 +179,7 @@ function split(
                     if (pairs(stationary, descA[1], descB[1])) {
 
                         const toUpdate = (stationary.has(descA[1])) ?
-                                          stationaryComponent : 
+                                          stationaryComponent :
                                           mobileComponent;
                         addDownlink(toUpdate, descA[1], descB[1]);
                     }
@@ -189,7 +189,7 @@ function split(
                     if (pairs(stationary, descA[1], descB[0])) {
 
                         const toUpdate = (stationary.has(descA[1])) ?
-                                          stationaryComponent : 
+                                          stationaryComponent :
                                           mobileComponent;
                         addDownlink(toUpdate, descA[1], descB[0]);
                     }
@@ -199,7 +199,7 @@ function split(
                     if (pairs(stationary, descA[0], descB[1])) {
 
                         const toUpdate = (stationary.has(descA[0])) ?
-                                          stationaryComponent : 
+                                          stationaryComponent :
                                           mobileComponent;
                         addDownlink(toUpdate, descA[0], descB[1]);
                     }
@@ -208,7 +208,7 @@ function split(
                 if (pairs(stationary, descA[0], descB[0])) {
 
                     const toUpdate = (stationary.has(descA[0])) ?
-                                      stationaryComponent : 
+                                      stationaryComponent :
                                       mobileComponent;
                     addDownlink(toUpdate, descA[0], descB[0]);
                 }
@@ -232,7 +232,7 @@ function split(
                     if (pairs(stationary, descA[1], descB[1])) {
 
                         const toUpdate = (stationary.has(descA[1])) ?
-                                          stationaryComponent : 
+                                          stationaryComponent :
                                           mobileComponent;
                         addUplink(toUpdate, descA[1], descB[1]);
                     }
@@ -242,7 +242,7 @@ function split(
                     if (pairs(stationary, descA[1], descB[0])) {
 
                         const toUpdate = (stationary.has(descA[1])) ?
-                                          stationaryComponent : 
+                                          stationaryComponent :
                                           mobileComponent;
                         addUplink(toUpdate, descA[1], descB[0]);
                     }
@@ -252,7 +252,7 @@ function split(
                     if (pairs(stationary, descA[0], descB[1])) {
 
                         const toUpdate = (stationary.has(descA[0])) ?
-                                          stationaryComponent : 
+                                          stationaryComponent :
                                           mobileComponent;
                         addUplink(toUpdate, descA[0], descB[1]);
                     }
@@ -261,7 +261,7 @@ function split(
                 if (pairs(stationary, descA[0], descB[0])) {
 
                     const toUpdate = (stationary.has(descA[0])) ?
-                                      stationaryComponent : 
+                                      stationaryComponent :
                                       mobileComponent;
                     addUplink(toUpdate, descA[0], descB[0]);
                 }
@@ -304,8 +304,8 @@ function pairs(
  * @param upID The face to link it to.
  */
 function addUplink(
-            component: PaperComponent, 
-            faceID: bigint, 
+            component: PaperComponent,
+            faceID: bigint,
             upID: bigint
             ) {
 
@@ -322,8 +322,8 @@ function addUplink(
  * @param downID The face to link it to.
  */
 function addDownlink(
-            component: PaperComponent, 
-            faceID: bigint, 
+            component: PaperComponent,
+            faceID: bigint,
             downID: bigint
             ) {
 
@@ -342,7 +342,7 @@ function clean(component: PaperComponent): void {
     // Remove from the bottom of the component.
     while (component.layers.length > 0 &&
            component.layers[0].size == 0) {
-     
+
         firstBottom++;
      }
 
@@ -350,7 +350,7 @@ function clean(component: PaperComponent): void {
     // Remove from the top of the component.
     while (component.layers.length > 0 &&
            component.layers[component.layers.length - 1].size == 0) {
-        
+
         firstTop--;
     }
 
@@ -390,7 +390,7 @@ function setLayerMap(component: PaperComponent): void {
 
 
 /**
- * Splits the paper component, based on the set of stationary faces, 
+ * Splits the paper component, based on the set of stationary faces,
  * which should be a subset of all the faces in this component. Unlike
  * split(), this operation assumes that no faces are created or deleted.
  * @param component The LUG component to split.
@@ -444,7 +444,7 @@ function partition(
 
     // Finally, set all of the uplinks and downlinks in each component, based
     // on the layer mappings and stationary set.
-    // Iterate layer by layer and connect up the nodes in the same set. 
+    // Iterate layer by layer and connect up the nodes in the same set.
     for (let layer = 0n; layer < component.layers.length; layer++) {
 
         const oldLayer = component.layers[Number(layer)];
@@ -457,7 +457,7 @@ function partition(
                 if (pairs(stationary, faceID, downID)) {
 
                     const toUpdate = (stationary.has(faceID)) ?
-                                      stationaryComponent : 
+                                      stationaryComponent :
                                       mobileComponent;
                     addDownlink(toUpdate, faceID, downID);
                 }
@@ -470,7 +470,7 @@ function partition(
                 if (pairs(stationary, faceID, upID)) {
 
                     const toUpdate = (stationary.has(faceID)) ?
-                                      stationaryComponent : 
+                                      stationaryComponent :
                                       mobileComponent;
                     addUplink(toUpdate, faceID, upID);
                 }
@@ -529,7 +529,7 @@ function stack(
     for (const faceID of rotatedFaces.keys()) {
         facesIn2D.set(
             faceID,
-            geo.projectToPlane(basis, 
+            geo.projectToPlane(basis,
                 ...rotatedFaces.get(faceID)),
         );
     }
@@ -557,7 +557,7 @@ function stack(
 
             // Descend from the top until the face intersects some layer.
             for (let j = topOfBot; j >= boundLayer; j--) {
-                
+
                 // Does the face intersect this layer?
                 let intersectsLayer = false;
                 for (const botFaceID of botComponent.layers[Number(j)].keys()) {
@@ -595,22 +595,20 @@ function stack(
         }
     }
 
-    
-    // Now we do the stacking, starting at the bound layer and moving up.
-    for (let i = 0n; i < topOfTop; i++) {
 
+    // Now we do the stacking, starting at the bound layer and moving up.
+    for (let i = 0n; i <= topOfTop; i++) {
         // Assume the layers from boundLayer to the top of bottom correspond
         // one to one with the layers of the top component.
         // (That is, they have been compressed already, no empty layers)
-        
+
         // Add new layer to bottom component if necessary.
-        if (boundLayer + i + 1n === topOfBot) {
+        if (boundLayer + i + 1n > topOfBot) {
             botComponent.layers.push(new Map<bigint, FaceNode>());
         }
 
         // Iterate the top component's faces in this layer.
         for (const topFaceID of topComponent.layers[Number(topOfTop - i)].keys()) {
-
             // Add the face to the layer, update layer mapping.
             botComponent.layers[Number(boundLayer + i + 1n)]
                 .set(topFaceID, new FaceNode(
@@ -635,10 +633,11 @@ function stack(
             }
 
         }
-        
+
 
     }
-    
+
+
     return botComponent;
 }
 
@@ -796,7 +795,7 @@ export function invert(component: PaperComponent) {
     const numLayers = BigInt(component.layers.length);
     component.layers.reverse();
     for (let i = 0n; i < numLayers; i++) {
- 
+
         for (const faceID of component.layers[Number(i)].keys()) {
 
             // Invert uplinks and downlinks for each node.
@@ -887,7 +886,7 @@ export function faceMutatingFold(
             descendants: Map<bigint, [bigint, bigint] | [bigint]>,
             stationary: Set<bigint>
             ): Map<bigint, number> {
-    
+
     const offsets = new Map<bigint, number>();
 
     if (startAngle === 180n && endAngle === 360n) {
@@ -896,20 +895,20 @@ export function faceMutatingFold(
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
-        
+
         // 360: The principal normals point away from each other.
         // So make both components have normals pointing opposite to the layering.
         // Then stack the stationary on top of the mobile.
         const statOrientation = getOrientation(stationaryComponent, refStationary);
         const mobOrientation = getOrientation(mobileComponent, refMobile);
-        
+
         if (statOrientation) {
             invert(stationaryComponent);
         }
         if (mobOrientation) {
             invert(mobileComponent);
         }
-        
+
         const result = stack(
             mobileComponent,  // Bottom (inverted)
             stationaryComponent, // Top (double inverted)
@@ -925,43 +924,50 @@ export function faceMutatingFold(
             // Which one did it come from? Check orientation and offset accordingly.
             if (stationaryComponent.layerMap.has(faceID)) {
                 offsets.set(
-                    faceID, 
+                    faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
                         * statOffset
                 );
             } else {
                 offsets.set(
-                    faceID, 
+                    faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
                         * mobOffset
                 );
             }
         }
-        
+
         // Update LUG components.
         LUG.delete(initialComponent.ID);
         LUG.set(result.ID, result);
 
     } else if (startAngle === 180n && endAngle === 0n) {
         // Complete Split Case 2.
+        console.log("sanity check: we get in if statement");
         const initialComponent = LUG.get(descendants.keys().next().value);
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
-        
+
+        console.log("initial component", initialComponent);
+        console.log("stat component", stationaryComponent);
+        console.log("mob component", mobileComponent);
+
+
         // 0: The principal normals point towards from each other.
         // So make both components have normals the same direction as the layering.
         // Then stack the mobile on top of the stationary.
         const statOrientation = getOrientation(stationaryComponent, refStationary);
         const mobOrientation = getOrientation(mobileComponent, refMobile);
-        
+
+
         if (!statOrientation) {
             invert(stationaryComponent);
         }
         if (!mobOrientation) {
             invert(mobileComponent);
         }
-        
+
         const result = stack(
             stationaryComponent,  // Bottom (upright)
             mobileComponent, // Top (inverted)
@@ -970,6 +976,8 @@ export function faceMutatingFold(
             180 // in the opposite direction as the stationary reference normal
         );
 
+        console.log("result hady", result);
+
         // Capture how the Face3D offsets should change.
         const statOffset = -1 * (result.layers.length - stationaryComponent.layers.length);
         const mobOffset = (result.layers.length - mobileComponent.layers.length);
@@ -977,13 +985,13 @@ export function faceMutatingFold(
             // Which one did it come from? Check orientation and offset accordingly.
             if (stationaryComponent.layerMap.has(faceID)) {
                 offsets.set(
-                    faceID, 
+                    faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
                         * statOffset
                 );
             } else {
                 offsets.set(
-                    faceID, 
+                    faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
                         * mobOffset
                 );
@@ -1000,20 +1008,20 @@ export function faceMutatingFold(
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
-        
+
         // 0: The principal normals point towards from each other.
         // So make both components have normals the same direction as the layering.
         // Then stack the mobile on top of the stationary.
         const statOrientation = getOrientation(stationaryComponent, refStationary);
         const mobOrientation = getOrientation(mobileComponent, refMobile);
-        
+
         if (!statOrientation) {
             invert(stationaryComponent);
         }
         if (!mobOrientation) {
             invert(mobileComponent);
         }
-        
+
         const result = stack(
             stationaryComponent,  // Bottom (upright)
             mobileComponent, // Top (inverted)
@@ -1041,7 +1049,7 @@ export function faceMutatingFold(
         // TODO
     }
     // No other cases should be possible for face-mutating folds.
-        
+
     return offsets;
 }
 
@@ -1057,7 +1065,7 @@ export function faceAlignFold(
     return null;
 }
 
-/* 
+/*
  * Complete Split: 180 -> 0 or 360. Component is Split and Stacked.
  * Complete Merge: 0 or 360 -> 180. Components are Partitioned and Merged.
  * Partial Split: 180 -> nonstable. Component is Split.
