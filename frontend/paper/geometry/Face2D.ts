@@ -721,4 +721,20 @@ export class Face2D {
         return minId;
     }
 
+
+    public getAveragePoint() : pt.Point2D {
+            let xValue = 0.0;
+            let yValue = 0.0;
+
+
+            for(let i = 0; i < this.N; i++) {
+                xValue += this.vertices[i].x;
+                yValue += this.vertices[i].y;
+            }
+
+
+            return pt.createPoint2D(xValue/Number(this.N), yValue/Number(this.N));
+
+    }
+
 }

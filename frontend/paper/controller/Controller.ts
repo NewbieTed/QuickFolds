@@ -492,7 +492,7 @@ async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, fac
 
 
   // need to get flattened 2d point
-  const flattedPoint3d: Point3D | null = projectPointToFace(vertexOfFaceStationary, face3d);
+  const flattedPoint3d: Point3D | null = face3d.projectToFace(vertexOfFaceStationary);
   if (flattedPoint3d === null) {
     console.error("error getting face 3d");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -606,10 +606,42 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
       p1, p2, face2d.getPoint(i), face2d.getPoint((i + 1n) % face2d.N)
     );
 
-    console.log("intersection point for vertex " + i + " of " +faceIdToUpdate + ": " +intersectionPointOfFaceEdgeAndUserLine.x, + intersectionPointOfFaceEdgeAndUserLine.y);
+
+
+
+    // test purposes
+
+  //   let annoRes2d = face2d.addAnnotatedPoint(intersectionPointOfFaceEdgeAndUserLine, i);
+  //   console.log("we are making a point on the stacked face");
+  //   if (annoRes2d.pointsAdded.size !== 1) {
+  //     throw new Error("error making a point");
+  //   }
+
+  //   const face3d = getFace3DByID(faceIdToUpdate);
+
+  // // add point (should just be one, but res uses map)
+  // for(let pointId of annoRes2d.pointsAdded.keys()) {
+  //   const pointIn3dVersion = translate2dTo3d(annoRes2d.pointsAdded.get(pointId).point, faceIdToUpdate);
+
+  //   face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, pointIn3dVersion));
+  // }
+
+
+
+
+
+
+    ////////////////
+
+
+
 
     // this just makes sure that we are on the edge (think of round off error)
-    intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+    //intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+
+    console.log("intersection point for vertex " + i + " of " +faceIdToUpdate + ": " +intersectionPointOfFaceEdgeAndUserLine.x, + intersectionPointOfFaceEdgeAndUserLine.y);
+
+
     console.log("i:" + i + ":" + distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine));
     // edge case, check if point is actually on the edge:
     if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.15) {
@@ -901,6 +933,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     mapFromOgIdsToSplitFaces.set(currFaceId, [currFaceId]);
 
     const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+
     // only do it if the plane we are looking at ISN"T being cut by the face
     if (points == null) {
       // line doesn't intersect plane, so just skip the splitting todo: don't delete og face until after this for loop since i need it here
@@ -1306,6 +1339,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
   let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
+  console.log("TRANSLATED POINT", getTranslated2dPoint);
   if (getTranslated2dPoint == null) {
     console.error("Error translating to 2d");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -1505,7 +1539,7 @@ function getConvertedPoint2D(point: Point3D, faceId: bigint) : Point2D | null{
     return null;
   }
 
-  let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
+  let flattedPoint: Point3D | null = face3d.projectToFace(point);
   if (flattedPoint == null) {
     return null;
   }
@@ -1613,7 +1647,7 @@ function getaddPointFromResultMap(addPointResult: AnnotationUpdate2D) : bigint {
  * @param face3d - the plane to be projected on
  * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
  */
-function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
+function projectPointToFacze(point: Point3D, face3d: Face3D): Point3D | null {
   const points: THREE.Vector3[] = [];
 
   for (let i = 0; i < 3; i++) {

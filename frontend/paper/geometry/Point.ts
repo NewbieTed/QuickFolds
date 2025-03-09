@@ -4,6 +4,7 @@
 
 import { Face2D } from "./Face2D.js";
 import { Face3D } from "./Face3D.js";
+import { basisToWorld, basisToWorld2D, getPlaneBasis, getPlaneBasis2D, PlaneBasis2D, projectToPlane } from "./geometry.js";
 
 
 // ----------------------------- Types ------------------------------------- //
@@ -492,57 +493,72 @@ export function normalize<T extends Point>(vec: T): T {
  * @returns - the translated 2d point, or null if there is an error
  */
 export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
-    let points : Point3D[] = [];
-    for (let i = 0; i < 3; i++) {
-      points.push(face3d.vertices[i]);
-    }
-
-    const basis1 : Point3D = createPoint3D(
-      points[1].x - points[0].x,
-      points[1].y - points[0].y,
-      points[1].z - points[0].z,
-    );
-
-    const basis2 : Point3D = createPoint3D(
-      points[2].x - points[0].x,
-      points[2].y - points[0].y,
-      points[2].z - points[0].z,
-    );
-
-    let basisResult = solveForScalars(
-    [basis1.x, basis1.y, basis2.z],
-    [basis2.x, basis2.y, basis2.z],
-    [point.x, point.y, point.z]
-    );
+    const othroBasis = getPlaneBasis(face3d);
+    console.log("ORTHO BASIS", othroBasis);
+    const translatedPoint2d: Point2D[] = projectToPlane(othroBasis, point);
+    console.log("transalted point", translatedPoint2d);
+    const centroidPoint = face2d.getAveragePoint();
+    console.log("CENTROID", centroidPoint);
 
 
-    if (basisResult == null) {
-      return null;
-    }
+    const getPlaneBasisFor2d: PlaneBasis2D = getPlaneBasis2D(face2d);
+    const translatedPoint: Point2D = basisToWorld2D(getPlaneBasisFor2d, translatedPoint2d[0]);
+
+    return translatedPoint;
 
 
-    // because our problem is isometric, use the same coordinates for our
-    // new basis vectors rotated on the 2d plane
-    const point0in2D : Point2D = face2d.vertices[0];
-    const point1in2D : Point2D = face2d.vertices[1];
-    const point2in2D : Point2D = face2d.vertices[2];
 
-    const basis1in2d : Point2D = createPoint2D(
-      point1in2D.x - point0in2D.x,
-      point1in2D.y - point0in2D.y
-    );
+    // let points : Point3D[] = [];
+    // for (let i = 0; i < 3; i++) {
+    //   points.push(face3d.vertices[i]);
+    // }
 
-    const basis2in2d : Point2D = createPoint2D(
-      point2in2D.x - point0in2D.x,
-      point2in2D.y - point0in2D.y
-    );
+    // const basis1 : Point3D = createPoint3D(
+    //   points[1].x - points[0].x,
+    //   points[1].y - points[0].y,
+    //   points[1].z - points[0].z,
+    // );
 
-    const coverted2dPoint = createPoint2D(
-      basis1in2d.x * basisResult[0] +  basis2in2d.x * basisResult[1],
-      basis1in2d.y * basisResult[0] +  basis2in2d.y * basisResult[1],
-    );
+    // const basis2 : Point3D = createPoint3D(
+    //   points[2].x - points[0].x,
+    //   points[2].y - points[0].y,
+    //   points[2].z - points[0].z,
+    // );
 
-    return coverted2dPoint;
+    // let basisResult = solveForScalars(
+    // [basis1.x, basis1.y, basis2.z],
+    // [basis2.x, basis2.y, basis2.z],
+    // [point.x, point.y, point.z]
+    // );
+
+
+    // if (basisResult == null) {
+    //   return null;
+    // }
+
+
+    // // because our problem is isometric, use the same coordinates for our
+    // // new basis vectors rotated on the 2d plane
+    // const point0in2D : Point2D = face2d.vertices[0];
+    // const point1in2D : Point2D = face2d.vertices[1];
+    // const point2in2D : Point2D = face2d.vertices[2];
+
+    // const basis1in2d : Point2D = createPoint2D(
+    //   point1in2D.x - point0in2D.x,
+    //   point1in2D.y - point0in2D.y
+    // );
+
+    // const basis2in2d : Point2D = createPoint2D(
+    //   point2in2D.x - point0in2D.x,
+    //   point2in2D.y - point0in2D.y
+    // );
+
+    // const coverted2dPoint = createPoint2D(
+    //   basis1in2d.x * basisResult[0] +  basis2in2d.x * basisResult[1],
+    //   basis1in2d.y * basisResult[0] +  basis2in2d.y * basisResult[1],
+    // );
+
+    // return coverted2dPoint;
   }
 
 

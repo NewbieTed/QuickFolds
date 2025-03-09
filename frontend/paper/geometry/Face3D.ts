@@ -790,7 +790,7 @@ export class Face3D {
         for(let i = 0; i < this.N; i++) {
             xValue += this.vertices[i].x;
             yValue += this.vertices[i].y;
-            zValue += this.vertices[i].y;
+            zValue += this.vertices[i].z;
         }
 
 
