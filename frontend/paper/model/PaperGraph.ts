@@ -118,6 +118,12 @@ function DisJointSetHas(edgesSet: Set<{face1Id: bigint;face2Id: bigint;}>, f1: b
   return false;
 }
 
+/**
+ * helper method that does bfs from one vertex
+ * @param startVertex - the vertex to do bfs from
+ * @param edgesNotToCross - list of edges not to cross
+ * @returns
+ */
 function singleBfs(startVertex: bigint, edgesNotToCross: Set<{face1Id: bigint;face2Id: bigint;}>): Set<bigint> {
   const result: Set<bigint> = new Set();
   const visited: Set<bigint> = new Set();

@@ -87,6 +87,14 @@ function getFaceIdThatTouchesTargetFace(targetFaceId: bigint, facesToConnectWith
 }
 
 
+/**
+ * takes a target point on the place and makes a vector that points in the direction from the edge
+ * to the target point where the angle between the edge and the vector is 90 degrees
+ * @param stationaryFaceId - id of face you want
+ * @param edgeIdOfST - edge to bank off of
+ * @param targetPoint - the point to make a vector with target
+ * @returns
+ */
 function getOriginVectorPointingInDirectionOfTargetFromCutEdge(stationaryFaceId: bigint, edgeIdOfST: bigint, targetPoint: Point3D) {
   const statFaceObj = getFace3DByID(stationaryFaceId);
   if (statFaceObj === undefined) {
@@ -107,7 +115,15 @@ function getOriginVectorPointingInDirectionOfTargetFromCutEdge(stationaryFaceId:
 
 
 
-
+/**
+ * Takes two faces and updates the angle between them for all edges linked to the provided one
+ * may merge if needed
+ * @param faceId1 - face1 of edge
+ * @param faceId2 - face2 of edge
+ * @param stationaryFace - id of face1/face2: whichevery doesn't move
+ * @param relativeChange - the angle in degrees between them. Positive puts the normals closer together
+ * @returns
+ */
 export async function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
   if (faceId1 === faceId2) {
     return "Faces are the same";
@@ -405,8 +421,6 @@ async function mergeMultiFaces(faceId1: bigint, faceId2: bigint, stationaryFaceI
     }
     allFacesCreatedObjs.push(face);
   })
-
-  // todo: make button to do the multimerge, then test split, then merge back again
 
   console.log("GOT HERE 7");
   let result: boolean = await addSplitFacesToDB(allFacesCreatedObjs, allFacesDeleted, stationaryFaceId);
