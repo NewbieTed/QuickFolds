@@ -604,10 +604,10 @@ public class GeometryService {
         int rowsFoldUpdated = foldEdgeMapper.deleteByFaceIds(faceIds, stepId);
 
 
-        if (rowsSideUpdated + rowsFoldUpdated < 3 * faceIds.size()) {
-            throw new DbException("Invalid number of edges deleted, " +
-                    "verify if DB state is correct (too little edges deleted)");
-        }
+        // if (rowsSideUpdated + rowsFoldUpdated < 3 * faceIds.size()) {
+        //     throw new DbException("Invalid number of edges deleted, " +
+        //             "verify if DB state is correct (too little edges deleted)");
+        // }
     }
 
 

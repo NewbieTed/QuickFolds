@@ -389,30 +389,45 @@ export function scalarDiv<T extends Point>(
 
 
 /**
- * Computes the average of an array of 3D vectors.
- * @param vectors The 3D vectors to average.
+ * Computes the average of an array of vectors.
+ * @param vectors The vectors to average.
  * @param context Context of the resulting point.
  *                Defaults to Annotation.
  * @returns The sum of the vectors divided by how many there are.
  *          The average of no vectors (empty array) is 0.
  */
-export function average(
-            vectors: Point3D[],
+export function average<T extends Point>(
+            vectors: T[],
             context: PointContext = "Annotation"
             ) {
 
-    let sum: Point3D = createPoint3D(0, 0, 0, context);
-    for (let i = 0; i < vectors.length; i++) {
-        sum = add(sum, vectors[i]);
+    if (vectors[0].dim === "3D") {
+
+        let sum: Point3D = createPoint3D(0, 0, 0, context);
+        for (let i = 0; i < vectors.length; i++) {
+            sum = add(sum, vectors[i] as Point3D);
+        }
+        // Edge case.
+        if (vectors.length == 0) {
+            return sum as T;
+        }
+        const avg: Point3D = scalarDiv(sum, vectors.length, context);
+        return avg as T;
+
+    } else if (vectors[0].dim === "2D") {
+
+        let sum: Point2D = createPoint2D(0, 0, context);
+        for (let i = 0; i < vectors.length; i++) {
+            sum = add(sum, vectors[i] as Point2D);
+        }
+        // Edge case.
+        if (vectors.length == 0) {
+            return sum as T;
+        }
+        const avg: Point2D = scalarDiv(sum, vectors.length, context);
+        return avg as T;
     }
 
-    // Edge case.
-    if (vectors.length == 0) {
-        return sum;
-    }
-
-    const avg: Point3D = scalarDiv(sum, vectors.length, context);
-    return avg;
 }
 
 

@@ -8,6 +8,7 @@ import {Face3D} from "./Face3D.js"
 import * as pt from "./Point.js"
 import * as SceneManager from "../view/SceneManager.js"
 import * as THREE from 'three';
+import { Face2D } from "./Face2D.js";
 
 /**
  * Represents an orthonomormal basis for a plane in 3D space. Specified
@@ -21,6 +22,20 @@ export type PlaneBasis3D = {
     readonly normal: pt.Point3D,
     readonly axis1: pt.Point3D,
     readonly axis2: pt.Point3D
+}
+
+/**
+ * Represents an orthonomormal basis for a plane in 2D space. Specified
+ * by a point in the plane, the unit normal vector to the plane, and two
+ * orthogonal unit basis vectors inside the plane itself. This gives a
+ * complete coordinate system in 3D space, where the given point acts as
+ * the origin of that coordinate system.
+ * ___
+ */
+export type PlaneBasis2D = {
+    readonly origin: pt.Point2D,
+    readonly axis1: pt.Point2D,
+    readonly axis2: pt.Point2D
 }
 
 /**
@@ -64,6 +79,66 @@ export function getPlaneBasis(face: Face3D): PlaneBasis3D {
     }
 
     return basis;
+}
+
+
+/**
+ * Gets an orthonormal basis for the coordinate system whose origin
+ * is at the pivot of the given Face3D, and whose plane matches the
+ * underlying plane of the Face3D.
+ * @param face The Face3D to get a basis for.
+ * @returns The plane basis whose:
+ *            - origin is the given face's pivot (centroid),
+ *            - normal is the principal normal, 
+ *            - first axis is from the pivot to vertex 0 of the face,
+ *            - second axis is orthogonal to the first and the normal
+ *              via the Right Hand Rule.
+ */
+export function getPlaneBasis2D(face: Face2D): PlaneBasis2D {
+
+    // Origin of the plane.
+    const origin: pt.Point2D = pt.average(face.vertices);
+
+    // Principal normal.
+    const normal: pt.Point3D = pt.createPoint3D(0, 1, 0);
+
+    // First axis.
+    const axis1: pt.Point2D = pt.normalize(
+        pt.subtract(face.vertices[0], origin)
+    );
+
+    // Second axis.
+    const axis1_3D = pt.createPoint3D(
+        axis1.x, 0, axis1.y
+    );
+    const axis2_3D: pt.Point3D = pt.crossProduct(normal, axis1_3D);
+    const axis2: pt.Point2D = pt.createPoint2D(axis2_3D.x, axis2_3D.z);
+
+    // Create the basis object.
+    const basis: PlaneBasis2D = {
+        origin: origin,
+        axis1: axis1,
+        axis2: axis2
+    }
+
+    return basis;
+}
+
+
+// Converts coordinates in a 2D plane basis to world coordinates.
+export function basisToWorld2D(basis: PlaneBasis2D, coord: pt.Point2D): pt.Point2D {
+    const scaledAxis1: pt.Point2D = pt.scalarMult(basis.axis1, coord.x);
+    const scaledAxis2: pt.Point2D = pt.scalarMult(basis.axis2, coord.y);
+    return pt.add(basis.origin, pt.add(scaledAxis1, scaledAxis2) as pt.Point2D);
+}
+
+// Converts coordinates in a 3D plane basis to world coordinates.
+export function basisToWorld(basis: PlaneBasis3D, coord: pt.Point3D): pt.Point3D {
+    const scaledAxis1: pt.Point3D = pt.scalarMult(basis.axis1, coord.x);
+    const scaledNormal: pt.Point3D = pt.scalarMult(basis.normal, coord.y);
+    const scaledAxis2: pt.Point3D = pt.scalarMult(basis.axis2, coord.z);
+    const relative = pt.add(pt.add(scaledAxis1, scaledAxis2) as pt.Point3D, scaledNormal);
+    return pt.add(basis.origin, relative);
 }
 
 
