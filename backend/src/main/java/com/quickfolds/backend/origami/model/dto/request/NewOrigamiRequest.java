@@ -1,6 +1,7 @@
 package com.quickfolds.backend.origami.model.dto.request;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,7 +38,7 @@ public class NewOrigamiRequest {
      * </ul>
      */
     @NotNull(message = "Field 'userId' in New Origami Request must not be null")
-    @PositiveOrZero(message = "Field 'userId' in New Origami Request must be non-negative")
+    @Positive(message = "Field 'userId' in New Origami Request must be non-negative")
     private Long userId;
 
     /**

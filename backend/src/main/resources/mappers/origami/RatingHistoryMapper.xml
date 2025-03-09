@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.quickfolds.backend.origami.mapper.RatingHistoryMapper">
+
+    <resultMap id="RatingHistoryResultMap" type="com.quickfolds.backend.origami.model.database.RatingHistory">
+        <id property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="origamiId" column="origami_id" />
+        <result property="rating" column="rating" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+
+    <select id="getObjByUserIdOrigamiId" resultMap="RatingHistoryResultMap">
+        SELECT id, user_id, origami_id, rating, created_by, updated_by, created_at. updated_at
+        FROM rating_history
+        WHERE
+        user_id = #{userId}
+        AND
+        origami_id = #{origamiId}
+    </select>
+
+
+</mapper>
