@@ -14,6 +14,7 @@ import {AddNewEdgeToDisjointSet, addValueToAdjList, BFS, EdgesAdjList, EdgesAdjL
 import { getFace3DByID, incrementStepID, print3dGraph, animateFold, deleteFace, addFace } from '../view/SceneManager.js';
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo, ProblemEdgeInfoMerge } from '../model/PaperManager.js';
+import { faceMutatingFold, getOverlappingFaces } from '../model/PaperStack.js';
 
 
 const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
@@ -684,7 +685,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p1: Point3D = startFaceObj.getPoint(point1Id);
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
-  let faceIdToUpdate: bigint[] = [0n]; // basically, get the connect component from the LUG from faceid
+  let faceIdToUpdate: bigint[] = getOverlappingFaces(faceId); // basically, get the connect component from the LUG from faceid
   //faceIdToUpdate sort
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
   const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn
@@ -710,8 +711,12 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   let edgeIdOfFirstDescendentThatisStationaryThatRotatesOn: bigint = -1n;
 
   // stuff hady needs
+  let stationaryFaceSpecifc = -1n;
+  let rotatingFaceSpecific = -1n;
+  let edgeIdOfStationaryFace = -1n;
+
   const listOfStationaryFacesInLug: bigint[] = [];
-  const mapFromOgIdsToSplitFaces: Map<bigint, {face1Id:bigint, face2Id:bigint}> = new Map<bigint, {face1Id:bigint, face2Id:bigint}>();
+  const mapFromOgIdsToSplitFaces = new Map<bigint, [bigint] | [bigint, bigint]>();
 
   // for loop that first only does the split faces
   // then copy paste this loop but update so that we continue on null returns
@@ -778,17 +783,22 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
         }
       }
 
+      // add values that should be returned to renderer
+      stationaryFaceSpecifc = resultFromSplitting.stationaryFaceId;
+      edgeIdOfStationaryFace = edgeIdOfFirstDescendentThatisStationaryThatRotatesOn; // bak
+      rotatingFaceSpecific = resultFromSplitting.rotationFaceId;
 
     }
 
 
+
     //getFace2dFromId(resultFromSplitting.stationaryFaceId).updateAnnotations();
 
-    // add values that should be returned to renderer
+
     listOfStationaryFacesInLug.push(resultFromSplitting.stationaryFaceId);
-    mapFromOgIdsToSplitFaces.set(currFaceId, {face1Id:resultFromSplitting.stationaryFaceId,
-                                          face2Id:resultFromSplitting.rotationFaceId
-    });
+    mapFromOgIdsToSplitFaces.set(currFaceId, [resultFromSplitting.stationaryFaceId,
+                                         resultFromSplitting.rotationFaceId]
+    );
     allMovingFaces.push(resultFromSplitting.rotationFaceId);
 
     // values for rendered by linking ids to objects when creating the faces
@@ -839,6 +849,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     if (projectedP1 === null || projectedP2 === null) {
       throw new Error("error getting split point")
     }
+
+    mapFromOgIdsToSplitFaces.set(currFaceId, [currFaceId]);
 
     const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
     // only do it if the plane we are looking at ISN"T being cut by the face
@@ -1060,16 +1072,27 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
 
 
-  // do lug
-  // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces);
-
   // do rendering
   for(const [ogFaceID, splitFaceIds] of mapFromOgIdsToSplitFaces) {
+    if (splitFaceIds.length === 1) {
+      continue; // skip if we don't split, since descendent is self
+    }
+
+
       // add planes to scene manager (for now, hady will do later)
-      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds.face1Id));
-      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds.face2Id));
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[0]));
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[1]));
       deleteFace(ogFaceID); // does the render deletion
   }
+
+  // do lug
+  // functionCall(listOfStationaryFacesInLug, mapFromOgIdsToSplitFaces); bak
+  const offsets: Map<bigint, number>  = faceMutatingFold(stationaryFaceSpecifc, rotatingFaceSpecific, 180n, 180n - angle,
+    edgeIdOfStationaryFace, mapFromOgIdsToSplitFaces, new Set<bigint>(listOfStationaryFacesInLug)
+  ); // bak
+
+
+
 
   // update renderer with animation
   // all set - stationary
