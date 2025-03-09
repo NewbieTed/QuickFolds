@@ -77,8 +77,6 @@ export async function addSplitFacesToDB(facesToAdd: Face2D[], facesToDelete: big
   const url = FOLDER_EDITOR_URL;
   const data = serializeSplitFold(facesToAdd, facesToDelete, stationaryNewFaceID);
 
-  console.log(data);
-
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -93,7 +91,7 @@ export async function addSplitFacesToDB(facesToAdd: Face2D[], facesToDelete: big
     }
 
     const result = await response.json();
-    console.log('Response:', result);
+
     return Promise.resolve(true);
   } catch (error) {
     console.error('Error:', error);
@@ -118,7 +116,6 @@ export async function addUpdatedAnnoationToDB(
   const url = ANNOTATE_EDITOR_URL;
   const data = serializeResultChange(statusUpdate, faceId);
 
-  console.log(data);
 
   try {
     const response = await fetch(url, {
@@ -134,7 +131,7 @@ export async function addUpdatedAnnoationToDB(
     }
 
     const result = await response.json();
-    console.log('Response:', result);
+
     return Promise.resolve(true);
   } catch (error) {
     console.error('Error:', error);

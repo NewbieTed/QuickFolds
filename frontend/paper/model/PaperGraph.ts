@@ -349,7 +349,7 @@ export function addValueToAdjList(faceId: bigint, otherFaceConnectionDetails: Ed
  * @param param2 - a list of the updated right face information, [id, the edge that is being folded, map of points from ogFace to rightFace]
  * @param angle - the angle between the two faces
  * @param idOfEdgeThatPointSplitsAtInOgFace1 - the edge in my original face that the edge splits, returns pointid if not on edge
- * @param idOfEdgeThatPointSplitsAtInOgFace1 - the other edge in my original face that the edge splits, returns pointid if not on edge
+ * @param idOfEdgeThatPointSplitsAtInOgFace2 - the other edge in my original face that the edge splits, returns pointid if not on edge
  */
 export function updateAdjListForSplitGraph(
   ogFaceId: bigint,

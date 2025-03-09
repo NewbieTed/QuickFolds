@@ -180,7 +180,6 @@ async function onMouseDown(event : MouseEvent) {
 					if (result !== true) {
 						addlogfeedMessage("red", "Error: ", result);
 					}
-					console.log(`Ran`);
 			} else {
 					console.log('No annotation point found near the clicks.');
 			}
@@ -392,7 +391,6 @@ async function onMouseDown(event : MouseEvent) {
 
 		}
 		// current issue: all faces are being captured, i'm crossing the boundary
-		console.log(input.getFoldAngleState());
 
 	} else if (foldButtonState.isPressed && !getIsSplittingInsteadOfMerging()) {
 		// note: the state used here is going be the same as the split state
@@ -559,7 +557,6 @@ async function onMouseDown(event : MouseEvent) {
 
 		}
 		// current issue: all faces are being captured, i'm crossing the boundary
-		console.log(input.getFoldAngleState());
 	}
 }
 
@@ -585,9 +582,6 @@ async function activateFoldStep() {
 	if (!getIsSplittingInsteadOfMerging()) {
 		// ie we are actually merging, so we do that
 		// First create the split, again note mismatch
-		console.log("face1" + foldButtonState.state.point1Id);
-		console.log("face2" + foldButtonState.state.point2Id);
-		console.log("stat face" + foldButtonState.state.faceId);
 		const result = await updateExistingMultiFold(
 			foldButtonState.state.point1Id,
 			foldButtonState.state.point2Id,
@@ -597,8 +591,6 @@ async function activateFoldStep() {
 
 		// Log all face IDs
 		const allFaces = SceneManager.getFaceObjects();
-		console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
-		console.log("aaaaaaaa");
 
 		if (typeof result === 'string') {
 			addlogfeedMessage("red", "Error: ", result);
@@ -615,8 +607,6 @@ async function activateFoldStep() {
 
 		// Log all face IDs
 		const allFaces = SceneManager.getFaceObjects();
-		console.log("All face IDs:", allFaces.map(face => SceneManager.getFace3D(face)?.ID));
-		console.log("aaaaaaaa");
 
 		if (typeof result === 'string') {
 			addlogfeedMessage("red", "Error: ", result);
@@ -626,7 +616,6 @@ async function activateFoldStep() {
 
 	// Reset the fold state
 	input.resetFoldButton();
-	console.log("was reset")
 	input.resetFoldAngleState();
 }
 
@@ -643,10 +632,10 @@ function getClosestPointViaRaycast() : [bigint, bigint] {
 	raycaster.setFromCamera(mouse, cameraManager.getCamera());
 	raycaster.layers.set(0);
 	const intersects = raycaster.intersectObjects(SceneManager.getFaceObjects());
-	console.log(intersects);
+
 	// find the closest annotation point to the mouse click
 	const intersect = intersects[0];
-	console.log("intersections", intersect);
+
 	const object3dHit = intersect.object;
 	const point = intersect.point;
 	raySphere.position.set(point.x, point.y, point.z);

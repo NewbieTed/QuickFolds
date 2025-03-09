@@ -18,7 +18,7 @@ import { faceMutatingFold, getOverlappingFaces } from '../model/PaperStack.js';
 import { off } from 'process';
 
 
-const USE_EXISTING_POINT_IN_GREEN_LINE = 0.0075;
+const USE_EXISTING_POINT_IN_GREEN_LINE = 0.5;
 
 
 
@@ -598,6 +598,8 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
   // keep track of whether we make a new point
   const generated: boolean[] = [];
 
+  console.log("we are seeing what vertex to go to")
+
   // go thru each vertex
   for(let i = 0n; i < face2d.N; i++) {
     let intersectionPointOfFaceEdgeAndUserLine = getLineIntersection(
@@ -606,11 +608,12 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 
     // this just makes sure that we are on the edge (think of round off error)
     intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
-
+    console.log("i:" + i + ":" + distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine));
     // edge case, check if point is actually on the edge:
-    if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.075) {
+    if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.15) {
       // add edge as hit point
       retList.push(i);
+      console.log("added vertex");
       generated.push(false);
       continue;
     }
@@ -621,22 +624,36 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
       // our point is actually at an intersection inside the polygon, so, we've found a target
       // now we need to get the point nearby, or make one if it exists
       let closestPointId: bigint = face2d.findClosestPointOnEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+
+      if (closestPointId < face2d.N) {
+        continue; // somehow grabbed vertex by accident again (should ahve done is up above)
+      }
+
+      console.log("distance green line check", distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine));
       if (distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine) <= USE_EXISTING_POINT_IN_GREEN_LINE) {
         // point exists, so use it
         retList.push(closestPointId);
+        console.log("added existing point", closestPointId);
         generated.push(false);
       } else {
 
         // need to make our own point
         let annoRes2d = face2d.addAnnotatedPoint(intersectionPointOfFaceEdgeAndUserLine, i);
+        console.log("we are making a point on the stacked face");
         if (annoRes2d.pointsAdded.size !== 1) {
           throw new Error("error making a point");
         }
 
+        const face3d = getFace3DByID(faceIdToUpdate);
+
         // add point (should just be one, but res uses map)
         for(let pointId of annoRes2d.pointsAdded.keys()) {
           retList.push(pointId);
+          const pointIn3dVersion = translate2dTo3d(annoRes2d.pointsAdded.get(pointId).point, faceIdToUpdate);
+
+          face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, pointIn3dVersion));
         }
+        console.log("added new point");
         generated.push(true);
       }
     }
@@ -664,7 +681,19 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 }
 
 
+function intMin(a: bigint, b: bigint) {
+  if(a < b) {
+    return a;
+  }
+  return b;
+}
 
+function intMax(a: bigint, b: bigint) {
+  if(a > b) {
+    return a;
+  }
+  return b;
+}
 
 // multifold udpate; final boss split method
 /**
@@ -678,6 +707,11 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
  * @returns
  */
 export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+  const smallestPointId = intMin(point1Id, point2Id);
+  const largestPointId = intMax(point1Id, point2Id);
+  point1Id = smallestPointId;
+  point2Id = largestPointId;
+
   const startFaceObj = getFace3DByID(faceId);
   if (startFaceObj === undefined) {
     throw new Error("couldn't find face");
@@ -687,6 +721,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
   let faceIdToUpdate: bigint[] = getOverlappingFaces(faceId); // basically, get the connect component from the LUG from faceid
+
   //faceIdToUpdate sort
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
   const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn
@@ -744,6 +779,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       continue;
     }
 
+    console.log("split running");
+
     const [idOnCurrFaceToSplit1, idOnCurrFaceToSplit2] = [points.pt1.id, points.pt2.id];
     // we need to split faces
     // note this also updates the adjlist of edges
@@ -790,6 +827,9 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       rotatingFaceSpecific = resultFromSplitting.rotationFaceId;
 
     }
+
+
+    console.log("after loop", perpindicularVectorPointTowardsLeftSpaceOrigin);
 
 
 
@@ -843,7 +883,6 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       continue; //this means we actually have a split,  which means this face has already been "done"
     }
 
-
     const projectedP1 = translate3dTo2d(face3d.projectToFace(p1), currFaceId);
     const projectedP2 = translate3dTo2d(face3d.projectToFace(p2), currFaceId);
 
@@ -889,6 +928,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // use format Face1-Face2, can check if oppsiiste exists so that
   // we don't do it twice
   const listOfAllEdgesFixed: Set<String> = new Set<String>();
+  console.log("All problem edges", allProblemEdges);
   for(const item of allProblemEdges) {
     // POV is to be from A looking to B
     // do brute force mapping
@@ -932,6 +972,9 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     if (a1FaceObj === undefined || a2FaceObj === undefined || b1FaceObj === undefined || b2FaceObj === undefined) {
       throw new Error("Split faces don't exist");
     }
+
+    console.log
+
 
     // manually check if the points line up
     if(areEdgesTheSame(a1FaceObj, a1EdgeId, b2FaceObj, b2EdgeId)) {
@@ -1118,9 +1161,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
 
   // debug info
+  console.log("Action:");
+  console.log(getAdjList());
   print2dGraph();
   print3dGraph();
-  printAdjList();
 
   // update step counter
   incrementStepID();
@@ -1134,9 +1178,11 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
  * @param allProblemEdges - the list to look for in this list
  */
 function getProblemEdgeRecord(pairingToLookFor: string, allProblemEdges: ProblemEdgeInfo[]) {
+  console.log("PE", allProblemEdges);
   for(const item of Array.from(allProblemEdges)) {
-    const thisHash = item.sideA.faceIdOfMyFaceA + "-" + item.sideB.faceIdOfMyFaceB
-    if (pairingToLookFor === thisHash) {
+    const thisHash = item.sideA.faceIdOfMyFaceA + "-" + item.sideB.faceIdOfMyFaceB;
+    const thisHash2 =  item.sideB.faceIdOfMyFaceB + "-" + item.sideA.faceIdOfMyFaceA;
+    if (pairingToLookFor === thisHash || pairingToLookFor === thisHash2) {
       return item;
     }
   }
@@ -1259,7 +1305,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
 
-    let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId);
+  let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId);
   if (addPointResult.status !== "NORMAL") {
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;
@@ -1282,6 +1328,11 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     const msg = EditorStatus[myStatus].msg;
     return msg;
   }
+
+  console.log("Action:");
+  console.log(getAdjList());
+  print2dGraph();
+  print3dGraph();
 
   incrementStepID();
   return true;

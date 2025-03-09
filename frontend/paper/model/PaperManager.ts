@@ -405,7 +405,8 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // get the ids so that we get the first edge first so that way we can create a new face
   // in the right order
   const [[minEdgePointId, firstEdgeId], [maxEdgePointId, secondEdgeId]]: [[bigint, bigint], [bigint, bigint]] = getPointEdgeOrder(point1Id, point2Id, faceId);
-
+  console.log("FE", firstEdgeId);
+  console.log("SE", secondEdgeId);
 
 
   // now that we got rid of the annoying stuff in our split line, we can now create a line that intersects
@@ -724,6 +725,11 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     theEdgeInTheLeftFaceThatComesFromFolding = i;
   }
 
+
+  console.log("____ __");
+  console.log(face2D);
+  console.log(face3D);
+
   // we've gotten to the first split, so include this point if we aren't at a vertex
   if (minEdgePointId !==  firstEdgeId) {
     theEdgeInTheLeftFaceThatComesFromFolding = BigInt(listOfVertexForLeftFace.length);
@@ -731,10 +737,6 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     listOfVertexForLeftFace.push(face2D.getPoint(minEdgePointId));
     listOfVertexForLeftFace3d.push(face3D.getPoint(minEdgePointId));
   }
-
-  console.log("______");
-  console.log(face2D);
-  console.log(face3D);
 
   // we've gotten to the end split, so always include this point
   mapOfOgPointIdsToNewPointIdsForLeftFace.set(maxEdgePointId, BigInt(listOfVertexForLeftFace.length));
@@ -786,6 +788,7 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   const leftFace = new Face2D(listOfVertexForLeftFace.slice());
   const leftFace3d = new Face3D(listOfVertexForLeftFace3d.slice(), face3D.getThickness(), face3D.getOffset(), face3D.getPrincipleNormal(), leftFace.ID);
 
+  console.log(leftFace);
 
 
   // now add the other face from the split
@@ -807,7 +810,6 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     listOfVertexForRightFace3d.push(face3D.getPoint(i));
   }
 
-  console.log("zzz", theEdgeInTheRightFaceThatComesFromFolding);
 
   // only if the end fold point isn't on the vertex do we add it
   // (since otherwise we've alreaded added it during the for loop)
@@ -825,6 +827,8 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   if (rightFace.getAnnotatedPointMap().size  > 0) {
     throw new Error("SHOULD E");
   }
+
+  console.log(rightFace);
 
   console.log("UPDATE FLEAS",  theEdgeInTheLeftFaceThatComesFromFolding);
   console.log("UPDATE FLEAS",  theEdgeInTheRightFaceThatComesFromFolding);

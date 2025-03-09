@@ -684,11 +684,6 @@ export class Face2D {
         const vecFromPToEndPoint : pt.Point2D = pt.createPoint2D(this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].x - p.x,
             this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].y - p.y,
         );
-
-
-        console.log("checking point [" + p.x + ", " + p.y + "]");
-        console.log("edge: [" + p.x + ", " + p.y + "] - " + p.x + ", " + p.y + "]");
-
         // if p are inside the edge, then these vectors should point in oppisite directions
 
         return pt.dotProduct(vecFromPToEndPoint, vecFromPToStartPoint) < 0;
@@ -714,6 +709,7 @@ export class Face2D {
         for(let [pointId, pointObj] of this.annotatedPoints) {
             if (pointObj.edgeID === edgeId) {
                 const currDistance = pt.distance(p, pointObj.point);
+                console.log("closest point to where the cut is is an annotated point");
                 if (currDistance < minDistance) {
                     minDistance = currDistance;
                     minId = pointId;
