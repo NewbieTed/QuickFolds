@@ -895,6 +895,9 @@ export function faceMutatingFold(
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
+        const statNumLayers = stationaryComponent.layers.length;
+        const mobNumLayers = mobileComponent.layers.length;
+        const statLayerMap = new Map<bigint, bigint>(stationaryComponent.layerMap);
 
         // 360: The principal normals point away from each other.
         // So make both components have normals pointing opposite to the layering.
@@ -918,11 +921,11 @@ export function faceMutatingFold(
         );
 
         // Capture how the Face3D offsets should change.
-        const statOffset = (result.layers.length - stationaryComponent.layers.length);
-        const mobOffset = -1 * (result.layers.length - mobileComponent.layers.length);
+        const statOffset = (result.layers.length - statNumLayers);
+        const mobOffset = -1 * (result.layers.length - mobNumLayers);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
-            if (stationaryComponent.layerMap.has(faceID)) {
+            if (statLayerMap.has(faceID)) {
                 offsets.set(
                     faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
@@ -948,6 +951,9 @@ export function faceMutatingFold(
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
+        const statNumLayers = stationaryComponent.layers.length;
+        const mobNumLayers = mobileComponent.layers.length;
+        const statLayerMap = new Map<bigint, bigint>(stationaryComponent.layerMap);
 
         console.log("initial component", initialComponent);
         console.log("stat component", stationaryComponent);
@@ -979,11 +985,11 @@ export function faceMutatingFold(
         console.log("result hady", result);
 
         // Capture how the Face3D offsets should change.
-        const statOffset = -1 * (result.layers.length - stationaryComponent.layers.length);
-        const mobOffset = (result.layers.length - mobileComponent.layers.length);
+        const statOffset = -1 * (result.layers.length - statNumLayers);
+        const mobOffset = (result.layers.length - mobNumLayers);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
-            if (stationaryComponent.layerMap.has(faceID)) {
+            if (statLayerMap.has(faceID)) {
                 offsets.set(
                     faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
