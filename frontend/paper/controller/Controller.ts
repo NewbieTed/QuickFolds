@@ -935,7 +935,6 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     const currFaceId: bigint = faceIdToUpdate[i];
     const face3d = getFace3DByID(currFaceId);
     if (getFace2dFromId(currFaceId) === undefined) {
-      i++;
       continue; //this means we actually have a split,  which means this face has already been "done"
     }
 

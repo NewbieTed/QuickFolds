@@ -123,6 +123,9 @@ function split(
         // Consider one node, find its descendants and classify them.
         for (const faceID of component.layers[Number(layer)].keys()) {
 
+            console.log("TRYING TO FIND DESCENDANT OF: ", faceID);
+            console.log(descendants.get(faceID));
+
             for (const descID of descendants.get(faceID)) {
 
                 if (stationary.has(descID)) {
@@ -343,7 +346,7 @@ function clean(component: PaperComponent): void {
     let firstBottom = 0;
     // Remove from the bottom of the component.
     while (component.layers.length > 0 &&
-           component.layers[0].size == 0) {
+           component.layers[firstBottom].size == 0) {
 
         firstBottom++;
      }
@@ -351,7 +354,7 @@ function clean(component: PaperComponent): void {
     let firstTop = component.layers.length;
     // Remove from the top of the component.
     while (component.layers.length > 0 &&
-           component.layers[component.layers.length - 1].size == 0) {
+           component.layers[firstTop - 1].size == 0) {
 
         firstTop--;
     }
@@ -926,8 +929,8 @@ export function faceMutatingFold(
         );
 
         // Capture how the Face3D offsets should change.
-        const statOffset = (result.layers.length - statNumLayers);
-        const mobOffset = -1 * (result.layers.length - mobNumLayers);
+        const statOffset = 1 * (result.layers.length - statNumLayers);
+        const mobOffset = 1 * (result.layers.length - mobNumLayers);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
             if (statLayerMap.has(faceID)) {
@@ -957,7 +960,6 @@ export function faceMutatingFold(
 
     } else if (startAngle === 180n && endAngle === 0n) {
         // Complete Split Case 2.
-        console.log("sanity check: we get in if statement");
         const initialComponent = LUG.get(
             faceToComponent.get(descendants.keys().next().value)
         );
@@ -967,11 +969,6 @@ export function faceMutatingFold(
         const statNumLayers = stationaryComponent.layers.length;
         const mobNumLayers = mobileComponent.layers.length;
         const statLayerMap = new Map<bigint, bigint>(stationaryComponent.layerMap);
-
-        console.log("initial component", initialComponent);
-        console.log("stat component", stationaryComponent);
-        console.log("mob component", mobileComponent);
-
 
         // 0: The principal normals point towards from each other.
         // So make both components have normals the same direction as the layering.
@@ -994,8 +991,6 @@ export function faceMutatingFold(
             foldEdgeID,
             180 // in the opposite direction as the stationary reference normal
         );
-
-        console.log("result hady", result);
 
         // Capture how the Face3D offsets should change.
         const statOffset = -1 * (result.layers.length - statNumLayers);

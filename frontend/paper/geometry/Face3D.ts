@@ -117,7 +117,9 @@ export class Face3D {
         this.startRotation.copy(this.pivot.quaternion);
         this.startNormal = pt.copyPoint(this.principalNormal);
 
-        console.log("POSITION OF CREATED FACE MESH: ", this.faceObject.position);
+        // DEBUG MODE
+        this.createFaceIDText();
+
     }
 
     public getThickness(): number {
@@ -292,6 +294,34 @@ export class Face3D {
         glowingLine.renderOrder = 1;
 
         return glowingLine;
+    }
+
+    // DEBUG MODE: SHOW ID OF THIS FACE.
+    public createFaceIDText() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const fontSize = 175;
+        
+        canvas.width = 512;
+        canvas.height = 256;
+        
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${this.ID}`, canvas.width / 2, canvas.height / 2);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        
+        const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+        const sprite = new THREE.Sprite(material);
+    
+        sprite.scale.set(2, 1, 1); // Adjust scale for better readability
+        sprite.renderOrder = 2;  // Ensures it's drawn last (always visible)
+
+        this.faceObjectCenter.attach(sprite);
+        sprite.position.copy(new THREE.Vector3(0, 0, 0));
     }
 
     /**
