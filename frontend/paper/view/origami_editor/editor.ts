@@ -641,7 +641,9 @@ async function activateFoldStep() {
  */
 function getClosestPointViaRaycast() : [bigint, bigint] {
 	raycaster.setFromCamera(mouse, cameraManager.getCamera());
+	raycaster.layers.set(0);
 	const intersects = raycaster.intersectObjects(SceneManager.getFaceObjects());
+	console.log(intersects);
 	// find the closest annotation point to the mouse click
 	const intersect = intersects[0];
 	console.log("intersections", intersect);

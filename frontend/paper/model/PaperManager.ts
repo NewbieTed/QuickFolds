@@ -732,6 +732,10 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     listOfVertexForLeftFace3d.push(face3D.getPoint(minEdgePointId));
   }
 
+  console.log("______");
+  console.log(face2D);
+  console.log(face3D);
+
   // we've gotten to the end split, so always include this point
   mapOfOgPointIdsToNewPointIdsForLeftFace.set(maxEdgePointId, BigInt(listOfVertexForLeftFace.length));
   listOfVertexForLeftFace.push(face2D.getPoint(maxEdgePointId));

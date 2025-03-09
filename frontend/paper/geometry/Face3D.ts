@@ -90,7 +90,10 @@ export class Face3D {
 
         // Create the initial face object and pivot.
         this.faceObject = this.createFaceObject();
+        this.faceObject.layers.enableAll();
+        this.faceObject.layers.set(0);
         this.pivot = new THREE.Object3D();
+
         this.faceObjectCenter = new THREE.Object3D();
         const center: pt.Point3D = pt.average(this.vertices);
         // Crucially: the pivot lies in the true plane, not with the
@@ -362,6 +365,8 @@ export class Face3D {
             if (point !== undefined) {
                 this.annotatedPoints.set(pointID, point);
                 const pointObject = this.createPointObject(point.point);
+                pointObject.layers.enableAll();
+                pointObject.layers.set(1);
                 this.pointObjects.set(pointID, pointObject);
                 this.faceObject.attach(pointObject);
             }
@@ -375,6 +380,8 @@ export class Face3D {
                 const endPoint = this.getPoint(line.endPointID);
                 this.annotatedLines.set(lineID, line);
                 const lineObject = this.createLineObject(startPoint, endPoint);
+                lineObject.layers.enableAll();
+                lineObject.layers.set(1);
                 this.lineObjects.set(lineID, lineObject);
                 this.faceObject.attach(lineObject);
             }
@@ -623,7 +630,7 @@ export class Face3D {
             this.principalNormal.y * this.offset * this.paperThickness * 0.5,
             this.principalNormal.z * this.offset * this.paperThickness * 0.5
         );
-        
+
         this.faceObjectCenter.position.copy(offsetVector);
     }
 
