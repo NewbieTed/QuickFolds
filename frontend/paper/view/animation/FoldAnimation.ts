@@ -29,7 +29,7 @@ export class FoldAnimation implements Animation {
         this.deltaAngle = deltaAngle * Math.PI / 180; // convert to radians
         this.faces = faces;
         this.time = 0;
-        this.totalTime = 2; // (In roughly seconds)
+        this.totalTime = 10; // (In roughly seconds)
         this.steepness = 15; // A measure of how fast the speed
         // of the paper is near the middle of the animation.
 

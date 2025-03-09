@@ -16,7 +16,7 @@ export class OffsetAnimation implements Animation {
 
         this.offsets = offsets;
         this.time = 0;
-        this.totalTime = 2; // (In roughly seconds)
+        this.totalTime = 10; // (In roughly seconds)
 
     }
 
@@ -26,7 +26,7 @@ export class OffsetAnimation implements Animation {
             // Get the change in offset for one step, and
             // offset the faces incrementally.
             SceneManager.getFace3DByID(faceID).changeOffset(
-                this.offsets.get(faceID) / 120
+                this.offsets.get(faceID) / (60 * this.totalTime)
             );
         }
 

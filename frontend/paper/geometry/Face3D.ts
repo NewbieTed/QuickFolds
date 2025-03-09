@@ -586,13 +586,12 @@ export class Face3D {
         this.startRotation.copy(this.pivot.quaternion);
     }
 
-    
     // Changes the offset position of this Face3D.
     public changeOffset(deltaOffset: number) {
         const shift = new THREE.Vector3(
-            this.principalNormal.x * deltaOffset,
-            this.principalNormal.y * deltaOffset,
-            this.principalNormal.z * deltaOffset
+            this.principalNormal.x * deltaOffset * this.paperThickness * 0.5,
+            this.principalNormal.y * deltaOffset * this.paperThickness * 0.5,
+            this.principalNormal.z * deltaOffset * this.paperThickness * 0.5
         );
 
         this.faceObject.position.add(shift);

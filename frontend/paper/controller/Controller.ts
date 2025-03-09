@@ -1108,7 +1108,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     ...allFacesThatMoveForAnyReason
   );
 
-  console.log(offsets);
+  console.log("FINAL RESULT OF OFFSETS", offsets);
 
   // update backend
   let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);
