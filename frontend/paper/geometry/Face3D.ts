@@ -42,6 +42,9 @@ export class Face3D {
      * principalNormal - a unit vector which shows the principal normal of the
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
+     * localNormal - like the principal normal but in relative coordinates to
+     *               to the pivot of this face. This remains constant, while the
+     *               principal normal updates to reflect the true current normal.
      * startPosition - caches the position of this object if a rotation starts
      * startRotation - caches the rotation of this object if a rotation starts
      * startNormal - caches the principal normal vector if a rotation starts
@@ -60,9 +63,9 @@ export class Face3D {
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
+    private readonly localNormal: pt.Point3D;
     private startPosition: THREE.Vector3;
     private startRotation: THREE.Quaternion;
-    private startNormal: pt.Point3D;
     private startOffset: number;
 
     public constructor(
@@ -87,6 +90,7 @@ export class Face3D {
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = pt.normalize(principalNormal);
+        this.localNormal = pt.copyPoint(this.principalNormal);
 
         // Create the initial face object and pivot.
         this.faceObject = this.createFaceObject();
@@ -115,7 +119,7 @@ export class Face3D {
         this.startPosition.copy(this.pivot.position);
         this.startRotation = new THREE.Quaternion();
         this.startRotation.copy(this.pivot.quaternion);
-        this.startNormal = pt.copyPoint(this.principalNormal);
+        this.startOffset = this.offset;
 
         // DEBUG MODE
         this.createFaceIDText();
@@ -237,6 +241,9 @@ export class Face3D {
             this.principalNormal, this.paperThickness * this.offset * 0.5
         );
         const pos: pt.Point3D = pt.add(point, principalOffset);
+
+        console.log("PRINCIPAL NORMAL @ createPointObject", this.principalNormal);
+        console.log("OFFSET @ createPointObject", this.offset);
 
         // Create a glowing point.
         const glowingMaterial = new THREE.PointsMaterial({
@@ -630,7 +637,6 @@ export class Face3D {
      * to rotateFromPreviousPosition() will rotate from the saved position.
      */
     public savePosition() {
-        this.startNormal = pt.copyPoint(this.principalNormal);
         this.startPosition = new THREE.Vector3();
         this.startPosition.copy(this.pivot.position);
         this.startRotation = new THREE.Quaternion();
@@ -644,21 +650,31 @@ export class Face3D {
         this.startOffset = this.offset;
     }
 
-    // Reloads the offset of this Face3D from the one last saved by saveOffset().
-    public resetOffset() {
-        this.offset = this.startOffset;
-    }
 
-
-
-    // Changes the offset position of this Face3D.
-    public changeOffset(deltaOffset: number) {
+    // Changes the offset position of this Face3D's mesh objects.
+    // ___
+    public offsetObjects(deltaOffset: number) {
 
         this.offset += deltaOffset;
         const offsetVector = new THREE.Vector3(
-            this.principalNormal.x * this.offset * this.paperThickness * 0.5,
-            this.principalNormal.y * this.offset * this.paperThickness * 0.5,
-            this.principalNormal.z * this.offset * this.paperThickness * 0.5
+            this.localNormal.x * this.offset * this.paperThickness * 0.5,
+            this.localNormal.y * this.offset * this.paperThickness * 0.5,
+            this.localNormal.z * this.offset * this.paperThickness * 0.5
+        );
+
+        this.faceObjectCenter.position.copy(offsetVector);
+    }
+
+    // Changes the offset position of this Face3D overall,
+    // Starting from the last offset saved by saveOffset().
+    // ___
+    public offsetFace(deltaOffset: number) {
+
+        this.offset = this.startOffset + deltaOffset;
+        const offsetVector = new THREE.Vector3(
+            this.localNormal.x * this.offset * this.paperThickness * 0.5,
+            this.localNormal.y * this.offset * this.paperThickness * 0.5,
+            this.localNormal.z * this.offset * this.paperThickness * 0.5
         );
 
         this.faceObjectCenter.position.copy(offsetVector);
@@ -698,19 +714,6 @@ export class Face3D {
         this.pivot.position.add(shift);
         this.pivot.quaternion.premultiply(q);
 
-        // Adjust the principle normal vector.
-        const principVec: THREE.Vector3 = new THREE.Vector3(
-            this.principalNormal.x,
-            this.principalNormal.y,
-            this.principalNormal.z
-        );
-        principVec.applyQuaternion(q);
-        this.principalNormal = pt.createPoint3D(
-            principVec.x,
-            principVec.y,
-            principVec.z
-        );
-
     }
 
     /**
@@ -728,10 +731,9 @@ export class Face3D {
                 deltaAngle: number
                 ): void {
 
-        // Revert to the previous position.
+        // Revert to the previous position/rotation.
         this.pivot.position.copy(this.startPosition);
         this.pivot.quaternion.copy(this.startRotation);
-        this.principalNormal = this.startNormal;
 
         // Compute the normalized direction vector of the axis.
         const axis: pt.Point3D = pt.normalize(

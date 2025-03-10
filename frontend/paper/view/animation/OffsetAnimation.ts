@@ -32,7 +32,7 @@ export class OffsetAnimation implements Animation {
         for (const faceID of this.offsets.keys()) {
             // Get the change in offset for one step, and
             // offset the faces incrementally.
-            SceneManager.getFace3DByID(faceID).changeOffset(
+            SceneManager.getFace3DByID(faceID).offsetObjects(
                 this.offsets.get(faceID) / (60 * this.totalTime)
             );
         }
@@ -49,8 +49,9 @@ export class OffsetAnimation implements Animation {
                 // Get the change in offset for one step, and
                 // offset the faces all at once.
                 const face = SceneManager.getFace3DByID(faceID);
-                face.resetOffset();
-                face.changeOffset(this.offsets.get(faceID));
+                face.offsetFace(this.offsets.get(faceID));
+                console.log(`FACE ${face.ID} HAS FINAL OFFSET OF ${face.getOffset()}`);
+                console.log(`FACE ${face.ID} HAS FINAL NORMAL OF`, face.getPrincipleNormal());
             }
             return true;
         }

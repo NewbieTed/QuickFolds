@@ -930,7 +930,7 @@ export function faceMutatingFold(
 
         // Capture how the Face3D offsets should change.
         const statOffset = 1 * (result.layers.length - statNumLayers);
-        const mobOffset = 1 * (result.layers.length - mobNumLayers);
+        const mobOffset = -1 * (result.layers.length - mobNumLayers);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
             if (statLayerMap.has(faceID)) {
@@ -994,7 +994,7 @@ export function faceMutatingFold(
 
         // Capture how the Face3D offsets should change.
         const statOffset = -1 * (result.layers.length - statNumLayers);
-        const mobOffset = -1 * (result.layers.length - mobNumLayers);
+        const mobOffset = 1 * (result.layers.length - mobNumLayers);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
             if (statLayerMap.has(faceID)) {
@@ -1061,6 +1061,7 @@ export function faceMutatingFold(
     }
     // No other cases should be possible for face-mutating folds.
 
+    console.log("OFFSET MAPPING, ", offsets);
     return offsets;
 }
 
