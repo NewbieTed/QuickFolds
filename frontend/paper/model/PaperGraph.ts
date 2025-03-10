@@ -4,7 +4,7 @@
  */
 
 import { Face2D } from "../geometry/Face2D.js";
-import { createPoint2D, distance, Point2D } from "../geometry/Point.js";
+import { createPoint2D, distance, Point, Point2D } from "../geometry/Point.js";
 import { ProblemEdgeInfo, ProblemEdgeInfoMerge } from "./PaperManager.js";
 
 /**
@@ -352,7 +352,7 @@ export function addValueToAdjList(faceId: bigint, otherFaceConnectionDetails: Ed
  * @param idOfEdgeThatPointSplitsAtInOgFace2 - the other edge in my original face that the edge splits, returns pointid if not on edge
  */
 export function updateAdjListForSplitGraph(
-  ogFaceId: bigint,
+  leftFaceObj:Face2D, rightFaceObj:Face2D, ogFaceId: bigint,
   [leftFaceId, leftFaceEdgeIdThatFolds, ogPointIdsToLeftPointIds]: [bigint, bigint, Map<bigint, bigint>],
   [rightFaceId, rightFaceEdgeIdThatFolds, ogPoingIdsToRightPointIds]: [bigint, bigint, Map<bigint, bigint>],
   angle: bigint, idOfEdgeThatPointSplitsAtInOgFace1: bigint, idOfEdgeThatPointSplitsAtInOgFace2: bigint
@@ -433,7 +433,12 @@ export function updateAdjListForSplitGraph(
       const currentItem = allOldConnectionsThatNeedToBeUdpdated[i];
       const outsideFaceToUpdate = currentItem.idOfOtherFace;
 
-      deleteValue(outsideFaceToUpdate, ogFaceId);
+      if(!(currentItem.edgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace1 ||
+        currentItem.edgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace2)) {
+        deleteValue(outsideFaceToUpdate, ogFaceId);
+      } else {
+        console.log("saved item");
+      }
     }
 
     console.log("here is what i need to fix from id" + ogFaceId + ":", allOldConnectionsThatNeedToBeUdpdated);
@@ -460,30 +465,34 @@ export function updateAdjListForSplitGraph(
           // bak
           console.log("looking for ", theOldEdgeIdOfMyFace);
 
-          // safety check that there is a mapping between A-> A1 and A -> A2
-          if (ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace) === undefined ||
-              ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace) === undefined) {
-                throw new Error("NO MAPPING FROM A->A_1/A_2 Edges");
-          }
+          manuallyFindTheConnectionBetweenTheSplitFace(getFace2dFromId(ogFaceId), leftFaceObj, rightFaceObj,
+            theOldEdgeIdOfMyFace, problemEdgesToReturnTo, currentItem
+          );
 
-          // multifold update: you'll have to record
-          // both this id of our trouble face, the ids of A_1, A_2 that need to be hooked
-          // and the OG id of the outside connection (B)
-          problemEdgesToReturnTo.push({
-            sideA: {
-              faceIdOfMyFaceA: ogFaceId,
-              edgeIdOfMyFaceA: theOldEdgeIdOfMyFace,
-              faceIdOfMyFaceA1: leftFaceId,
-              edgeIdOfMyFaceA1: ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace), // idea here is to get the edge of A1, since vertex and edges correspond
-              faceIdOfMyFaceA2: rightFaceId,
-              edgeIdOfMyFaceA2: ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace)
-            },
-            sideB: {
-              faceIdOfMyFaceB: currentItem.idOfOtherFace,
-              edgeIdOfMyFaceB: currentItem.edgeIdOfOtherFace
-            }
+          // // safety check that there is a mapping between A-> A1 and A -> A2
+          // if (ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace) === undefined ||
+          //     ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace) === undefined) {
+          //       throw new Error("NO MAPPING FROM A->A_1/A_2 Edges");
+          // }
 
-          });
+          // // multifold update: you'll have to record
+          // // both this id of our trouble face, the ids of A_1, A_2 that need to be hooked
+          // // and the OG id of the outside connection (B)
+          // problemEdgesToReturnTo.push({
+          //   sideA: {
+          //     faceIdOfMyFaceA: ogFaceId,
+          //     edgeIdOfMyFaceA: theOldEdgeIdOfMyFace,
+          //     faceIdOfMyFaceA1: leftFaceId,
+          //     edgeIdOfMyFaceA1: ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace), // idea here is to get the edge of A1, since vertex and edges correspond
+          //     faceIdOfMyFaceA2: rightFaceId,
+          //     edgeIdOfMyFaceA2: ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace)
+          //   },
+          //   sideB: {
+          //     faceIdOfMyFaceB: currentItem.idOfOtherFace,
+          //     edgeIdOfMyFaceB: currentItem.edgeIdOfOtherFace
+          //   }
+
+          // });
           continue;
       }
 
@@ -581,27 +590,27 @@ function pseudoEquals(p1: Point2D, p2: Point2D) {
 function getEdgeThatSharesBetweenTheTwoFaces(leftChildObj: Face2D, rightChildObj: Face2D) {
   for(let i = 0; i < leftChildObj.N; i++) {
     // for every pair in the left child
-    const leftPtInLeftChildIndex: BigInt = BigInt(i);
+    const leftPtInLeftChildIndex: bigint = BigInt(i);
     const leftPtInLeftChild = leftChildObj.vertices[Number(leftPtInLeftChildIndex)];
-    const rightPtInLeftChildIndex: BigInt = BigInt(i + 1) % leftChildObj.N;
+    const rightPtInLeftChildIndex: bigint = BigInt(i + 1) % leftChildObj.N;
     const rightPtInLeftChild = leftChildObj.vertices[Number(rightPtInLeftChildIndex)];
 
 
     for(let j = 0; j < rightChildObj.N; j++) {
     // for every pair in the right child
-    const leftPtInRightChildIndex: BigInt = BigInt(j);
+    const leftPtInRightChildIndex: bigint = BigInt(j);
     const leftPtInRightChild = rightChildObj.vertices[Number(leftPtInRightChildIndex)];
-    const rightPtInRightChildIndex: BigInt = BigInt(i + 1) % rightChildObj.N;
+    const rightPtInRightChildIndex: bigint = BigInt(i + 1) % rightChildObj.N;
     const rightPtInRightChild = rightChildObj.vertices[Number(rightPtInRightChildIndex)];
 
 
       if (pseudoEquals(leftPtInLeftChild, leftPtInRightChild) && pseudoEquals(rightPtInLeftChild, rightPtInRightChild)) {
         // left-left and right-right match
-        return {pt1:{l:leftPtInLeftChildIndex, r:leftPtInRightChildIndex}, pt2:{l:rightPtInLeftChild, r:rightPtInRightChild}}
+        return {pt1:{l:leftPtInLeftChildIndex, r:leftPtInRightChildIndex}, pt2:{l:rightPtInLeftChildIndex, r:rightPtInRightChildIndex}}
       }
       else if (pseudoEquals(leftPtInLeftChild, rightPtInRightChild) && pseudoEquals(rightPtInLeftChild, leftPtInRightChild)) {
         // left-right and right-left match
-        return {pt1:{l:leftPtInLeftChildIndex, r:rightPtInRightChildIndex}, pt2:{l:rightPtInLeftChild, r:leftPtInRightChild}}
+        return {pt1:{l:leftPtInLeftChildIndex, r:rightPtInRightChildIndex}, pt2:{l:rightPtInLeftChildIndex, r:leftPtInRightChildIndex}}
       }
     }
 
@@ -610,21 +619,197 @@ function getEdgeThatSharesBetweenTheTwoFaces(leftChildObj: Face2D, rightChildObj
   throw new Error("couldn't find matchup");
 }
 
-function manuallyFindTheConnectionBetweenTheSplitFace(ogFaceObj: Face2D, leftChildObj: Face2D, rightChildObj: Face2D) {
-
-  // first we need to find the edge that intersects the left and right child
-
-
-
-
-
-  // idea is to go around the old face
-  for(let i = 0; i < ogFaceObj.N; i++) {
-
+/**
+ * goal is to return the other vertex id that isn't apart of the fold
+ * ie connected to firstPointIdOfCut that is adjacent, but not equal to secondPointIdOFCut
+ * @param faceObj
+ * @param firstPointIdOfCut
+ * @param secondPointIdOfCut
+ */
+function returnNoCutEdgeVertex(faceObj: Face2D, firstPointIdOfCut: bigint, secondPointIdOfCut:bigint) {
+  if ((firstPointIdOfCut + 1n) % faceObj.N !== secondPointIdOfCut) {
+    // going forwad/positive is the way away
+    return (firstPointIdOfCut + 1n) % faceObj.N;
   }
 
+  // going backwards is correct (deal with looping, so do size - 1)
+  return (firstPointIdOfCut + (faceObj.N - 1n)) % faceObj.N;
 }
 
+/**
+ * returns in the format of Face1id-Face2id
+ * @param face1
+ * @param param1
+ * @param face2
+ * @param param3
+ */
+function mergeTheTwoEdgesTogether(face1: Face2D, [edge1V1, edge1V2]: [bigint, bigint], face2: Face2D, [edge2V1, edge2V2]: [bigint, bigint]): [bigint, bigint] {
+  // we need to see if edge1V1=edge2V1 or edge1V1=edge2V2
+
+  // edge1V1=edge2V1
+  console.log("here is a logging on the points");
+  console.log(face1.getPoint(edge1V1));
+  console.log(face1.getPoint(edge1V2));
+  console.log(face2.getPoint(edge2V1));
+  console.log(face2.getPoint(edge2V2));
+  console.log("===============");
+
+  if (pseudoEquals(face1.getPoint(edge1V1), face2.getPoint(edge2V2))) {
+    return [edge1V2, edge2V1];
+  }
+
+  // edge1V1=edge2V1
+  if (pseudoEquals(face1.getPoint(edge1V1), face2.getPoint(edge2V1))) {
+    return [edge1V2, edge2V2];
+  }
+
+
+
+  // we need to see if edge1V2=edge1V1 or edge1V2=edge1V2
+
+  // edge1V2=edge1V1
+  if (pseudoEquals(face1.getPoint(edge1V2), face2.getPoint(edge2V2))) {
+    return [edge1V1, edge2V1];
+  }
+
+  // edge1V2=edge1V1
+  if (pseudoEquals(face1.getPoint(edge1V2), face2.getPoint(edge2V1))) {
+    return [edge1V1, edge2V2];
+  }
+
+
+  throw new Error("no matching")
+}
+
+function manuallyFindTheConnectionBetweenTheSplitFace(ogFaceObj: Face2D, leftChildObj: Face2D, rightChildObj: Face2D, edgeIdThatsTroubleInOg:bigint, problemEdgesToReturnTo: ProblemEdgeInfo[], currentItem: EdgesAdjList) {
+
+  const faceEdgePoint1 = ogFaceObj.getPoint(edgeIdThatsTroubleInOg);
+  const faceEdgePoint2 = ogFaceObj.getPoint((edgeIdThatsTroubleInOg + 1n) % ogFaceObj.N);
+
+  console.log("TARGETINGS 1", faceEdgePoint1);
+  console.log("TARGETINGS 2", faceEdgePoint2);
+
+
+  // first we need to find the edge that intersects the left and right child
+  console.log(leftChildObj);
+  const actualSplit = getEdgeThatSharesBetweenTheTwoFaces(leftChildObj, rightChildObj);
+
+  // to find the connection for the pt1 left face
+
+  // these two pair
+  const firstPointOtherLeftId = returnNoCutEdgeVertex(leftChildObj, actualSplit.pt1.l, actualSplit.pt2.l);
+  const firstLefttEdge: [bigint, bigint] = [firstPointOtherLeftId, actualSplit.pt1.l];
+
+  const firstPointOtherRightId = returnNoCutEdgeVertex(rightChildObj, actualSplit.pt1.r, actualSplit.pt2.r);
+  const firstRightEdge: [bigint, bigint] = [firstPointOtherRightId, actualSplit.pt1.r];
+
+  // edge that is pseudo equal to the merged edge of A
+  const mergedEdgeOne: [bigint, bigint] = mergeTheTwoEdgesTogether(leftChildObj, firstLefttEdge, rightChildObj, firstRightEdge);
+  console.log("here is the merged points");
+  console.log(leftChildObj.getPoint(mergedEdgeOne[0]));
+  console.log(rightChildObj.getPoint(mergedEdgeOne[1]));
+  console.log(faceEdgePoint1);
+  console.log(faceEdgePoint2);
+
+  let isTrue1 = (pseudoEquals(leftChildObj.getPoint(mergedEdgeOne[0]), faceEdgePoint1) &&
+  pseudoEquals(rightChildObj.getPoint(mergedEdgeOne[1]), faceEdgePoint2));
+  isTrue1 ||=  (pseudoEquals(leftChildObj.getPoint(mergedEdgeOne[0]), faceEdgePoint2) &&
+  pseudoEquals(rightChildObj.getPoint(mergedEdgeOne[1]), faceEdgePoint1));
+  if (isTrue1) {
+    problemEdgesToReturnTo.push({
+      sideA: {
+        faceIdOfMyFaceA: ogFaceObj.ID,
+        edgeIdOfMyFaceA: edgeIdThatsTroubleInOg,
+        faceIdOfMyFaceA1: leftChildObj.ID,
+        edgeIdOfMyFaceA1: startOfEdge(leftChildObj, firstLefttEdge), // todo: get either [0], [1] // idea here is to get the edge of A1, since vertex and edges correspond
+        faceIdOfMyFaceA2: rightChildObj.ID,
+        edgeIdOfMyFaceA2: startOfEdge(rightChildObj, firstRightEdge) // todo: get either [0], [1]
+      },
+      sideB: {
+        faceIdOfMyFaceB: currentItem.idOfOtherFace,
+        edgeIdOfMyFaceB: currentItem.edgeIdOfOtherFace
+      }
+
+    });
+    return;
+  }
+
+  // then the target must be the other connection
+
+
+
+  // these two pair
+  const secondPointOtherLeftId = returnNoCutEdgeVertex(leftChildObj, actualSplit.pt2.l, actualSplit.pt1.l);
+  const secondLefttEdge: [bigint, bigint] = [secondPointOtherLeftId, actualSplit.pt2.l];
+
+  const secondPointOtherRightId = returnNoCutEdgeVertex(rightChildObj, actualSplit.pt2.r, actualSplit.pt1.r);
+  const secondRightEdge: [bigint, bigint] = [secondPointOtherRightId, actualSplit.pt2.r];
+
+
+  // edge that is pseudo equal to the merged edge of B
+  const mergedEdgeTwo: [bigint, bigint] = mergeTheTwoEdgesTogether(leftChildObj, secondLefttEdge, rightChildObj, secondRightEdge);
+
+  console.log("comparision pt 2");
+  console.log(leftChildObj.getPoint(mergedEdgeTwo[0]));
+  console.log(rightChildObj.getPoint(mergedEdgeTwo[1]));
+  console.log(faceEdgePoint1);
+  console.log(faceEdgePoint2);
+
+  let isTrue2 = (pseudoEquals(leftChildObj.getPoint(mergedEdgeTwo[0]), faceEdgePoint1) &&
+  pseudoEquals(rightChildObj.getPoint(mergedEdgeTwo[1]), faceEdgePoint2));
+  isTrue2 ||= (pseudoEquals(leftChildObj.getPoint(mergedEdgeTwo[0]), faceEdgePoint2) &&
+  pseudoEquals(rightChildObj.getPoint(mergedEdgeTwo[1]), faceEdgePoint1))
+
+  if (isTrue2) {
+    problemEdgesToReturnTo.push({
+      sideA: {
+        faceIdOfMyFaceA: ogFaceObj.ID,
+        edgeIdOfMyFaceA: edgeIdThatsTroubleInOg,
+        faceIdOfMyFaceA1: leftChildObj.ID,
+        edgeIdOfMyFaceA1: startOfEdge(leftChildObj, secondLefttEdge), // todo: get either [0], [1] // idea here is to get the edge of A1, since vertex and edges correspond
+        faceIdOfMyFaceA2: rightChildObj.ID,
+        edgeIdOfMyFaceA2: startOfEdge(rightChildObj, secondRightEdge) // todo: get either [0], [1]
+      },
+      sideB: {
+        faceIdOfMyFaceB: currentItem.idOfOtherFace,
+        edgeIdOfMyFaceB: currentItem.edgeIdOfOtherFace
+      }
+
+    });
+    return;
+  }
+
+  throw new Error("missed overlap");
+}
+
+
+/**
+ * given two ids of an edge on a face (two connected vertex ids), return the "pointing"
+ * id direction
+ * @param faceObj
+ * @param edgeObjPair
+ * @returns
+ */
+function startOfEdge(faceObj: Face2D, edgeObjPair: [bigint, bigint]) {
+  if (edgeObjPair[0] === edgeObjPair[1]) {
+    throw new Error('need adj');
+  }
+  // edge case: zero vector isn't always min
+  if (edgeObjPair[0] === 0n || edgeObjPair[1] === 0n) {
+    if(edgeObjPair[0] === 1n || edgeObjPair[1] === 1n) {
+      return 0n;
+    }
+
+    return faceObj.N - 1n;
+  }
+
+
+  if(edgeObjPair[0] < edgeObjPair[1]) {
+    return edgeObjPair[0];
+  }
+
+  return edgeObjPair[1];
+}
 
 
 /**
