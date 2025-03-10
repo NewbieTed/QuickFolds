@@ -105,7 +105,7 @@ bash localtester.sh
 
 __Backend:__
 
-To only run backend tests, run the following in the terminal:
+To only run backend tests, go to `backend/` run the following command in the terminal:
 
 ```
 ./mvnw test
