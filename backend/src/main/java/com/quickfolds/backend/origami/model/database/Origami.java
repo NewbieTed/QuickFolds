@@ -73,13 +73,13 @@ public class Origami {
     @Column(name = "ratings", nullable = false)
     private double ratings;
 
-    /**
-     * The number of ratings for the origami model.
-     * <p>
-     * This field stores the number of ratings given to the origami by users.
-     */
-    @Column(name = "num_ratings", nullable = false)
-    private double numRatings;
+//    /**
+//     * The number of ratings for the origami model.
+//     * <p>
+//     * This field stores the number of ratings given to the origami by users.
+//     */
+//    @Column(name = "num_ratings", nullable = false)
+//    private double numRatings;
 
     /**
      * Identifier of the user who created this origami record.
