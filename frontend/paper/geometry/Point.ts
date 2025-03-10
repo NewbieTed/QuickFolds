@@ -494,11 +494,8 @@ export function normalize<T extends Point>(vec: T): T {
  */
 export function processTransationFrom3dTo2d(point: Point3D, face3d : Face3D, face2d: Face2D) {
     const othroBasis = getPlaneBasis(face3d);
-    console.log("ORTHO BASIS", othroBasis);
     const translatedPoint2d: Point2D[] = projectToPlane(othroBasis, point);
-    console.log("transalted point", translatedPoint2d);
     const centroidPoint = face2d.getAveragePoint();
-    console.log("CENTROID", centroidPoint);
 
 
     const getPlaneBasisFor2d: PlaneBasis2D = getPlaneBasis2D(face2d);

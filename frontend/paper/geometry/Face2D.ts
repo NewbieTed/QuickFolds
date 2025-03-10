@@ -676,15 +676,22 @@ export class Face2D {
      * @param edgeId - edge to test that colinear with p
      */
     public isColinearPointInsideEdge(p: pt.Point2D, edgeId: bigint) : boolean {
+        p = this.projectToEdge(p, edgeId);
+
         const edgeIdNum: number = Number(edgeId);
         const vecFromPToStartPoint : pt.Point2D = pt.createPoint2D(this.vertices[edgeIdNum].x - p.x,
                                                                    this.vertices[edgeIdNum].y - p.y,
         );
 
+
         const vecFromPToEndPoint : pt.Point2D = pt.createPoint2D(this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].x - p.x,
             this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].y - p.y,
         );
         // if p are inside the edge, then these vectors should point in oppisite directions
+
+
+        console.log("dir to edgeId", vecFromPToStartPoint);
+        console.log("dir to edgeId + 1", vecFromPToEndPoint);
 
         return pt.dotProduct(vecFromPToEndPoint, vecFromPToStartPoint) < 0;
 

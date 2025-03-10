@@ -4,7 +4,7 @@
  */
 
 import { Face2D } from "../geometry/Face2D.js";
-import { createPoint2D } from "../geometry/Point.js";
+import { createPoint2D, distance, Point2D } from "../geometry/Point.js";
 import { ProblemEdgeInfo, ProblemEdgeInfoMerge } from "./PaperManager.js";
 
 /**
@@ -375,6 +375,10 @@ export function updateAdjListForSplitGraph(
   const correctLeftFaceEdge: bigint =  leftFaceEdgeIdThatFolds;
   const correctRightFaceEdge:  bigint = rightFaceEdgeIdThatFolds;
 
+  console.log("map of ogface to left", ogPointIdsToLeftPointIds);
+  console.log("map of ogface to right", ogPoingIdsToRightPointIds);
+
+
   if (adjList.size === 1) {
     // this is the first fold ever
 
@@ -432,6 +436,10 @@ export function updateAdjListForSplitGraph(
       deleteValue(outsideFaceToUpdate, ogFaceId);
     }
 
+    console.log("here is what i need to fix from id" + ogFaceId + ":", allOldConnectionsThatNeedToBeUdpdated);
+
+
+
 
     // create the copy list, and add the copy to the other faces
     // this is all the outside stuff connecting back to the L/R split
@@ -449,6 +457,8 @@ export function updateAdjListForSplitGraph(
       // since we need another outside face to be in this loop bc it's an adj list
       if(theOldEdgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace1 ||
          theOldEdgeIdOfMyFace === idOfEdgeThatPointSplitsAtInOgFace2) {
+          // bak
+          console.log("looking for ", theOldEdgeIdOfMyFace);
 
           // safety check that there is a mapping between A-> A1 and A -> A2
           if (ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace) === undefined ||
@@ -480,12 +490,15 @@ export function updateAdjListForSplitGraph(
 
 
       // find out where the old edge when to
-      if (Array.from(ogPointIdsToLeftPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
+      if (Array.from(ogPointIdsToLeftPointIds.keys()).includes(theOldEdgeIdOfMyFace) &&
+      Array.from(ogPointIdsToLeftPointIds.keys()).includes((theOldEdgeIdOfMyFace + 1n) % getFace2dFromId(ogFaceId).N)) {
         // left face has the connection
         const theEdgeForTheSplitFace: bigint | undefined = ogPointIdsToLeftPointIds.get(theOldEdgeIdOfMyFace);
         if (theEdgeForTheSplitFace === undefined) {
           throw new Error("missed edge in adj list");
         }
+
+        console.log("mapping face" + ogFaceId + "<->" + currentItem.idOfOtherFace + " to " + leftFaceId + "<->" + currentItem.idOfOtherFace);
 
         // create the new value for the left face
         const valueForNewFace: EdgesAdjList = {
@@ -511,12 +524,15 @@ export function updateAdjListForSplitGraph(
           {aFaceId:ogFaceId , bFaceId:currentItem.idOfOtherFace}, // old
           [{face1Id:leftFaceId , face2Id:currentItem.idOfOtherFace}]  // new swap a1 for a
         );
-      } else if (Array.from(ogPoingIdsToRightPointIds.keys()).includes(theOldEdgeIdOfMyFace)) {
+      } else if (Array.from(ogPoingIdsToRightPointIds.keys()).includes(theOldEdgeIdOfMyFace) &&
+        Array.from(ogPoingIdsToRightPointIds.keys()).includes((theOldEdgeIdOfMyFace + 1n) % getFace2dFromId(ogFaceId).N)) {
         // right face has the connection
         const theEdgeForTheSplitFace: bigint | undefined = ogPoingIdsToRightPointIds.get(theOldEdgeIdOfMyFace);
         if (theEdgeForTheSplitFace === undefined) {
           throw new Error("missed edge in adj list");
         }
+
+        console.log("mapping face" + ogFaceId + "<->" + currentItem.idOfOtherFace + " to " + rightFaceId + "<->" + currentItem.idOfOtherFace);
 
         // create the new value for the right face
         const valueForNewFace: EdgesAdjList = {
@@ -555,6 +571,60 @@ export function updateAdjListForSplitGraph(
 
   return problemEdgesToReturnTo;
 }
+
+
+function pseudoEquals(p1: Point2D, p2: Point2D) {
+  return distance(p1, p2) < 0.01;
+}
+
+
+function getEdgeThatSharesBetweenTheTwoFaces(leftChildObj: Face2D, rightChildObj: Face2D) {
+  for(let i = 0; i < leftChildObj.N; i++) {
+    // for every pair in the left child
+    const leftPtInLeftChildIndex: BigInt = BigInt(i);
+    const leftPtInLeftChild = leftChildObj.vertices[Number(leftPtInLeftChildIndex)];
+    const rightPtInLeftChildIndex: BigInt = BigInt(i + 1) % leftChildObj.N;
+    const rightPtInLeftChild = leftChildObj.vertices[Number(rightPtInLeftChildIndex)];
+
+
+    for(let j = 0; j < rightChildObj.N; j++) {
+    // for every pair in the right child
+    const leftPtInRightChildIndex: BigInt = BigInt(j);
+    const leftPtInRightChild = rightChildObj.vertices[Number(leftPtInRightChildIndex)];
+    const rightPtInRightChildIndex: BigInt = BigInt(i + 1) % rightChildObj.N;
+    const rightPtInRightChild = rightChildObj.vertices[Number(rightPtInRightChildIndex)];
+
+
+      if (pseudoEquals(leftPtInLeftChild, leftPtInRightChild) && pseudoEquals(rightPtInLeftChild, rightPtInRightChild)) {
+        // left-left and right-right match
+        return {pt1:{l:leftPtInLeftChildIndex, r:leftPtInRightChildIndex}, pt2:{l:rightPtInLeftChild, r:rightPtInRightChild}}
+      }
+      else if (pseudoEquals(leftPtInLeftChild, rightPtInRightChild) && pseudoEquals(rightPtInLeftChild, leftPtInRightChild)) {
+        // left-right and right-left match
+        return {pt1:{l:leftPtInLeftChildIndex, r:rightPtInRightChildIndex}, pt2:{l:rightPtInLeftChild, r:leftPtInRightChild}}
+      }
+    }
+
+  }
+
+  throw new Error("couldn't find matchup");
+}
+
+function manuallyFindTheConnectionBetweenTheSplitFace(ogFaceObj: Face2D, leftChildObj: Face2D, rightChildObj: Face2D) {
+
+  // first we need to find the edge that intersects the left and right child
+
+
+
+
+
+  // idea is to go around the old face
+  for(let i = 0; i < ogFaceObj.N; i++) {
+
+  }
+
+}
+
 
 
 /**

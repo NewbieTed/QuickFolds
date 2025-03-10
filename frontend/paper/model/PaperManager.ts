@@ -420,7 +420,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // now we delete the colinear lines and points that were potentially create by intersecting
   // the fold edge
   const dangerousLineID: bigint = face2d.addRawAnnotatedLine(point1Id, point2Id)
-
+  console.log("dangerout lineid", dangerousLineID);
   // first we need to delete all the colinear lines between our "edge"
   const listOfLinesToDelete = getColinearLine(dangerousLineID, face2d);
   listOfLinesToDelete.forEach(lineId => face2d.delAnnotatedLine(lineId));
@@ -958,15 +958,21 @@ function getColinearLine(lineId: bigint, face2d: Face2D) :  bigint[] {
   const annoLines: Map<bigint, AnnotatedLine> = face2d.getAnnotatedLinesMap();
   // go thru each line, and remove if both ends of line segment are close to the cut edge
   // since that means the entire line is close enough
+
+  const dangerousLineObj = annoLines.get(lineId);
+
   for (const [id, lineObj] of annoLines) {
     const startPointOnLine: Point2D = face2d.getPoint(lineObj.startPointID);
     const endPointOnLine: Point2D = face2d.getPoint(lineObj.endPointID);
+
+    console.log("line id", lineId);
+    console.log("face", face2d);
+
 
     if (id != lineId &&
         face2d.isPointOnCustomLine(startPointOnLine, lineId) &&
         face2d.isPointOnCustomLine(endPointOnLine, lineId)) {
       retList.push(id);
-    } else {
     }
   }
 

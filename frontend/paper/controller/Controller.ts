@@ -594,14 +594,20 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 
   // algorithm
   // we know that our line will intersect two lines if it intersects plane, so add to return list
+  // contains ids of things hit: could be vertex, existing anno points, or new points
   const retList: bigint[] = [];
   // keep track of whether we make a new point
   const generated: boolean[] = [];
 
   console.log("we are seeing what vertex to go to")
 
+
   // go thru each vertex
   for(let i = 0n; i < face2d.N; i++) {
+    if (retList.length ==  2) {
+      break;
+    }
+
     let intersectionPointOfFaceEdgeAndUserLine = getLineIntersection(
       p1, p2, face2d.getPoint(i), face2d.getPoint((i + 1n) % face2d.N)
     );
@@ -642,12 +648,12 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
     console.log("intersection point for vertex " + i + " of " +faceIdToUpdate + ": " +intersectionPointOfFaceEdgeAndUserLine.x, + intersectionPointOfFaceEdgeAndUserLine.y);
 
 
-    console.log("i:" + i + ":" + distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine));
+    console.log("i: edge " + i + ":" + distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine));
     // edge case, check if point is actually on the edge:
-    if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.15) {
+    if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.05) {
       // add edge as hit point
       retList.push(i);
-      console.log("added vertex");
+      console.log("FOUND: added vertex");
       generated.push(false);
       continue;
     }
@@ -659,21 +665,31 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
       // now we need to get the point nearby, or make one if it exists
       let closestPointId: bigint = face2d.findClosestPointOnEdge(intersectionPointOfFaceEdgeAndUserLine, i);
 
-      if (closestPointId < face2d.N) {
-        continue; // somehow grabbed vertex by accident again (should ahve done is up above)
+      // also, we check to make sure we haven't made a point that is super close to another one already created
+      let exit = false;
+      for(let l = 0n; l < face2d.N; l++) {
+        if (distance(face2d.getPoint(l), intersectionPointOfFaceEdgeAndUserLine) <= 0.05) {
+          exit = true;
+          break;
+        }
+      }
+      if (exit) {
+        console.log("ive exited!");
+        continue;
       }
 
+
       console.log("distance green line check", distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine));
-      if (distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine) <= USE_EXISTING_POINT_IN_GREEN_LINE) {
+      if (closestPointId >= face2d.N && distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine) <= USE_EXISTING_POINT_IN_GREEN_LINE) {
         // point exists, so use it
         retList.push(closestPointId);
-        console.log("added existing point", closestPointId);
+        console.log("FOUND: added existing point", closestPointId);
         generated.push(false);
       } else {
 
         // need to make our own point
         let annoRes2d = face2d.addAnnotatedPoint(intersectionPointOfFaceEdgeAndUserLine, i);
-        console.log("we are making a point on the stacked face");
+        console.log("FOUND: we are making a point on the stacked face");
         if (annoRes2d.pointsAdded.size !== 1) {
           throw new Error("error making a point");
         }
@@ -687,13 +703,23 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 
           face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, pointIn3dVersion));
         }
-        console.log("added new point");
+
         generated.push(true);
       }
     }
   }
 
-  if (retList.length === 2) {
+  if (retList.length >= 2) {
+    console.log("RESULT", {
+      pt1:{
+        id:retList[0],
+        gen: generated[0]
+      },
+
+      pt2:{
+        id:retList[1],
+        gen: generated[1]
+      }});
     return {
     pt1:{
       id:retList[0],
@@ -702,7 +728,7 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
 
     pt2:{
       id:retList[1],
-      gen: generated[0]
+      gen: generated[1]
     }};
 
   }
@@ -794,6 +820,8 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // split all of the faces that need to split,
   // and update adj list with this information
   for(let i = 0; i < faceIdToUpdate.length; i++) {
+
+    console.log("CURRENT FACE I AM WORKING WITH", faceIdToUpdate[i]);
     // get face
     const currFaceId: bigint = faceIdToUpdate[i];
     const face3d = getFace3DByID(currFaceId);
@@ -809,6 +837,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
     }
 
     const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+
     // we only want to do the case where we split first
     if (points == null) {
       continue;
@@ -925,6 +954,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       deleteFace(ogFaceID); // does the render deletion
   }
 
+  console.log("for loop pt 2");
 
 
 
@@ -1179,8 +1209,6 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   // update all existing edges that have split. come from problem children
   AddNewEdgeToDisjointSet(newSetOfEdgesForDS);
 
-
-
   // do lug
   console.log("HERE:____");
   console.log(stationaryFaceSpecifc);
@@ -1192,6 +1220,11 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const offsets: Map<bigint, number>  = faceMutatingFold(stationaryFaceSpecifc, rotatingFaceSpecific, 180n, 180n - angle,
     edgeIdOfStationaryFace, mapFromOgIdsToSplitFaces, new Set<bigint>(listOfStationaryFacesInLug)
   );
+
+
+  console.log("ALL MOVING FACES", allMovingFaces);
+  console.log("edges not to cross", newSetOfEdgesForDS);
+  console.log("adj list at this point", getAdjList());
 
   // update renderer with animation
   // all set - stationary

@@ -69,7 +69,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     ]
     const principalNormal = pt.createPoint3D(0, 1, 0);
     // Paper thickness: 0.01
-    const plane = new Face3D(vertices3D, 0.5, 0, principalNormal, 0n);
+    const plane = new Face3D(vertices3D, 0.01, 0, principalNormal, 0n);
     scene.add(plane.getPivot());
 
     idsToFace3D.set(plane.ID, plane);
