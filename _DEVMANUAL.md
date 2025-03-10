@@ -2,6 +2,22 @@
 
 This is the developer Guide, and contains implementation details about the state of the repository, things that go beyond just running the current version. It is expected you have also read the USERMANUAL to be able to run the build.
 
+## Table of Contents
+
+- [How to obtain the source code](#how-to-obtain-the-source-code)
+- [Layout of Directory Structure](#layout-of-directory-structure)
+  - [/Backend](#backend)
+  - [/Frontend](#frontend)
+  - [/reports](#reports)
+- [How to build the software](#how-to-build-the-software)
+- [How to test the software](#how-to-test-the-software)
+  - [Frontend](#frontend-1)
+  - [Backend](#backend-1)
+- [How to add a new test](#how-to-add-a-new-test)
+  - [Frontend](#frontend-2)
+  - [Backend](#backend-2)
+- [How to build a release](#how-to-build-a-release)
+
 ## How to obtain the source code
 
 This project only has one repository.
