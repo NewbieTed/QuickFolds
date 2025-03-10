@@ -8,7 +8,7 @@
 
 import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
 import {serializeMergeFold, serializeResultChange, serializeSplitFold} from "./Serializer.js";
-import {processAnnotationStep} from "./Controller.js";
+import {processAnnotationStep, processFoldStep} from "./Controller.js";
 
 
 const ANNOTATE_EDITOR_URL = 'http://localhost:8080/geometry/annotate';
@@ -151,16 +151,16 @@ export async function addUpdatedAnnoationToDB(
 export async function getStepFromDB(startStep: bigint, endStep: bigint, isForward: boolean) : Promise<boolean> {
   // Get the origami ID from the SceneManager instead of directly from localStorage
   const origamiId = localStorage.getItem("currentOrigamiIdForViewer");
-  
+
   if (!origamiId) {
     console.error("No origami ID found in localStorage");
     return Promise.resolve(false);
   }
-  
+
   // Convert the values to strings for the URL
   // Make sure isForward is properly formatted as a string "true" or "false"
   const url = `http://localhost:8080/geometry/getStep/${origamiId}/${startStep.toString()}/${endStep.toString()}/${isForward.toString()}`;
-  
+
 
   try {
     const response = await fetch(url, {
@@ -180,10 +180,10 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
     const result = await response.json();
     console.log('Step Response:', result.data);
 
-    
+
 
     // const result = {
-    //   "stepType": "ANNOTATE", 
+    //   "stepType": "ANNOTATE",
     //   "annotations": [
     //     {
     //       "idInOrigami": 0, // Face ID in the origami model
@@ -202,7 +202,7 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
     // }
 
     // const result2 = {
-    //   "stepType": "ANNOTATE", 
+    //   "stepType": "ANNOTATE",
     //   "annotations": [
     //     {
     //       "idInOrigami": 0, // Face ID in the origami model
@@ -221,7 +221,7 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
     // }
 
     // const result3 = {
-    //   "stepType": "ANNOTATE", 
+    //   "stepType": "ANNOTATE",
     //   "annotations": [
     //     {
     //       "idInOrigami": 0, // Face ID in the origami model
@@ -251,7 +251,7 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
     // }
 
     // const result4 = {
-    //   "stepType": "ANNOTATE", 
+    //   "stepType": "ANNOTATE",
     //   "annotations": [
     //     {
     //       "idInOrigami": 0, // Face ID in the origami model
@@ -284,9 +284,9 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
         processAnnotationStep(result.data);
       }
     } else if (result.data.stepType === "fold") {
-      console.log("fold");
+      processFoldStep(result.data);
     }
-    
+
     return Promise.resolve(true);
   } catch (error) {
     console.error('Error:', error);

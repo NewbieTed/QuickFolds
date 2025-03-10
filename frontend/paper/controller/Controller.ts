@@ -2039,6 +2039,21 @@ export async function processAnnotationStep(result: any) : Promise<string | true
 
 export async function processFoldStep(result: any) : Promise<string | true> {
   console.log("result", result);
+  console.log("we got here!");
+
+
+  // algorithm
+  // get all of the added faces id, and sort them
+  // get all of the deleted faces id, and sort them
+
+
+  // now find the edge that connection smallestChild1 to smallestChild2
+  // ^ this should be in the edges area of the first child data DB sends
+
+  // takes these two points and project them onto smallest deleted face
+
+  // run the editor split method
+
   return true;
 }
 
