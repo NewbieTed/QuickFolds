@@ -89,6 +89,12 @@ export class CameraManager {
         this.azimuth = Math.PI / 4;
         this.altitude = Math.PI / 4;
 
+
+        // allow camera to see all layers in scene
+        this.ORTHOGRAPHIC_CAMERA.layers.enableAll();
+        this.PERSPECTIVE_CAMERA.layers.enableAll();
+
+
         // Whether movement of the camera is locked (disabled).
         this.locked = false;
 

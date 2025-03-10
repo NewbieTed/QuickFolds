@@ -2,9 +2,9 @@
  * @fileoverview The animation that folds the paper. Essentially a rotation.
  */
 
-import * as pt from "../../geometry/Point";
-import {Face3D} from "../../geometry/Face3D";
-import {Animation} from "./Animation";
+import * as pt from "../../geometry/Point.js";
+import {Face3D} from "../../geometry/Face3D.js";
+import {Animation} from "./Animation.js";
 
 
 export class FoldAnimation implements Animation {
@@ -18,7 +18,7 @@ export class FoldAnimation implements Animation {
     private steepness: number;
 
     constructor(
-                axisPoint1: pt.Point3D, 
+                axisPoint1: pt.Point3D,
                 axisPoint2: pt.Point3D,
                 deltaAngle: number,
                 ...faces: Face3D[]
@@ -29,7 +29,7 @@ export class FoldAnimation implements Animation {
         this.deltaAngle = deltaAngle * Math.PI / 180; // convert to radians
         this.faces = faces;
         this.time = 0;
-        this.totalTime = 2; // (In roughly seconds)
+        this.totalTime = 5; // (In roughly seconds)
         this.steepness = 15; // A measure of how fast the speed
         // of the paper is near the middle of the animation.
 
@@ -48,7 +48,7 @@ export class FoldAnimation implements Animation {
             const currentAngle = this.getAngle(this.time);
             const nextAngle = this.getAngle(this.time + 1 / 60);
             face.rotateObjects(
-                this.axisPoint1, 
+                this.axisPoint1,
                 this.axisPoint2,
                 nextAngle - currentAngle
             );

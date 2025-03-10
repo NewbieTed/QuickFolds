@@ -13,6 +13,7 @@ import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.j
 import { createNewGraph } from '../model/PaperGraph.js';
 import { Animation } from './animation/Animation.js';
 import { FoldAnimation } from './animation/FoldAnimation.js';
+import { OffsetAnimation } from './animation/OffsetAnimation.js';
 
 let stepID = 1n;
 // Get the origami ID from localStorage based on context (editor or viewer)
@@ -79,7 +80,8 @@ export function initialize(renderer: THREE.WebGLRenderer) {
         pt.createPoint3D(3, 0, -3, "Vertex"),
     ]
     const principalNormal = pt.createPoint3D(0, 1, 0);
-    const plane = new Face3D(vertices3D, 0.05, 0, principalNormal, 0n);
+    // Paper thickness: 0.01
+    const plane = new Face3D(vertices3D, 0.01, 0, principalNormal, 0n);
     scene.add(plane.getPivot());
 
     idsToFace3D.set(plane.ID, plane);
@@ -100,6 +102,7 @@ export function getScene(): THREE.Scene {
  * This does not include annotation geometry - only the polygon meshes.
  */
 export function getFaceObjects(): THREE.Object3D[] {
+    console.log("face objects", idsToFaceObj.values());
     return Array.from(idsToFaceObj.values());
 }
 
@@ -290,5 +293,13 @@ export function animateFold(
 
     // Now create the animation and run it!
     const anim = new FoldAnimation(axisPoint1, axisPoint2, deltaAngle, ...faces);
+    animations.push(anim);
+}
+
+
+// Animates the offset of several faces given a map of face ids to the change in offset.
+export function animateOffset(offsets: Map<bigint, number>): void {
+
+    const anim = new OffsetAnimation(offsets);
     animations.push(anim);
 }

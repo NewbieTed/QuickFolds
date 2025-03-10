@@ -9,12 +9,20 @@ import * as THREE from 'three';
 import * as SceneManager from "../view/SceneManager.js";
 import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
 import { AnnotationUpdate2D, Face2D } from '../geometry/Face2D.js'; // export Face 2d
-import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D } from "../geometry/Point.js";
-import {addMergeFoldToDB, addSplitFacesToDB, addUpdatedAnnoationToDB, getStepFromDB} from "./RequestHandler.js";
-import {getFace2dFromId, print2dGraph, printAdjList, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
-import { getFace3DByID, incrementStepID, print3dGraph, animateFold } from '../view/SceneManager.js';
+
+import { createPoint2D, createPoint3D, Point3D, Point2D, AnnotatedLine, AnnotatedPoint3D, Point, processTransationFrom3dTo2d, AnnotatedPoint2D, distance, dotProduct } from "../geometry/Point.js";
+import {addRotationListToDB, addSplitFacesToDB, addUpdatedAnnoationToDB, getStepFromDB} from "./RequestHandler.js";
+import {AddNewEdgeToDisjointSet, addValueToAdjList, BFS, EdgesAdjList, EdgesAdjListMerging, getAdjList, getAllFaceIds, getConnectionInAdjList, getDisjointSetEdge, getDisjointSetEdgeAndDelete, getFace2dFromId, isConnectionInAdjList, print2dGraph, printAdjList, ReplaceExistingConnectionsBasedOnFirstWithNewConnections, ReplaceExistingConnectionWithNewConnections, updateAdjListForMergeGraph, updateRelativePositionBetweenFacesIndependentOfRelativeChange} from "../model/PaperGraph.js"
+import { getFace3DByID, incrementStepID, print3dGraph, animateFold, deleteFace, addFace, animateOffset } from '../view/SceneManager.js';
+
 import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
-import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager.js';
+import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo, ProblemEdgeInfoMerge } from '../model/PaperManager.js';
+import { faceMutatingFold, getOverlappingFaces } from '../model/PaperStack.js';
+import { off } from 'process';
+
+
+const USE_EXISTING_POINT_IN_GREEN_LINE = 0.5;
+
 
 
 /**
@@ -27,7 +35,7 @@ import { graphCreateNewFoldSplit, mergeFaces } from '../model/PaperManager.js';
  *                         normal vector direction for faces
  * @returns true/ or an error message
  */
-export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
   if (faceId1 === faceId2) {
     return "Faces are the same";
   }
@@ -42,7 +50,14 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
     animateFold(stationaryFace, edgeIDs[1], Number(relativeChange), faceId1);
   }
 
+
+
+
+
   // backend needs a simple update angle step
+
+
+
 
   // print2dGraph();
   // print3dGraph();
@@ -51,6 +66,379 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
   incrementStepID();
   return true;
 }
+
+
+// find if there is a face that in my facesToConnectWith set that is connected to target face in adj  list
+function getFaceIdThatTouchesTargetFace(targetFaceId: bigint, facesToConnectWith: Set<bigint>) {
+  const listOfTargetConnections = getAdjList().get(targetFaceId);
+  const listOfTargetConnectionsIds: bigint[] = [];
+
+  for(const item of listOfTargetConnections) {
+    listOfTargetConnectionsIds.push(item.idOfOtherFace);
+  }
+
+
+  if (listOfTargetConnections === undefined) {
+    return undefined;
+  }
+
+  for(const potentialIdConnection of facesToConnectWith) {
+    if (listOfTargetConnectionsIds.includes(potentialIdConnection)) {
+      return potentialIdConnection;
+    }
+  }
+
+  return undefined;
+}
+
+
+/**
+ * takes a target point on the place and makes a vector that points in the direction from the edge
+ * to the target point where the angle between the edge and the vector is 90 degrees
+ * @param stationaryFaceId - id of face you want
+ * @param edgeIdOfST - edge to bank off of
+ * @param targetPoint - the point to make a vector with target
+ * @returns
+ */
+function getOriginVectorPointingInDirectionOfTargetFromCutEdge(stationaryFaceId: bigint, edgeIdOfST: bigint, targetPoint: Point3D) {
+  const statFaceObj = getFace3DByID(stationaryFaceId);
+  if (statFaceObj === undefined) {
+    throw new Error("no face");
+  }
+  const targetPointProjectedOnStatFace = statFaceObj.projectToFace(targetPoint);
+  const projectedPtToCutEdge = statFaceObj.projectToEdge(targetPointProjectedOnStatFace, edgeIdOfST);
+
+
+  return createPoint3D(
+    targetPointProjectedOnStatFace.x - projectedPtToCutEdge.x,
+    targetPointProjectedOnStatFace.y - projectedPtToCutEdge.y,
+    targetPointProjectedOnStatFace.z - projectedPtToCutEdge.z
+  );
+}
+
+
+
+
+
+/**
+ * Takes two faces and updates the angle between them for all edges linked to the provided one
+ * may merge if needed
+ * @param faceId1 - face1 of edge
+ * @param faceId2 - face2 of edge
+ * @param stationaryFace - id of face1/face2: whichevery doesn't move
+ * @param relativeChange - the angle in degrees between them. Positive puts the normals closer together
+ * @returns
+ */
+export async function updateExistingMultiFold(faceId1: bigint, faceId2: bigint, stationaryFace:bigint, relativeChange: bigint) {
+  if (faceId1 === faceId2) {
+    return "Faces are the same";
+  }
+
+  const getAllEdgesThatAreApartOfTheFace1Face2Connection = getDisjointSetEdge(faceId1, faceId2);
+
+
+
+  let startMovingFace: bigint = -1n;
+  let startStationaryFace: bigint = -1n;
+
+  if (stationaryFace === faceId1) {
+    startStationaryFace = faceId1;
+    startMovingFace = faceId2;
+  } else {
+    startStationaryFace = faceId2;
+    startMovingFace = faceId1;
+  }
+
+  // get moving faces for animation
+  const allMovingFaces: Set<bigint> = BFS([startMovingFace], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+  const allStatFaces: Set<bigint> = BFS([startStationaryFace], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+
+  // idea is if we have an isolated face
+  // we do bfs from isolated face, matching with oppisite of cross edge type
+  for (const faceId of getAllFaceIds()) {
+    // if we've found a isolated face, need to add it
+    if (!allMovingFaces.has(faceId) && !allStatFaces.has(faceId)) {
+      // find connection from either set that connects existing face to it
+      const faceIdFromSetTouchesFace = getFaceIdThatTouchesTargetFace(faceId, allMovingFaces);
+      if(faceIdFromSetTouchesFace !== undefined) {
+        // meaning other side was a moving face, so I am stationary
+        // and any other independed faces attached to me are as well
+        const allIdpFaces: Set<bigint> = BFS([faceId], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+        allIdpFaces.forEach(item => allStatFaces.add(item));
+      } else if (faceIdFromSetTouchesFace !== undefined) {
+        // meaning other side was a stat face, so I am moving
+        // and any other independed faces attached to me are as well
+        const allIdpFaces: Set<bigint> = BFS([faceId], getAllEdgesThatAreApartOfTheFace1Face2Connection);
+        allMovingFaces.forEach(item => allStatFaces.add(item));
+      }
+    }
+  }
+
+
+
+  // safety check that makes sure all faces were caught
+  for(const faceId of getAllFaceIds()) {
+    if (!allMovingFaces.has(faceId) && !allStatFaces.has(faceId)) {
+      console.error("missed a face");
+    }
+  }
+
+  // get edge id of rotation for animation
+  let edgeIdOfRot: bigint = -1n;
+
+  const edgeIDsStart = updateRelativePositionBetweenFacesIndependentOfRelativeChange(
+    faceId1, faceId2, -relativeChange
+  );
+
+  if (stationaryFace === faceId1) {
+    edgeIdOfRot = edgeIDsStart[0];
+  } else if (stationaryFace === faceId2) {
+    edgeIdOfRot = edgeIDsStart[1];
+  } else {
+    throw new Error("internal issue");
+  }
+
+
+
+  // update face value
+  for(const edge of getAllEdgesThatAreApartOfTheFace1Face2Connection) {
+    if ((edge.face1Id == faceId1 && edge.face2Id == faceId2) ||
+        (edge.face1Id == faceId2 && edge.face2Id == faceId1)) {
+          continue;  // don't want to update the clicked edge id twice. already did this above
+    }
+
+
+    updateRelativePositionBetweenFacesIndependentOfRelativeChange(
+      edge.face1Id, edge.face2Id, relativeChange
+    );
+  }
+
+  animateFold(stationaryFace, edgeIdOfRot, Number(relativeChange), ...allMovingFaces);
+
+
+  await sleep(5000);
+
+  // now we see what the new value is
+  const newAngleBetweenDSEdge: bigint = getConnectionInAdjList(faceId1, faceId2).angleBetweenThem;
+  console.log("new angle: " + newAngleBetweenDSEdge);
+  if (newAngleBetweenDSEdge === 180n) {
+    // we need to do our merge
+    console.log("begin merge");
+    const result = await mergeMultiFaces(faceId1, faceId2, stationaryFace);
+    console.log(result);
+    print2dGraph();
+
+  } else {
+    const listOfAllMovingFacesInDsSet: {moveFace:bigint, statFace:bigint}[] = []
+    for(const movingFace of allMovingFaces) {
+      const isInMyEdge = getPairingInsideDSEdgeSet(movingFace, getAllEdgesThatAreApartOfTheFace1Face2Connection);
+      if (isInMyEdge !== undefined) {
+        listOfAllMovingFacesInDsSet.push(isInMyEdge);
+      }
+    }
+
+    // it's just a regular no merge update, update backend via /rotate
+    await addRotationListToDB(listOfAllMovingFacesInDsSet);
+  }
+
+  return true;
+}
+
+/**
+ * mimics java classes Thread.sleep(ms) since TS uses event based design
+ * to use this method, do
+ * await sleep(miliseconds);
+ * @param ms
+ * @returns
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * goal is to return the connection to faceIdTarget in provided set. undefined if no connection found
+ * @param faceIdTarget
+ * @param getAllEdgesThatAreApartOfTheFace1Face2Connection
+ */
+function getPairingInsideDSEdgeSet(faceIdTarget: bigint, getAllEdgesThatAreApartOfTheFace1Face2Connection: Set<{
+  face1Id: bigint;
+  face2Id: bigint;
+}>) {
+
+  for(const edge of getAllEdgesThatAreApartOfTheFace1Face2Connection) {
+    // idea is i give the moving face, so return it first
+    if (edge.face1Id === faceIdTarget) {
+      return {moveFace:edge.face1Id, statFace:edge.face2Id};
+    }
+    if (edge.face2Id === faceIdTarget) {
+      return {moveFace:edge.face2Id, statFace:edge.face1Id};
+    }
+  }
+
+  return undefined;
+}
+
+
+/**
+ * takes two faces, and merges the DS set that contain the edges
+ * @param faceId1
+ * @param faceId2
+ */
+async function mergeMultiFaces(faceId1: bigint, faceId2: bigint, stationaryFaceId: bigint) {
+  // get all edges that should be merged together
+  const dsEdges: {face1Id: bigint,face2Id: bigint}[] = Array.from(getDisjointSetEdge(faceId1, faceId2));
+
+  // use this to update ds edges that should be merged (problem edges)
+  const listOfDsEdgesThatNeedToBeMerged: {face1: bigint, face2: bigint}[] = [];
+
+  // takes dsmappping and breaks it up into 2 kv pairs
+  const mapOfChildFacesToMergedFaces: Map<bigint, bigint> = new Map<bigint, bigint>();
+
+  // list of all the a1 b1, a2 b2 connection (ie problem edges) but NEVER b1 a1 in the same list
+  const listOfAllChildEdges: EdgesAdjListMerging[] = [];
+
+  // renderer information
+  const allFacesCreated: bigint[] = [];
+  const allFacesDeleted: bigint[] = [];
+  console.log("GOT HERE");
+  // go thru all children faces and merge them, update the
+  // adj list,
+  for (let i = 0; dsEdges.length; i++) {
+    // actually create the new face and partially update
+    // the adj list
+    console.log("GOT HERE 2");
+    const currentEdge = dsEdges[i];
+    if (currentEdge == undefined) { // this is a hot fix, find out why ds edge has undefined value in it
+      break;
+    }
+    const resultForOneFace = await createANewFoldByMerging(currentEdge.face1Id, currentEdge.face2Id);
+    if (typeof(resultForOneFace) === "string") {
+      throw new Error(resultForOneFace);
+    }
+
+    // udpate fields needed for after face creation
+    // update fields for adj list for problem edge
+    mapOfChildFacesToMergedFaces.set(currentEdge.face1Id, resultForOneFace.mergedFaceId);
+    mapOfChildFacesToMergedFaces.set(currentEdge.face2Id, resultForOneFace.mergedFaceId);
+    listOfAllChildEdges.push(...resultForOneFace.edgesToUpdate);
+
+    // update DSedges fields that are problem edges
+    resultForOneFace.edgesToUpdate.forEach(item => {
+      listOfDsEdgesThatNeedToBeMerged.push({face1:item.idOfMyFace, face2:item.idOfOtherFace});
+    });
+
+    // update renderer fields
+    allFacesDeleted.push(currentEdge.face1Id);
+    allFacesDeleted.push(currentEdge.face2Id);
+    allFacesCreated.push(resultForOneFace.mergedFaceId);
+
+  }
+
+  console.log("GOT HERE 3");
+  // now we update the rest of the adj list with problem child edges
+  for(const item of listOfAllChildEdges) {
+    console.log("GOT HERE 4");
+    const mergedFaceAId = mapOfChildFacesToMergedFaces.get(item.idOfMyFace);
+    const mergedFaceBId = mapOfChildFacesToMergedFaces.get(item.idOfOtherFace);
+
+
+    // if not already seen before, do both a-b and b->a connection
+    // only do if not done before
+    if (!isConnectionInAdjList(mergedFaceAId, mergedFaceBId)) {
+      // a->b
+      addValueToAdjList(mergedFaceAId, {
+        idOfOtherFace:mergedFaceBId,
+        angleBetweenThem:item.angleBetweenThem,
+        edgeIdOfMyFace:item.edgeIdOfMyFace,
+        edgeIdOfOtherFace:item.edgeIdOfOtherFace
+      });
+
+      // b->a
+      addValueToAdjList(mergedFaceBId, {
+        idOfOtherFace:mergedFaceAId,
+        angleBetweenThem:item.angleBetweenThem,
+        edgeIdOfMyFace:item.edgeIdOfOtherFace,
+        edgeIdOfOtherFace:item.edgeIdOfMyFace
+      });
+
+    }
+  }
+
+
+  // now we update the DS edges to be merged
+  // a1-b1, a2-b2 --> a-b
+
+  // idea here is to save if added so the second child
+  // one doesn't cause any issues, don't want double a-b connections
+  const setOfMergedProblemFacesUpdatedInDS: Set<{f1: bigint, f2: bigint}> = new Set<{f1: bigint, f2: bigint}>();
+  for (const childPair of listOfDsEdgesThatNeedToBeMerged) {
+    console.log("GOT HERE 5");
+    if (mapOfChildFacesToMergedFaces.get(childPair.face1) === undefined ||
+        mapOfChildFacesToMergedFaces.get(childPair.face2) === undefined) {
+          throw new Error("merged face(s) not found");
+    }
+
+    // check to make sure that there won't be a "duplicate request"
+    // ie a1-b1 and a2-b2 would make 2 copies of a-b connection
+    const mergedAFaceId = mapOfChildFacesToMergedFaces.get(childPair.face1);
+    const mergedBFaceId = mapOfChildFacesToMergedFaces.get(childPair.face2);
+    for(const mergedConnection of setOfMergedProblemFacesUpdatedInDS) {
+      if ((mergedConnection.f1 === mergedAFaceId && mergedConnection.f2 === mergedBFaceId) ||
+      (mergedConnection.f1 === mergedBFaceId && mergedConnection.f2 === mergedAFaceId)) {
+        continue;  // we've found a duplicate copy, just don't do request again
+      }
+    }
+
+    // update ds edge
+    ReplaceExistingConnectionsBasedOnFirstWithNewConnections(
+      [{
+        aFaceId: childPair.face1,
+        bFaceId: childPair.face2
+      }],
+      [{
+        face1Id:mapOfChildFacesToMergedFaces.get(childPair.face1),
+        face2Id:mapOfChildFacesToMergedFaces.get(childPair.face2)
+      }]
+    );
+
+    // add to set so no duplicates requests are done
+    setOfMergedProblemFacesUpdatedInDS.add(
+      {f1:mapOfChildFacesToMergedFaces.get(childPair.face1),
+       f2:mapOfChildFacesToMergedFaces.get(childPair.face2)
+      }
+    );
+  }
+
+  // update lug
+
+  // rendering
+  allFacesDeleted;
+  allFacesCreated;
+
+  console.log("GOT HERE 6");
+  // backend
+  const allFacesCreatedObjs : Face2D[] = [];
+  allFacesCreated.forEach(item => {
+    const face = getFace2dFromId(item);
+    if (face === undefined) {
+      throw new Error("face not found for id:" + item);
+
+    }
+    allFacesCreatedObjs.push(face);
+  })
+
+  console.log("GOT HERE 7");
+  let result: boolean = await addSplitFacesToDB(allFacesCreatedObjs, allFacesDeleted, stationaryFaceId);
+  if (result === false) {
+    throw new Error("error with db");
+  }
+  console.log("GOT HERE 8");
+  incrementStepID();
+  return true;
+}
+
+
+
 
 
 // creates a new split based on the edge, face, and what part should move
@@ -63,9 +451,9 @@ export async function updateAnExistingFold(faceId1: bigint, faceId2: bigint, sta
  * @param faceId - the id of the face that is split into two
  * @param vertexOfFaceStationary - provide a point that is stationary in case of movement in future
  * @param angle - the angle to start between them. should be 180
- * @returns true/ or a string of error msg
+ * @returns {stationaryFaceId:bigint, rotationFaceId:bigint}/ or a string of error msg
  */
-export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId: bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
   if (point1Id == point2Id) {
     return "Points cannot be same";
   }
@@ -107,7 +495,7 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
 
 
   // need to get flattened 2d point
-  const flattedPoint3d: Point3D | null = projectPointToFace(vertexOfFaceStationary, face3d);
+  const flattedPoint3d: Point3D | null = face3d.projectToFace(vertexOfFaceStationary);
   if (flattedPoint3d === null) {
     console.error("error getting face 3d");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -123,34 +511,815 @@ export async function createANewFoldBySplitting(point1Id: bigint, point2Id: bigi
     return msg;
   }
 
+                                                                  //vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine
+  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint,ProblemEdgeInfo[], Point2D, Point2D, Face3D, Face3D] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
 
-  const resultOfUpdatingPaperGraph: [Face2D,Face2D,bigint] | false= graphCreateNewFoldSplit(point1Id, point2Id, faceId, angle,flattedPoint2d);
+  // do a quick double check later that it's ok to delete adjlist/mapping of old faces, assuming it splits
+
   if (resultOfUpdatingPaperGraph === false) {
     throw new Error("Error saving paper graph");
   }
 
-  let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
+  // let result: boolean = await addSplitFacesToDB(resultOfUpdatingPaperGraph[0], resultOfUpdatingPaperGraph[1], faceId, resultOfUpdatingPaperGraph[2]);
 
-  if (result === false) {
-    throw new Error("error with db");
+  // if (result === false) {
+  //   throw new Error("error with db");
+  // }
+
+  if (resultOfUpdatingPaperGraph[0].ID == resultOfUpdatingPaperGraph[2]) {
+    // left face is stationary
+    return {stationaryFaceId:resultOfUpdatingPaperGraph[0].ID,
+            rotationFaceId:resultOfUpdatingPaperGraph[1].ID,
+            problemEdgesForFace:resultOfUpdatingPaperGraph[3],
+            perpindicularVectorPointTowardsLeftSpaceDirection: resultOfUpdatingPaperGraph[4],
+            perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5],
+            splitFaceObjs:[resultOfUpdatingPaperGraph[6], resultOfUpdatingPaperGraph[7]] // stat, rot obj
+    };
   }
 
-
-  print2dGraph();
-  print3dGraph();
-  printAdjList();
-
-  incrementStepID();
-  return true;
+  // right face is stationary
+  return {stationaryFaceId:resultOfUpdatingPaperGraph[1].ID,
+          rotationFaceId:resultOfUpdatingPaperGraph[0].ID,
+          problemEdgesForFace:resultOfUpdatingPaperGraph[3],
+          perpindicularVectorPointTowardsLeftSpaceDirection: resultOfUpdatingPaperGraph[4],
+          perpindicularVectorPointTowardsLeftSpaceOrigin: resultOfUpdatingPaperGraph[5],
+          splitFaceObjs:[resultOfUpdatingPaperGraph[7], resultOfUpdatingPaperGraph[6]] // stat, rot obj
+        };
 }
 
 
 
 /**
+ * Finds the intersection point of two lines defined by points (p1, p2) and (p3, p4).
+ * @param p1 First point of the first line.
+ * @param p2 Second point of the first line.
+ * @param p3 First point of the second line.
+ * @param p4 Second point of the second line.
+ * @returns The intersection point or null if the lines are parallel or coincident.
+ */
+function getLineIntersection(p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D): Point2D | null {
+  const denominator =
+      (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+
+  // If denominator is zero, the lines are parallel or coincident
+  if (denominator === 0) {
+      return null;
+  }
+
+  const numeratorX =
+      (p1.x * p2.y - p1.y * p2.x) * (p3.x - p4.x) -
+      (p1.x - p2.x) * (p3.x * p4.y - p3.y * p4.x);
+  const numeratorY =
+      (p1.x * p2.y - p1.y * p2.x) * (p3.y - p4.y) -
+      (p1.y - p2.y) * (p3.x * p4.y - p3.y * p4.x);
+
+  const x = numeratorX / denominator;
+  const y = numeratorY / denominator;
+
+  return createPoint2D(x, y);
+}
+
+
+
+/**
+ * given point 1 and point 2, returns the id of the points (either annotation or vertex)
+ * that p1 and p2 pass thru in the plane. If the points at which the user provides
+ * intersect the face don't have a vertex/annotation point nearby, this method makes one
+ * @param p1 - the first point in line
+ * @param p2 - the second point in line
+ * @param faceIdToUpdate - the id of the face to comapre to
+ */
+function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdate: bigint) {
+  const face2d = getFace2dFromId(faceIdToUpdate);
+  if (face2d === undefined) {
+    throw new Error("couldn't find face");
+  }
+
+  // algorithm
+  // we know that our line will intersect two lines if it intersects plane, so add to return list
+  // contains ids of things hit: could be vertex, existing anno points, or new points
+  const retList: bigint[] = [];
+  // keep track of whether we make a new point
+  const generated: boolean[] = [];
+
+  console.log("we are seeing what vertex to go to")
+
+
+  // go thru each vertex
+  for(let i = 0n; i < face2d.N; i++) {
+    if (retList.length ==  2) {
+      break;
+    }
+
+    let intersectionPointOfFaceEdgeAndUserLine = getLineIntersection(
+      p1, p2, face2d.getPoint(i), face2d.getPoint((i + 1n) % face2d.N)
+    );
+
+
+
+
+    // test purposes
+
+  //   let annoRes2d = face2d.addAnnotatedPoint(intersectionPointOfFaceEdgeAndUserLine, i);
+  //   console.log("we are making a point on the stacked face");
+  //   if (annoRes2d.pointsAdded.size !== 1) {
+  //     throw new Error("error making a point");
+  //   }
+
+  //   const face3d = getFace3DByID(faceIdToUpdate);
+
+  // // add point (should just be one, but res uses map)
+  // for(let pointId of annoRes2d.pointsAdded.keys()) {
+  //   const pointIn3dVersion = translate2dTo3d(annoRes2d.pointsAdded.get(pointId).point, faceIdToUpdate);
+
+  //   face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, pointIn3dVersion));
+  // }
+
+
+
+
+
+
+    ////////////////
+
+
+
+
+    // this just makes sure that we are on the edge (think of round off error)
+    //intersectionPointOfFaceEdgeAndUserLine = face2d.projectToEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+
+    console.log("intersection point for vertex " + i + " of " +faceIdToUpdate + ": " +intersectionPointOfFaceEdgeAndUserLine.x, + intersectionPointOfFaceEdgeAndUserLine.y);
+
+
+    console.log("i: edge " + i + ":" + distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine));
+    // edge case, check if point is actually on the edge:
+    if (distance(face2d.vertices[Number(i)], intersectionPointOfFaceEdgeAndUserLine) < 0.05) {
+      // add edge as hit point
+      retList.push(i);
+      console.log("FOUND: added vertex");
+      generated.push(false);
+      continue;
+    }
+
+
+    if (face2d.isColinearPointInsideEdge(intersectionPointOfFaceEdgeAndUserLine, i)) {
+
+      // our point is actually at an intersection inside the polygon, so, we've found a target
+      // now we need to get the point nearby, or make one if it exists
+      let closestPointId: bigint = face2d.findClosestPointOnEdge(intersectionPointOfFaceEdgeAndUserLine, i);
+
+      // also, we check to make sure we haven't made a point that is super close to another one already created
+      let exit = false;
+      for(let l = 0n; l < face2d.N; l++) {
+        if (distance(face2d.getPoint(l), intersectionPointOfFaceEdgeAndUserLine) <= 0.05) {
+          exit = true;
+          break;
+        }
+      }
+      if (exit) {
+        console.log("ive exited!");
+        continue;
+      }
+
+
+      console.log("distance green line check", distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine));
+      if (closestPointId >= face2d.N && distance(face2d.getPoint(closestPointId), intersectionPointOfFaceEdgeAndUserLine) <= USE_EXISTING_POINT_IN_GREEN_LINE) {
+        // point exists, so use it
+        retList.push(closestPointId);
+        console.log("FOUND: added existing point", closestPointId);
+        generated.push(false);
+      } else {
+
+        // need to make our own point
+        let annoRes2d = face2d.addAnnotatedPoint(intersectionPointOfFaceEdgeAndUserLine, i);
+        console.log("FOUND: we are making a point on the stacked face");
+        if (annoRes2d.pointsAdded.size !== 1) {
+          throw new Error("error making a point");
+        }
+
+        const face3d = getFace3DByID(faceIdToUpdate);
+
+        // add point (should just be one, but res uses map)
+        for(let pointId of annoRes2d.pointsAdded.keys()) {
+          retList.push(pointId);
+          const pointIn3dVersion = translate2dTo3d(annoRes2d.pointsAdded.get(pointId).point, faceIdToUpdate);
+
+          face3d.updateAnnotations(create3dAnnoationResultForNewPoint(pointId, pointIn3dVersion));
+        }
+
+        generated.push(true);
+      }
+    }
+  }
+
+  if (retList.length >= 2) {
+    console.log("RESULT", {
+      pt1:{
+        id:retList[0],
+        gen: generated[0]
+      },
+
+      pt2:{
+        id:retList[1],
+        gen: generated[1]
+      }});
+    return {
+    pt1:{
+      id:retList[0],
+      gen: generated[0]
+    },
+
+    pt2:{
+      id:retList[1],
+      gen: generated[1]
+    }};
+
+  }
+
+  if (retList.length === 0) {
+    return null;
+  }
+
+  throw new Error("you make diff number of collisions that you should have: " + retList.length);
+}
+
+
+function intMin(a: bigint, b: bigint) {
+  if(a < b) {
+    return a;
+  }
+  return b;
+}
+
+function intMax(a: bigint, b: bigint) {
+  if(a > b) {
+    return a;
+  }
+  return b;
+}
+
+// multifold udpate; final boss split method
+/**
+ * takes 2 pointids, and a faceid for said points, and cuts thru everything in said face
+ * and any paper that is stacked on top of it, going thru the cut line
+ * @param point1Id
+ * @param point2Id
+ * @param faceId
+ * @param vertexOfFaceStationary
+ * @param angle - the new angle of the faces
+ * @returns
+ */
+export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+  const smallestPointId = intMin(point1Id, point2Id);
+  const largestPointId = intMax(point1Id, point2Id);
+  point1Id = smallestPointId;
+  point2Id = largestPointId;
+
+
+  const startFaceObj = getFace3DByID(faceId);
+  if (startFaceObj === undefined) {
+    throw new Error("couldn't find face");
+  }
+
+  const p1: Point3D = startFaceObj.getPoint(point1Id);
+  const p2: Point3D = startFaceObj.getPoint(point2Id);
+
+  let faceIdToUpdate: bigint[] = getOverlappingFaces(faceId); // basically, get the connect component from the LUG from faceid
+
+  //faceIdToUpdate sort
+  const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
+  const newSetOfEdgesForDS: Set<{face1Id:bigint, face2Id:bigint}> = new Set<{face1Id:bigint, face2Id:bigint}>(); // list of the "new line" drawn
+
+  // for renderer
+  const allMovingFaces : bigint[]  = [];
+  const mapOfnewFaceIdsToNewObjects: Map<bigint, Face3D> = new Map<bigint, Face3D>();
+
+
+
+  // will be set during the first iteration of the for loop
+  // needed for any planes that don't intersect the cut
+  let perpindicularVectorPointTowardsLeftSpaceDirection = null;
+  let perpindicularVectorPointTowardsLeftSpaceOrigin = null;
+  let isLeftSideRotating = false;
+
+
+  // stuff for db request
+  let allCreatedFaces: Face2D[] = [];
+  let allDeletedFaces: bigint[] = [];
+
+  let firstDescendentFaceIdThatStationary: bigint = -1n;
+  let edgeIdOfFirstDescendentThatisStationaryThatRotatesOn: bigint = -1n;
+
+  // stuff hady needs
+  let stationaryFaceSpecifc = -1n;
+  let rotatingFaceSpecific = -1n;
+  let edgeIdOfStationaryFace = -1n;
+
+  const listOfStationaryFacesInLug: bigint[] = [];
+  const mapFromOgIdsToSplitFaces = new Map<bigint, [bigint] | [bigint, bigint]>();
+
+  // for loop that first only does the split faces
+  // then copy paste this loop but update so that we continue on null returns
+  // split all of the faces that need to split,
+  // and update adj list with this information
+  for(let i = 0; i < faceIdToUpdate.length; i++) {
+
+    console.log("CURRENT FACE I AM WORKING WITH", faceIdToUpdate[i]);
+    // get face
+    const currFaceId: bigint = faceIdToUpdate[i];
+    const face3d = getFace3DByID(currFaceId);
+    if (face3d === undefined) {
+      throw new Error("couldn't find face");
+    }
+
+    const projectedP1 = translate3dTo2d(face3d.projectToFace(p1), currFaceId);
+    const projectedP2 = translate3dTo2d(face3d.projectToFace(p2), currFaceId);
+
+    if (projectedP1 === null || projectedP2 === null) {
+      throw new Error("error getting split point")
+    }
+
+    const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+
+    // we only want to do the case where we split first
+    if (points == null) {
+      continue;
+    }
+
+    console.log("split running");
+
+    const [idOnCurrFaceToSplit1, idOnCurrFaceToSplit2] = [points.pt1.id, points.pt2.id];
+    // we need to split faces
+    // note this also updates the adjlist of edges
+    const projectedVertexStationaryOnNewFace = face3d.projectToFace(vertexOfFaceStationary);
+    const targetPointOn2dSpace = translate3dTo2d(projectedVertexStationaryOnNewFace, face3d.ID);
+    const resultFromSplitting = await createANewFoldBySplitting(idOnCurrFaceToSplit1, idOnCurrFaceToSplit2, currFaceId, projectedVertexStationaryOnNewFace, 180n - angle);
+
+    if (typeof(resultFromSplitting) === 'string') {
+      console.error("error creating split of a face");
+      return;
+    }
+
+    // setup up left direction vector for all future iterations (only runs first time)
+    if (perpindicularVectorPointTowardsLeftSpaceOrigin == null) {
+      perpindicularVectorPointTowardsLeftSpaceDirection = resultFromSplitting.perpindicularVectorPointTowardsLeftSpaceDirection;
+      perpindicularVectorPointTowardsLeftSpaceOrigin = resultFromSplitting.perpindicularVectorPointTowardsLeftSpaceOrigin;
+
+      const vectorDirectionOfUserPoint = createPoint2D(
+        targetPointOn2dSpace.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
+        targetPointOn2dSpace.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
+      );
+      // basically, is the point on left space?
+      // if so, it's stationary, so left rotates only
+      // if point is on otherside
+      isLeftSideRotating = dotProduct(vectorDirectionOfUserPoint, perpindicularVectorPointTowardsLeftSpaceDirection) < 0;
+      firstDescendentFaceIdThatStationary = resultFromSplitting.stationaryFaceId;
+
+      const listOfConnectsForStatFace = getAdjList().get(resultFromSplitting.stationaryFaceId);
+      if(listOfConnectsForStatFace === undefined) {
+        throw new Error("missing face in adj list, trying to connect to inner edge a1 a2");
+      }
+
+      for(let z = 0; z < listOfConnectsForStatFace.length; z++) {
+        if (listOfConnectsForStatFace[z].idOfOtherFace === resultFromSplitting.rotationFaceId) {
+          // found inner split, so this must be the edge
+          edgeIdOfFirstDescendentThatisStationaryThatRotatesOn = listOfConnectsForStatFace[z].edgeIdOfMyFace;
+          break;
+        }
+      }
+
+      // add values that should be returned to renderer
+      stationaryFaceSpecifc = resultFromSplitting.stationaryFaceId;
+      edgeIdOfStationaryFace = edgeIdOfFirstDescendentThatisStationaryThatRotatesOn; // bak
+      rotatingFaceSpecific = resultFromSplitting.rotationFaceId;
+
+    }
+
+
+    console.log("after loop", perpindicularVectorPointTowardsLeftSpaceOrigin);
+
+
+
+    //getFace2dFromId(resultFromSplitting.stationaryFaceId).updateAnnotations();
+
+
+    listOfStationaryFacesInLug.push(resultFromSplitting.stationaryFaceId);
+    mapFromOgIdsToSplitFaces.set(currFaceId, [resultFromSplitting.stationaryFaceId,
+                                         resultFromSplitting.rotationFaceId]
+    );
+    allMovingFaces.push(resultFromSplitting.rotationFaceId);
+
+    // values for rendered by linking ids to objects when creating the faces
+    resultFromSplitting.splitFaceObjs.forEach(face => {
+      mapOfnewFaceIdsToNewObjects.set(face.ID, face);
+    })
+
+
+    // add faces to DB request
+    if(getFace2dFromId(resultFromSplitting.stationaryFaceId) === undefined ||
+       getFace2dFromId(resultFromSplitting.rotationFaceId) === undefined) {
+        throw new Error("descendent faces were not put in adj list before adding to db")
+    }
+
+    allCreatedFaces.push(getFace2dFromId(resultFromSplitting.stationaryFaceId));
+    allCreatedFaces.push(getFace2dFromId(resultFromSplitting.rotationFaceId));
+
+    allDeletedFaces.push(currFaceId);
+
+
+
+    // add all the edges that the adjlist should update: Multifold update
+    // note that there will be duplicate one for B,A and one for A,B
+    allProblemEdges.push(...resultFromSplitting.problemEdgesForFace);
+
+
+    // add new line to DS. this is my a1-a2 connection
+    newSetOfEdgesForDS.add({face1Id:resultFromSplitting.stationaryFaceId , face2Id:resultFromSplitting.rotationFaceId})
+  }
+
+
+  if (perpindicularVectorPointTowardsLeftSpaceOrigin == null) {
+    throw new Error("should have saved the split face vector");
+  }
+
+
+
+  // do rendering
+  for(const [ogFaceID, splitFaceIds] of mapFromOgIdsToSplitFaces) {
+    if (splitFaceIds.length === 1) {
+      continue; // skip if we don't split, since descendent is self
+    }
+
+
+      // add planes to scene manager (for now, hady will do later)
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[0]));
+      addFace(mapOfnewFaceIdsToNewObjects.get(splitFaceIds[1]));
+      deleteFace(ogFaceID); // does the render deletion
+  }
+
+  console.log("for loop pt 2");
+
+
+
+  // update faces, but only the ones that aren't split via the line
+  for(let i = 0; i < faceIdToUpdate.length; i++) {
+    // get face
+
+    const currFaceId: bigint = faceIdToUpdate[i];
+    const face3d = getFace3DByID(currFaceId);
+    if (getFace2dFromId(currFaceId) === undefined) {
+      continue; //this means we actually have a split,  which means this face has already been "done"
+    }
+
+    console.log("CURRENT FACE I AM WORKING WITH", faceIdToUpdate[i]);
+
+    const projectedP1 = translate3dTo2d(face3d.projectToFace(p1), currFaceId);
+    const projectedP2 = translate3dTo2d(face3d.projectToFace(p2), currFaceId);
+
+    if (projectedP1 === null || projectedP2 === null) {
+      throw new Error("error getting split point")
+    }
+
+    mapFromOgIdsToSplitFaces.set(currFaceId, [currFaceId]);
+
+    const points = findPointsOnEdgeOfStackedFace(projectedP1, projectedP2, faceIdToUpdate[i]);
+
+    // only do it if the plane we are looking at ISN"T being cut by the face
+    if (points == null) {
+      // line doesn't intersect plane, so just skip the splitting todo: don't delete og face until after this for loop since i need it here
+      // is either static or rotating
+      console.log("left/right child that comes from splitting", startFaceObj);
+      print3dGraph();
+      const planePointOnStartFace = startFaceObj.projectToFace(face3d.getAveragePoint());
+      console.log("looking for face", startFaceObj.ID);
+      print2dGraph();
+      console.log("left child?")
+      const planePoint2dVersion = translate3dTo2d(planePointOnStartFace, firstDescendentFaceIdThatStationary);
+
+
+      console.log(perpindicularVectorPointTowardsLeftSpaceOrigin);
+      const directionToPlanePoint = createPoint2D(
+        planePoint2dVersion.x - perpindicularVectorPointTowardsLeftSpaceOrigin.x,
+        planePoint2dVersion.y - perpindicularVectorPointTowardsLeftSpaceOrigin.y
+      );
+
+      // i can check if im on left side if they point in the same direction
+      const amIonLeftSide = dotProduct(directionToPlanePoint, perpindicularVectorPointTowardsLeftSpaceDirection) > 0;
+
+      let amIRotating = (isLeftSideRotating && amIonLeftSide) ||
+                        (!isLeftSideRotating && !amIonLeftSide);
+
+      // im not rotating, so add it to list for hady
+      if (!amIRotating) {
+        listOfStationaryFacesInLug.push(currFaceId);
+      } else {
+        allMovingFaces.push(currFaceId);
+      }
+
+      continue;
+    }
+  }
+
+
+  // update adjlist with problematic edges
+  // set is here so we don't have duplicates
+  // use format Face1-Face2, can check if oppsiiste exists so that
+  // we don't do it twice
+  const listOfAllEdgesFixed: Set<String> = new Set<String>();
+  console.log("All problem edges", allProblemEdges);
+  for(const item of allProblemEdges) {
+    // POV is to be from A looking to B
+    // do brute force mapping
+    // from A_1/A_2 edge connect B_1/B_2 edge
+
+    // check to make sure we don't do repeat
+    const hashCheck: string = item.sideB.faceIdOfMyFaceB + "-" + item.sideA.faceIdOfMyFaceA;
+    if(Array.from(listOfAllEdgesFixed).includes(hashCheck)) {
+      // already have fixed this edge, don't do again
+      continue;
+    }
+    item.sideA.edgeIdOfMyFaceA // A edge
+    item.sideB.edgeIdOfMyFaceB // B edge
+
+    const aFaceId = item.sideA.faceIdOfMyFaceA;
+
+    const a1FaceId = item.sideA.faceIdOfMyFaceA1;
+    const a1EdgeId = item.sideA.edgeIdOfMyFaceA1;
+    const a1FaceObj = getFace2dFromId(a1FaceId);
+
+    const a2FaceId = item.sideA.faceIdOfMyFaceA2;
+    const a2EdgeId = item.sideA.edgeIdOfMyFaceA2;
+    const a2FaceObj = getFace2dFromId(a2FaceId);
+
+    const bFaceId = item.sideB.faceIdOfMyFaceB;
+
+    // to get the B1/B2 Faces, we need to find the B->A value which should still be in our list
+    const getBrecord: ProblemEdgeInfo = getProblemEdgeRecord(bFaceId + "-" + aFaceId, allProblemEdges); // goal of this method is to get the oppsite record
+                                                                                                        // from looking at B face and seeing problem edge connecting to A
+    // feels weird doing this from sideA for B values, but the list is classified as
+    // 'A' as the POV in the JSON object
+    if (item == getBrecord) {
+      throw new Error("should be oppisitie");
+    }
+
+    console.log("GET THE B RECORD", getBrecord);
+    console.log("GET THE A RECORD", item)
+    const b1FaceId = getBrecord.sideA.faceIdOfMyFaceA1;
+    const b1EdgeId = getBrecord.sideA.edgeIdOfMyFaceA1;
+    const b1FaceObj = getFace2dFromId(b1FaceId);
+
+    const b2FaceId = getBrecord.sideA.faceIdOfMyFaceA2;
+    const b2EdgeId = getBrecord.sideA.edgeIdOfMyFaceA2;
+    const b2FaceObj = getFace2dFromId(b2FaceId);
+
+    if (a1FaceObj === undefined || a2FaceObj === undefined || b1FaceObj === undefined || b2FaceObj === undefined) {
+      throw new Error("Split faces don't exist");
+    }
+
+    console.log("here is the list of content");
+    console.log("a face");
+    console.log("[", a1FaceObj.getPoint(a1EdgeId), ",", a1FaceObj.getPoint((a1EdgeId + 1n) % a1FaceObj.N), "]");
+    console.log("[", a2FaceObj.getPoint(a2EdgeId), ",", a2FaceObj.getPoint((a2EdgeId + 1n) % a2FaceObj.N), "]");
+    console.log("b face");
+    console.log("[", b1FaceObj.getPoint(b1EdgeId), ",", b1FaceObj.getPoint((b1EdgeId + 1n) % b1FaceObj.N), "]");
+    console.log("[", b2FaceObj.getPoint(b2EdgeId), ",", b2FaceObj.getPoint((b2EdgeId + 1n) % b2FaceObj.N), "]");
+    console.log("~~~~~~~~~~~~~~~");
+
+    // manually check if the points line up
+    if(areEdgesTheSame(a1FaceObj, a1EdgeId, b2FaceObj, b2EdgeId)) {
+      // a1-b2 link up
+      // a2-b1 link up
+
+      // safety check to catch early error
+      if(!areEdgesTheSame(a2FaceObj, a2EdgeId, b1FaceObj, b1EdgeId)) {
+        throw new Error("other edges don't overlap");
+      }
+
+      // update these connections in the DS
+      ReplaceExistingConnectionWithNewConnections(
+        {aFaceId:aFaceId, bFaceId:bFaceId},
+        [
+          {face1Id:a1FaceId, face2Id:b2FaceId},
+          {face1Id:a2FaceId, face2Id:b1FaceId}
+        ]
+      );
+
+
+      // a1-b2 link up
+      addValueToAdjList(
+        a1FaceId,
+        {
+          idOfOtherFace: b2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a1EdgeId,
+          edgeIdOfOtherFace: b2EdgeId
+        }
+      );
+      addValueToAdjList(
+        b2FaceId,
+        {
+          idOfOtherFace: a1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b2EdgeId,
+          edgeIdOfOtherFace: a1EdgeId
+        }
+      );
+
+      // a2-b1 link up
+      addValueToAdjList(
+        a2FaceId,
+        {
+          idOfOtherFace: b1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a2EdgeId,
+          edgeIdOfOtherFace: b1EdgeId
+        }
+      );
+      addValueToAdjList(
+        b1FaceId,
+        {
+          idOfOtherFace: a2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b1EdgeId,
+          edgeIdOfOtherFace: a2EdgeId
+        }
+      );
+
+    } else {
+      // a1 - b1  / a2 - b2 link up
+      // safety check to catch early error
+      if(!areEdgesTheSame(a1FaceObj, a1EdgeId, b1FaceObj, b1EdgeId)) {
+        throw new Error("other edges don't overlap");
+      }
+      if(!areEdgesTheSame(a2FaceObj, a2EdgeId, b2FaceObj, b2EdgeId)) {
+        throw new Error("other edges don't overlap");
+      }
+
+      // replace old edge with new ones
+      ReplaceExistingConnectionWithNewConnections(
+        {aFaceId: aFaceId, bFaceId: bFaceId},
+        [
+          {face1Id: a1FaceId, face2Id: b1FaceId},
+          {face1Id: a2FaceId, face2Id: b2FaceId}
+        ]
+      );
+
+
+      // a1-b1 link up
+      addValueToAdjList(
+        a1FaceId,
+        {
+          idOfOtherFace: b1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a1EdgeId,
+          edgeIdOfOtherFace: b1EdgeId
+        }
+      );
+      addValueToAdjList(
+        b1FaceId,
+        {
+          idOfOtherFace: a1FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b1EdgeId,
+          edgeIdOfOtherFace: a1EdgeId
+        }
+      );
+
+
+      // a2-b2 link up
+      addValueToAdjList(
+        a2FaceId,
+        {
+          idOfOtherFace: b2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: a2EdgeId,
+          edgeIdOfOtherFace: b2EdgeId
+        }
+      );
+      addValueToAdjList(
+        b2FaceId,
+        {
+          idOfOtherFace: a2FaceId,
+          angleBetweenThem: angle,
+          edgeIdOfMyFace: b2EdgeId,
+          edgeIdOfOtherFace: a2EdgeId
+        }
+      );
+    }
+
+    // mark this completed in set
+    listOfAllEdgesFixed.add(aFaceId + "-" + bFaceId);
+  }
+
+
+  // update disjointset: keep in mind i just need to know what goes together
+  // i can use the lug to find out what things should be stationary by looking
+  // thru the "set"
+  // to do the update disjoint sets,
+  // 1) add a new set that comes from all the split lines
+  // 2) update the trouble edges by removing OG connection A-B and replacing it
+  //    with new connections A1-B1/B2 and vice versa
+  // add new edge: newSetOfEdgesForDS
+  // update all existing edges that have split. come from problem children
+  AddNewEdgeToDisjointSet(newSetOfEdgesForDS);
+
+  // do lug
+  console.log("HERE:____");
+  console.log(stationaryFaceSpecifc);
+  console.log(rotatingFaceSpecific);
+  console.log(mapFromOgIdsToSplitFaces);
+  console.log(180n - angle);
+  console.log(listOfStationaryFacesInLug);
+  console.log("END:____");
+  const offsets: Map<bigint, number>  = faceMutatingFold(stationaryFaceSpecifc, rotatingFaceSpecific, 180n, 180n - angle,
+    edgeIdOfStationaryFace, mapFromOgIdsToSplitFaces, new Set<bigint>(listOfStationaryFacesInLug)
+  );
+
+
+  console.log("ALL MOVING FACES", allMovingFaces);
+  console.log("edges not to cross", newSetOfEdgesForDS);
+  console.log("adj list at this point", getAdjList());
+
+  // update renderer with animation
+  // all set - stationary
+  // todo: include all moving faces from BFS in this list
+  const allFacesThatMoveForAnyReason: bigint[] = Array.from(BFS(allMovingFaces, newSetOfEdgesForDS));
+
+  animateFold(firstDescendentFaceIdThatStationary, edgeIdOfFirstDescendentThatisStationaryThatRotatesOn, Number(angle),
+    ...allFacesThatMoveForAnyReason
+  );
+  animateOffset(offsets);
+
+  console.log("FINAL RESULT OF OFFSETS", offsets);
+
+  // update backend
+  let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);
+  if (result === false) {
+    throw new Error("error with db");
+  }
+
+
+  // debug info
+  console.log("Action:");
+  console.log(getAdjList());
+  print2dGraph();
+  print3dGraph();
+
+  // update step counter
+  incrementStepID();
+}
+
+
+// goal of this method is to get the oppsite record
+/**
+ *
+ * @param pairingToLookFor - hash combo to look for in format "FaceId1-FaceId2"
+ * @param allProblemEdges - the list to look for in this list
+ */
+function getProblemEdgeRecord(pairingToLookFor: string, allProblemEdges: ProblemEdgeInfo[]) {
+  console.log("PE", allProblemEdges);
+  for(const item of Array.from(allProblemEdges)) {
+    const thisHash = item.sideA.faceIdOfMyFaceA + "-" + item.sideB.faceIdOfMyFaceB;
+    if (pairingToLookFor === thisHash) {
+      return item;
+    }
+  }
+
+  throw new Error("could find pairing:" + pairingToLookFor);
+}
+
+const CLOSE_ENOUGH_SO_POINTS_ARE_SAME = 0.02
+
+function areEdgesTheSame(faceObj1: Face2D, edgeIdForFace1: bigint, faceObj2: Face2D, edgeIdForFace2: bigint) {
+  // to get "edge", just get edgeId vertex and edgeID + 1 vertex
+
+  const edge1Point1: Point2D = faceObj1.getPoint(edgeIdForFace1);
+  const edge1Point2: Point2D = faceObj1.getPoint((edgeIdForFace1 + 1n) % faceObj1.N);
+
+  console.log("point 1 a ", edge1Point1);
+  console.log("point 1 b ", edge1Point2);
+
+  const edge2Point1: Point2D = faceObj2.getPoint(edgeIdForFace2);
+  const edge2Point2: Point2D = faceObj2.getPoint((edgeIdForFace2 + 1n) % faceObj2.N);
+
+  console.log("point 2 a ", edge2Point1);
+  console.log("point 2 b ", edge2Point2);
+
+  const case1: boolean = distance(edge1Point1, edge2Point1) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME &&
+                         distance(edge1Point2, edge2Point2) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME;
+
+  const case2: boolean = distance(edge1Point2, edge2Point1) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME &&
+                         distance(edge1Point1, edge2Point2) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME;
+  return case1 || case2
+}
+
+
+/**
  * Creates a new fold operation by merging two faces that are together (180 degrees apart)
+ * updates all possible edges it can
  * @param faceId1 - the id of the first face to be merged
  * @param faceId2 - the id of the other face to be merged
- * @returns - true, or a string message error
+ * @returns - the problem edges to update at very end and new merged face id, or str error
  */
 export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) {
   if (faceId1 == faceId2) {
@@ -173,17 +1342,24 @@ export async function createANewFoldByMerging(faceId1: bigint, faceId2: bigint) 
     return msg;
   }
 
+  // get all edges from DS and put into list, deleting isolated copy
+  const dsEdges: {face1Id: bigint,face2Id: bigint}[] = Array.from(getDisjointSetEdgeAndDelete(faceId1, faceId2));
+  const listOfDsEdges : bigint[] = [];
+
+  dsEdges.forEach(item => {
+    listOfDsEdges.push(item.face1Id);
+    listOfDsEdges.push(item.face2Id);
+  });
+
+
+
   const [mergedFace, leftFacePointIdsToNewIds, rightFacePointIdsToNewIds] = resFrontend;
-  updateAdjListForMergeGraph(mergedFace.ID, faceId1, faceId2, leftFacePointIdsToNewIds,rightFacePointIdsToNewIds);
+  // i get back the update adj list except for problem child
+  const edgesINeedToUdpate: EdgesAdjListMerging[] = updateAdjListForMergeGraph(mergedFace.ID, faceId1, faceId2, listOfDsEdges, leftFacePointIdsToNewIds,rightFacePointIdsToNewIds);
 
-  let result: boolean = await addMergeFoldToDB(faceId1, faceId2, mergedFace);
 
-  // print2dGraph();
-  // print3dGraph();
-  printAdjList();
 
-  incrementStepID();
-  return true;
+  return {mergedFaceId:mergedFace.ID, edgesToUpdate:edgesINeedToUdpate};
 }
 
 
@@ -208,7 +1384,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
 
-  let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
+  let flattedPoint: Point3D | null = face3d.projectToFace(point);
   if (flattedPoint == null) {
     console.error("Point creation isn't on plane");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -226,7 +1402,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
   let getTranslated2dPoint: Point2D | null = translate3dTo2d(flattedPoint, faceId);
-  console.log("getTranslated2dPoint", getTranslated2dPoint);
+
   if (getTranslated2dPoint == null) {
     console.error("Error translating to 2d");
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -234,7 +1410,7 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     return msg;
   }
 
-  let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId)
+  let addPointResult: AnnotationUpdate2D = face2d.addAnnotatedPoint(getTranslated2dPoint, edgeId);
   if (addPointResult.status !== "NORMAL") {
     const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
     const msg = EditorStatus[myStatus].msg;
@@ -257,6 +1433,11 @@ export async function addAnnotationPoint(point: Point3D, faceId: bigint, edgeId:
     const msg = EditorStatus[myStatus].msg;
     return msg;
   }
+
+  console.log("Action:");
+  console.log(getAdjList());
+  print2dGraph();
+  print3dGraph();
 
   incrementStepID();
   return true;
@@ -324,7 +1505,7 @@ export async function deleteAnnotationPoint(pointId: bigint, faceId: bigint) : P
 export async function addAnnotationLine(point1Id: bigint, point2Id: bigint, faceId: bigint) : Promise<string | true>   {
   // add annotation point to face3d [ie in SceneManager]
   if (point1Id == point2Id) {
-    return "Cannot click the same point"; // todo: update will fail
+    return "Cannot click the same point"; // todo: update will fail for user
   }
 
   // get faces
@@ -421,7 +1602,7 @@ function getConvertedPoint2D(point: Point3D, faceId: bigint) : Point2D | null{
     return null;
   }
 
-  let flattedPoint: Point3D | null = projectPointToFace(point, face3d);
+  let flattedPoint: Point3D | null = face3d.projectToFace(point);
   if (flattedPoint == null) {
     return null;
   }
@@ -527,7 +1708,7 @@ function getaddPointFromResultMap(addPointResult: AnnotationUpdate2D) : bigint {
  * @param face3d - the plane to be projected on
  * @returns - a Point3d that is projected on the plane, or null if it doesn't line up
  */
-function projectPointToFace(point: Point3D, face3d: Face3D): Point3D | null {
+function projectPointToFacze(point: Point3D, face3d: Face3D): Point3D | null {
   const points: THREE.Vector3[] = [];
 
   for (let i = 0; i < 3; i++) {
@@ -791,7 +1972,7 @@ export async function processAnnotationStep(result: any) : Promise<string | true
         const msg = EditorStatus[myStatus].msg;
         return msg;
       }
-      const flattedPoint: Point3D | null = projectPointToFace(point3d, face3d);
+      const flattedPoint: Point3D | null = face3d.projectToFace(point3d);
       if (flattedPoint == null) {
         console.error("Point creation isn't on plane");
         const myStatus: EditorStatusType = "FRONTEND_SYSTEM_ERROR";
@@ -852,7 +2033,7 @@ export async function processAnnotationStep(result: any) : Promise<string | true
 
     face2d.updateAnnotations(update2d);
     face3d.updateAnnotations(update3d);
-    
+
   }
 }
 

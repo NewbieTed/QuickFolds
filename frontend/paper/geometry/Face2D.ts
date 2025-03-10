@@ -608,11 +608,10 @@ export class Face2D {
      * @throws Error if the given ID is not a valid edge ID.
      */
     public projectToLine(point: pt.Point2D, lineId: bigint): pt.Point2D {
-
         const getAnnotationLine = this.getAnnotatedLine(lineId);
 
-        const edgeStart: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.startPointID).point;
-        const edgeEnd: pt.Point2D = this.getAnnotatedPoint(getAnnotationLine.endPointID).point;
+        const edgeStart: pt.Point2D = this.getPoint(getAnnotationLine.startPointID);
+        const edgeEnd: pt.Point2D = this.getPoint(getAnnotationLine.endPointID);
         const direction: pt.Point2D = pt.normalize(pt.subtract(
             edgeEnd, edgeStart
         ));
@@ -666,6 +665,82 @@ export class Face2D {
                 this.annotatedLines.set(lineID, line);
             }
         }
+
+    }
+
+
+    /**
+     * given a point on the 2d face, that is on the line of edgeID return boolean as to whether the point
+     * is inside the line segement
+     * @param p - point to test
+     * @param edgeId - edge to test that colinear with p
+     */
+    public isColinearPointInsideEdge(p: pt.Point2D, edgeId: bigint) : boolean {
+        p = this.projectToEdge(p, edgeId);
+
+        const edgeIdNum: number = Number(edgeId);
+        const vecFromPToStartPoint : pt.Point2D = pt.createPoint2D(this.vertices[edgeIdNum].x - p.x,
+                                                                   this.vertices[edgeIdNum].y - p.y,
+        );
+
+
+        const vecFromPToEndPoint : pt.Point2D = pt.createPoint2D(this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].x - p.x,
+            this.vertices[Number(BigInt(edgeIdNum + 1) % this.N)].y - p.y,
+        );
+        // if p are inside the edge, then these vectors should point in oppisite directions
+
+
+        console.log("dir to edgeId", vecFromPToStartPoint);
+        console.log("dir to edgeId + 1", vecFromPToEndPoint);
+
+        return pt.dotProduct(vecFromPToEndPoint, vecFromPToStartPoint) < 0;
+
+    }
+
+
+    public
+
+
+    public findClosestPointOnEdge(p: pt.Point2D, edgeId: bigint) {
+        let minId: bigint = edgeId;
+        let minDistance: number = pt.distance(p, this.vertices[Number(edgeId)]);
+
+        // go thru edge provided (end endpoint)
+        const currDistance = pt.distance(p, this.vertices[Number((edgeId + 1n) % this.N)]);
+        if (currDistance < minDistance) {
+            minDistance = currDistance;
+            minId = BigInt(Number((edgeId + 1n) % this.N));
+        }
+
+        // go thru all annopoints
+        for(let [pointId, pointObj] of this.annotatedPoints) {
+            if (pointObj.edgeID === edgeId) {
+                const currDistance = pt.distance(p, pointObj.point);
+                console.log("closest point to where the cut is is an annotated point");
+                if (currDistance < minDistance) {
+                    minDistance = currDistance;
+                    minId = pointId;
+                }
+            }
+
+        }
+
+        return minId;
+    }
+
+
+    public getAveragePoint() : pt.Point2D {
+            let xValue = 0.0;
+            let yValue = 0.0;
+
+
+            for(let i = 0; i < this.N; i++) {
+                xValue += this.vertices[i].x;
+                yValue += this.vertices[i].y;
+            }
+
+
+            return pt.createPoint2D(xValue/Number(this.N), yValue/Number(this.N));
 
     }
 
