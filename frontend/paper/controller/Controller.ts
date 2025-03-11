@@ -785,6 +785,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
   let faceIdToUpdate: bigint[] = getOverlappingFaces(faceId); // basically, get the connect component from the LUG from faceid
+  faceIdToUpdate.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 
   //faceIdToUpdate sort
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
@@ -2037,23 +2038,65 @@ export async function processAnnotationStep(result: any) : Promise<string | true
   }
 }
 
+
 export async function processFoldStep(result: any) : Promise<string | true> {
   console.log("result", result);
   console.log("we got here!");
 
 
+  const facesJsonList: any[] = result.foldForward.faces;
+  console.log(result);
   // algorithm
   // get all of the added faces id, and sort them
-  // get all of the deleted faces id, and sort them
+  const mappingOfFaceIdToIndexInBackendArray: Map<bigint, number> = new Map<bigint, number>();
+  const allFacesCreated: bigint[] = [];
+  for(let i = 0; i < facesJsonList.length; i++) {
+    allFacesCreated.push(facesJsonList[i].idInOrigami);
+    mappingOfFaceIdToIndexInBackendArray.set(BigInt(facesJsonList[i].idInOrigami), i);
+  }
+  // sort the faces
+  allFacesCreated.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 
+
+
+  // get all of the deleted faces id, and sort them
+  const allFacesDeleted = result.foldForward.deletedFaces;
+  allFacesDeleted.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 
   // now find the edge that connection smallestChild1 to smallestChild2
-  // ^ this should be in the edges area of the first child data DB sends
+  const originalFace: Face2D = getFace2dFromId(BigInt(allFacesDeleted[0]));
+  console.log("id of deleted", originalFace);
+  const smallestFace = facesJsonList[mappingOfFaceIdToIndexInBackendArray.get(BigInt(allFacesCreated[0]))];
+  const smallestFaceRight = facesJsonList[mappingOfFaceIdToIndexInBackendArray.get(BigInt(allFacesCreated[1]))];
 
-  // takes these two points and project them onto smallest deleted face
+  // find points to split edge in og face
+  const pointId1 = findEdgeConnection(smallestFace, smallestFaceRight.idInOrigami);
 
+  const pointId2 = Number(BigInt(pointId1 + 1) % BigInt(smallestFace.vertices.length));
+
+  const point1Json = smallestFace.vertices[pointId1];
+  const point1Obj = createPoint2D(point1Json.x, point1Json.y);
+  const point2Json = smallestFace.vertices[pointId2];
+  const point2Obj = createPoint2D(point2Json.x, point2Json.y);
+
+  const pointId1OnOgFace = originalFace.findClosestPoint(point1Obj);
+  const pointId2OnOgFace = originalFace.findClosestPoint(point2Obj);
+
+  const anchoredFaceId = result.foldForward.anchoredFaceIdInOrigami;
+  // now we need to find the moving face
   // run the editor split method
+  // bak
 
+
+
+  //createMultiFoldBySplitting(pointId1OnOgFace, pointId2OnOgFace, originalFace.ID, )
   return true;
 }
 
+function findEdgeConnection(faceObject: any, faceId2: bigint) {
+  for(const edge of faceObject.edges) {
+    if (edge.otherFaceIdInOrigami == Number(faceId2)) {
+      return edge.idInFace;
+    }
+  }
+}

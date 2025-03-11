@@ -729,6 +729,31 @@ export class Face2D {
     }
 
 
+
+    public findClosestPoint(p: pt.Point2D) {
+        let minId: bigint = -1n;
+        let minDistance: number = Number.POSITIVE_INFINITY;
+        for(let i = 0n; i < this.N; i++) {
+            if (pt.distance(p, this.vertices[Number(i)]) < minDistance) {
+                minDistance = pt.distance(p, this.vertices[Number(i)]);
+                minId = i;
+            }
+        }
+
+        // go thru all annopoints
+        for(let [pointId, pointObj] of this.annotatedPoints) {
+            const currDistance = pt.distance(p, pointObj.point);
+            if (currDistance < minDistance) {
+                minDistance = currDistance;
+                minId = pointId;
+            }
+        }
+
+        return minId;
+    }
+
+
+
     public getAveragePoint() : pt.Point2D {
             let xValue = 0.0;
             let yValue = 0.0;
