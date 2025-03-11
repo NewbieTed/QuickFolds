@@ -215,7 +215,7 @@ export class Face3D {
 
         // Create the mesh.
         const faceMaterial = new THREE.MeshPhysicalMaterial({
-            color: 0xc036e0,
+            color: 0xdeb531,
             side: THREE.DoubleSide,
             roughness: 0.95,
             metalness: 0,
@@ -237,19 +237,16 @@ export class Face3D {
      * @returns A Three JS object mesh which displays the provided point.
      */
     private createPointObject(point: pt.Point3D): THREE.Points {
-        console.log("createPointObject called with point:", point);
+
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
             this.principalNormal, this.paperThickness * this.offset
         );
         const pos: pt.Point3D = pt.add(point, principalOffset);
 
-        console.log("PRINCIPAL NORMAL @ createPointObject", this.principalNormal);
-        console.log("OFFSET @ createPointObject", this.offset);
-
         // Create a glowing point.
         const glowingMaterial = new THREE.PointsMaterial({
-            color: 0x0000ff,
+            color: 0x662217,
             size: 0.1,
             opacity: 1,
             sizeAttenuation: true,
@@ -286,7 +283,7 @@ export class Face3D {
 
         // Create a glowing line.
         const glowingMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00aa22,
+            color: 0xff8c00,
             opacity: 1,
             side: THREE.DoubleSide,
             depthTest: false

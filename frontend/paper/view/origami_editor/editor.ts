@@ -25,6 +25,8 @@ let faces = []; // field to store all face objects
 
 // Create the renderer.
 const renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -64,32 +66,7 @@ function onKeyDown(event: KeyboardEvent) {
     	cameraManager.swapCameraType();
   	} else if (event.key === settings.TOGGLE_FOCAL_PT_KEY) {
 		cameraManager.toggleFocalPointVisible();
-	} else if (event.key === "s") {
-		updateExistingMultiFold(1n, 2n, 1n, -100n);
-
-
-		// // Temporary key to fold the paper in half.
-		// addAnnotationPoint(
-		// 	createPoint3D(-3, 0, 0),
-		// 	0n, //face ID
-		// 	0n // edge 0
-		// );
-		// addAnnotationPoint(
-		// 	createPoint3D(3, 0, 0),
-		// 	0n, // face ID
-		// 	2n  // edge 2
-		// );
-		// createANewFoldBySplitting(
-		// 	4n, // first point ID
-		// 	5n, // second point ID
-		// 	0n, // face ID
-		// 	createPoint3D(-3, 0, -3), // vertex of anchored face
-		// 	90n // angle between the faces.
-		// )
-		// updateAnExistingFold(1n, 2n, 1n, 90n);
-
 	}
-
 }
 
 

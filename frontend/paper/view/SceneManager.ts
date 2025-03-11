@@ -57,12 +57,6 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     idsToFaceObj.clear();
     threeIDtoFaceID.clear();
 
-    // Set up environment for proper lighting.
-    const environment = new RoomEnvironment();
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmremGenerator.fromScene(environment).texture;
-    environment.dispose();
-
     // Create visual axes/grid.
     const grid = new THREE.GridHelper(10, 10);
     const axis = new THREE.AxesHelper(3);
@@ -71,11 +65,22 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     axis.position.set(0, 1, 0);
     scene.add(axis);
 
-
     // Add a point light to be able to see things.
-    const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
-    pointLight.position.set(10, 10, 10);
+    const pointLight = new THREE.PointLight(0xffffff, 5, 0, 0);
+    pointLight.position.set(3, 10, 3);
+    pointLight.castShadow = true;
+    pointLight.shadow.mapSize.width = 8192;
+    pointLight.shadow.mapSize.height = 8192;
+    pointLight.shadow.bias = -0.000025;
     scene.add(pointLight);
+
+    // Ambient Light to provide overall illumination
+    const ambientLight = new THREE.AmbientLight(0x222222, 15);
+    scene.add(ambientLight);
+
+    // Light Helper (Optional)
+    const lightHelper = new THREE.PointLightHelper(pointLight, 0.5);
+    scene.add(lightHelper);
 
     // Create a Face3D to begin manipulating.
     const vertices3D = [
@@ -93,6 +98,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     idsToFaceObj.set(plane.ID, plane.getFaceObject());
     threeIDtoFaceID.set(plane.getFaceObject().id, plane.ID);
     createNewGraph(0n);
+
 }
 
 /**
