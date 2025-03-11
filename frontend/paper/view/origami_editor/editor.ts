@@ -28,6 +28,7 @@ document.body.appendChild(renderer.domElement);
 
 // Create the scene and camera.
 SceneManager.initialize(renderer);
+renderer.shadowMap.enabled = true;
 const cameraManager = new CameraManager(SceneManager.getScene());
 
  // Create the raycaster.

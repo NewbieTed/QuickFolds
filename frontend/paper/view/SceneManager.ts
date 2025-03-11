@@ -56,9 +56,13 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     scene.add(grid);
 
     // Add a point light to be able to see things.
-    const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
+    const pointLight = new THREE.PointLight(0xffffff, 0.01, 0, 2);
     pointLight.position.set(10, 10, 10);
+    pointLight.castShadow = true;
+    pointLight.layers.set(0);
+    const helper = new THREE.PointLightHelper(pointLight);  
     scene.add(pointLight);
+    scene.add(helper);
 
     // Create a Face3D to begin manipulating.
     const vertices3D = [
@@ -69,7 +73,7 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     ]
     const principalNormal = pt.createPoint3D(0, 1, 0);
     // Paper thickness: 0.01
-    const plane = new Face3D(vertices3D, 0.01, 0, principalNormal, 0n);
+    const plane = new Face3D(vertices3D, 0.5, 0, principalNormal, 0n);
     scene.add(plane.getPivot());
 
     idsToFace3D.set(plane.ID, plane);
