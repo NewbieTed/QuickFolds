@@ -588,6 +588,8 @@ function pseudoEquals(p1: Point2D, p2: Point2D) {
 
 
 function getEdgeThatSharesBetweenTheTwoFaces(leftChildObj: Face2D, rightChildObj: Face2D) {
+  console.log(leftChildObj);
+  console.log(rightChildObj);
   for(let i = 0; i < leftChildObj.N; i++) {
     // for every pair in the left child
     const leftPtInLeftChildIndex: bigint = BigInt(i);
@@ -600,9 +602,12 @@ function getEdgeThatSharesBetweenTheTwoFaces(leftChildObj: Face2D, rightChildObj
     // for every pair in the right child
     const leftPtInRightChildIndex: bigint = BigInt(j);
     const leftPtInRightChild = rightChildObj.vertices[Number(leftPtInRightChildIndex)];
-    const rightPtInRightChildIndex: bigint = BigInt(i + 1) % rightChildObj.N;
+    const rightPtInRightChildIndex: bigint = BigInt(j + 1) % rightChildObj.N;
     const rightPtInRightChild = rightChildObj.vertices[Number(rightPtInRightChildIndex)];
 
+    console.log("comparing points: [" + leftPtInLeftChildIndex + ", " + rightPtInLeftChildIndex + "]");
+    console.log("comparing points: [" + leftPtInRightChildIndex + ", " + rightPtInRightChildIndex + "]");
+    console.log("===");
 
       if (pseudoEquals(leftPtInLeftChild, leftPtInRightChild) && pseudoEquals(rightPtInLeftChild, rightPtInRightChild)) {
         // left-left and right-right match

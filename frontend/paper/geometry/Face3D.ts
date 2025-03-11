@@ -94,7 +94,6 @@ export class Face3D {
 
         // Create the initial face object and pivot.
         this.faceObject = this.createFaceObject();
-        this.faceObject.layers.enableAll();
         this.faceObject.layers.set(0);
         this.pivot = new THREE.Object3D();
 
@@ -106,9 +105,9 @@ export class Face3D {
             center.x, center.y, center.z
         ));
         const offsetVector = new THREE.Vector3(
-            this.principalNormal.x * this.offset * this.paperThickness * 0.5,
-            this.principalNormal.y * this.offset * this.paperThickness * 0.5,
-            this.principalNormal.z * this.offset * this.paperThickness * 0.5
+            this.principalNormal.x * this.offset * this.paperThickness,
+            this.principalNormal.y * this.offset * this.paperThickness,
+            this.principalNormal.z * this.offset * this.paperThickness
         );
         this.faceObjectCenter.position.copy(offsetVector.add(this.pivot.position));
         this.pivot.attach(this.faceObjectCenter);
@@ -152,7 +151,7 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, this.paperThickness * this.offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset
         );
         // The centroid of the slab.
         const centroid: pt.Point3D = pt.add(
@@ -218,15 +217,18 @@ export class Face3D {
         const faceMaterial = new THREE.MeshPhysicalMaterial({
             color: 0xc036e0,
             side: THREE.DoubleSide,
-            roughness: 0.8,
+            roughness: 0.95,
             metalness: 0,
-            clearcoat: 0.1,
-            reflectivity: 0.1,
+            clearcoat: 0.01,
+            reflectivity: 0.05,
             opacity: 1,
             flatShading: true
         });
 
-        return new THREE.Mesh(faceGeometry, faceMaterial);
+        const mesh = new THREE.Mesh(faceGeometry, faceMaterial);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
     }
 
     /**
@@ -238,7 +240,7 @@ export class Face3D {
         console.log("createPointObject called with point:", point);
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, this.paperThickness * this.offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset
         );
         const pos: pt.Point3D = pt.add(point, principalOffset);
 
@@ -277,7 +279,7 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, this.paperThickness * this.offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset
         );
         const pos1: pt.Point3D = pt.add(start, principalOffset);
         const pos2: pt.Point3D = pt.add(end, principalOffset);
@@ -306,23 +308,23 @@ export class Face3D {
     public createFaceIDText() {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const fontSize = 175;
-        
+        const fontSize = 100;
+
         canvas.width = 512;
         canvas.height = 256;
-        
+
         ctx.font = `${fontSize}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${this.ID}`, canvas.width / 2, canvas.height / 2);
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
-        
+
         const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
         const sprite = new THREE.Sprite(material);
-    
+
         sprite.scale.set(2, 1, 1); // Adjust scale for better readability
         sprite.renderOrder = 2;  // Ensures it's drawn last (always visible)
 
@@ -401,7 +403,6 @@ export class Face3D {
             if (point !== undefined) {
                 this.annotatedPoints.set(pointID, point);
                 const pointObject = this.createPointObject(point.point);
-                pointObject.layers.enableAll();
                 pointObject.layers.set(1);
                 this.pointObjects.set(pointID, pointObject);
                 this.faceObject.attach(pointObject);
@@ -416,7 +417,6 @@ export class Face3D {
                 const endPoint = this.getPoint(line.endPointID);
                 this.annotatedLines.set(lineID, line);
                 const lineObject = this.createLineObject(startPoint, endPoint);
-                lineObject.layers.enableAll();
                 lineObject.layers.set(1);
                 this.lineObjects.set(lineID, lineObject);
                 this.faceObject.attach(lineObject);
@@ -656,9 +656,9 @@ export class Face3D {
 
         this.offset += deltaOffset;
         const offsetVector = new THREE.Vector3(
-            this.localNormal.x * this.offset * this.paperThickness * 0.5,
-            this.localNormal.y * this.offset * this.paperThickness * 0.5,
-            this.localNormal.z * this.offset * this.paperThickness * 0.5
+            this.localNormal.x * this.offset * this.paperThickness,
+            this.localNormal.y * this.offset * this.paperThickness,
+            this.localNormal.z * this.offset * this.paperThickness
         );
 
         this.faceObjectCenter.position.copy(offsetVector);
@@ -671,9 +671,9 @@ export class Face3D {
 
         this.offset = this.startOffset + deltaOffset;
         const offsetVector = new THREE.Vector3(
-            this.localNormal.x * this.offset * this.paperThickness * 0.5,
-            this.localNormal.y * this.offset * this.paperThickness * 0.5,
-            this.localNormal.z * this.offset * this.paperThickness * 0.5
+            this.localNormal.x * this.offset * this.paperThickness,
+            this.localNormal.y * this.offset * this.paperThickness,
+            this.localNormal.z * this.offset * this.paperThickness
         );
 
         this.faceObjectCenter.position.copy(offsetVector);

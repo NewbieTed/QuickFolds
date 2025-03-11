@@ -144,7 +144,17 @@ function split(
                     );
                 }
 
+                // Update the world offsets: copy from ancestor.
+                worldOffsets.set(descID, worldOffsets.get(faceID));
+                console.log("SET DESC OFFSET: ", worldOffsets);
+
             }
+
+            // Remove old world offset.
+            if (descendants.get(faceID).length !== 1) {
+                worldOffsets.delete(faceID);
+            }
+            console.log("DELETE ANCES OFFSET: ", worldOffsets);
 
         }
 
@@ -486,9 +496,6 @@ function partition(
 
     }
 
-    // Flip the layer order of the mobile component.
-    invert(mobileComponent);
-
     // Return the stationary component and mobile component.
     return [stationaryComponent, mobileComponent];
 }
@@ -634,6 +641,8 @@ function stack(
                     addUplink(botComponent, botFaceID, topFaceID);
                     addDownlink(botComponent, topFaceID, botFaceID);
                 }
+
+                worldOffsets.set(topFaceID, worldOffsets.get(botFaceID) + 1n);
 
             }
 
@@ -810,6 +819,7 @@ export function invert(component: PaperComponent) {
             node.upLinks = down;
             node.downLinks = up;
             node.orientation = !node.orientation;
+            worldOffsets.set(faceID, -worldOffsets.get(faceID));
 
             // Invert the layer mapping using simple math.
             component.layerMap.set(
@@ -832,12 +842,28 @@ function getOrientation(component: PaperComponent, faceID: bigint): boolean {
     return component.layers[Number(layer)].get(faceID).orientation;
 }
 
+// Finds the ID of the face with zero world offset in the given component.
+function getZeroOffsetFace(component: PaperComponent) {
+
+    for (const faceID of component.layerMap.keys()) {
+        if (worldOffsets.get(faceID) === 0n) {
+            return faceID;
+        }
+    }
+
+    // Couldn't find face iD with zero offset. Hopefully this never happens.
+    return -1n;
+}
+
 
 // TODO: Stack and Partition are incomplete / buggy in some cases: they both
 // assume that the components involved are fully compressed, with no possible
 // empty layers of paper in the middle. In the future, stack needs to compress
 // the layers of the one being stacked, and partition needs to decompress those.
-// This would mean stack/partition require connection mappings.
+// This would mean stack/partition require face-to-face connection mappings.
+// Additionally, because this is not completely finished, we are unable to update
+// the world offsets on a partition or merge operation; only split and stack operations
+// are correct at the moment, with respect to updating the offsets.
 
 
 // -------------------------------------------------------------------------------------------------------------
@@ -845,6 +871,7 @@ function getOrientation(component: PaperComponent, faceID: bigint): boolean {
 // Code to initialize the LUG.
 const LUG = new Map<bigint, PaperComponent>();
 const faceToComponent = new Map<bigint, bigint>();
+const worldOffsets = new Map<bigint, bigint>();
 const initialComponent = new PaperComponent(0n);
 const initialFace = new FaceNode(0n, true);
 initialComponent.layerMap.set(0n, 0n);
@@ -852,6 +879,7 @@ initialComponent.layers.push(new Map<bigint, FaceNode>());
 initialComponent.layers[0].set(0n, initialFace);
 LUG.set(0n, initialComponent);
 faceToComponent.set(0n, 0n);
+worldOffsets.set(0n, 0n);
 let nextComponentID = 1n;
 
 
@@ -903,9 +931,10 @@ export function faceMutatingFold(
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
-        const statNumLayers = stationaryComponent.layers.length;
-        const mobNumLayers = mobileComponent.layers.length;
         const statLayerMap = new Map<bigint, bigint>(stationaryComponent.layerMap);
+        const zeroOffsetStat = getZeroOffsetFace(stationaryComponent);
+
+        console.log("WORLD OFFSETS AFTER SPLIT ", worldOffsets);
 
         // 360: The principal normals point away from each other.
         // So make both components have normals pointing opposite to the layering.
@@ -928,18 +957,14 @@ export function faceMutatingFold(
             -180 // in the same direction as the stationary reference normal
         );
 
+        console.log("WORLD OFFSETS AFTER STACK ", worldOffsets);
+
         // Capture how the Face3D offsets should change.
-        const statOffset = 1 * (result.layers.length - statNumLayers);
-        const mobOffset = -1 * (result.layers.length - mobNumLayers);
+        const deltaOffset = worldOffsets.get(zeroOffsetStat);
+        const mobOffset = -1 * Number(deltaOffset);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
-            if (statLayerMap.has(faceID)) {
-                offsets.set(
-                    faceID,
-                    ((getOrientation(result, faceID)) ? 1 : -1)
-                        * statOffset
-                );
-            } else {
+            if (!statLayerMap.has(faceID)) {
                 offsets.set(
                     faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
@@ -966,16 +991,16 @@ export function faceMutatingFold(
         const [stationaryComponent, mobileComponent] = split(
             initialComponent, descendants, stationary
         );
-        const statNumLayers = stationaryComponent.layers.length;
-        const mobNumLayers = mobileComponent.layers.length;
         const statLayerMap = new Map<bigint, bigint>(stationaryComponent.layerMap);
+        const zeroOffsetMob = getZeroOffsetFace(mobileComponent);
+
+        console.log("WORLD OFFSETS AFTER SPLIT ", worldOffsets);
 
         // 0: The principal normals point towards from each other.
         // So make both components have normals the same direction as the layering.
         // Then stack the mobile on top of the stationary.
         const statOrientation = getOrientation(stationaryComponent, refStationary);
         const mobOrientation = getOrientation(mobileComponent, refMobile);
-
 
         if (!statOrientation) {
             invert(stationaryComponent);
@@ -992,18 +1017,14 @@ export function faceMutatingFold(
             180 // in the opposite direction as the stationary reference normal
         );
 
+        console.log("WORLD OFFSETS AFTER STACK ", worldOffsets);
+
         // Capture how the Face3D offsets should change.
-        const statOffset = -1 * (result.layers.length - statNumLayers);
-        const mobOffset = 1 * (result.layers.length - mobNumLayers);
+        const deltaOffset = worldOffsets.get(zeroOffsetMob);
+        const mobOffset = 1 * Number(deltaOffset);
         for (const faceID of result.layerMap.keys()) {
             // Which one did it come from? Check orientation and offset accordingly.
-            if (statLayerMap.has(faceID)) {
-                offsets.set(
-                    faceID,
-                    ((getOrientation(result, faceID)) ? 1 : -1)
-                        * statOffset
-                );
-            } else {
+            if (!statLayerMap.has(faceID)) {
                 offsets.set(
                     faceID,
                     ((getOrientation(result, faceID)) ? 1 : -1)
@@ -1076,14 +1097,3 @@ export function faceAlignFold(
     //TODO
     return null;
 }
-
-/*
- * Complete Split: 180 -> 0 or 360. Component is Split and Stacked.
- * Complete Merge: 0 or 360 -> 180. Components are Partitioned and Merged.
- * Partial Split: 180 -> nonstable. Component is Split.
- * Resolved Merge: nonstable -> 180. Components are Partitioned and Merged.
- * Complete Align: 0 or 360 -> 360 or 0. Components are Partitioned and Stacked.
- * Partial Align: 0 or 360 -> nonstable. Components are Partitioned.
- * Resolved Align: nonstable -> 0 or 360. Components are Partitioned and Stacked.
- * Adjusted Align: nonstable -> nonstable. Nothing happens to the component.
- */
