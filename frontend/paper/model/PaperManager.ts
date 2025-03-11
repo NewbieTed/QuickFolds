@@ -461,6 +461,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
   const problemIssuesEdges: ProblemEdgeInfo[]
   = updateAdjListForSplitGraph(
+    leftFace, rightFace,
     faceId,
     [leftFace.ID, foldEdgeIdLeft, leftFacePointIdFromOG],
     [rightFace.ID, foldEdgeIdRight, rightFacePointIdFromOG],

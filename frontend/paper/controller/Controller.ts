@@ -1055,12 +1055,17 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
                                                                                                         // from looking at B face and seeing problem edge connecting to A
     // feels weird doing this from sideA for B values, but the list is classified as
     // 'A' as the POV in the JSON object
+    if (item == getBrecord) {
+      throw new Error("should be oppisitie");
+    }
 
+    console.log("GET THE B RECORD", getBrecord);
+    console.log("GET THE A RECORD", item)
     const b1FaceId = getBrecord.sideA.faceIdOfMyFaceA1;
     const b1EdgeId = getBrecord.sideA.edgeIdOfMyFaceA1;
     const b1FaceObj = getFace2dFromId(b1FaceId);
 
-    const b2FaceId = getBrecord.sideA.faceIdOfMyFaceA1;
+    const b2FaceId = getBrecord.sideA.faceIdOfMyFaceA2;
     const b2EdgeId = getBrecord.sideA.edgeIdOfMyFaceA2;
     const b2FaceObj = getFace2dFromId(b2FaceId);
 
@@ -1068,8 +1073,14 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       throw new Error("Split faces don't exist");
     }
 
-    console.log
-
+    console.log("here is the list of content");
+    console.log("a face");
+    console.log("[", a1FaceObj.getPoint(a1EdgeId), ",", a1FaceObj.getPoint((a1EdgeId + 1n) % a1FaceObj.N), "]");
+    console.log("[", a2FaceObj.getPoint(a2EdgeId), ",", a2FaceObj.getPoint((a2EdgeId + 1n) % a2FaceObj.N), "]");
+    console.log("b face");
+    console.log("[", b1FaceObj.getPoint(b1EdgeId), ",", b1FaceObj.getPoint((b1EdgeId + 1n) % b1FaceObj.N), "]");
+    console.log("[", b2FaceObj.getPoint(b2EdgeId), ",", b2FaceObj.getPoint((b2EdgeId + 1n) % b2FaceObj.N), "]");
+    console.log("~~~~~~~~~~~~~~~");
 
     // manually check if the points line up
     if(areEdgesTheSame(a1FaceObj, a1EdgeId, b2FaceObj, b2EdgeId)) {
@@ -1185,10 +1196,10 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
       addValueToAdjList(
         b2FaceId,
         {
-          idOfOtherFace: a1FaceId,
+          idOfOtherFace: a2FaceId,
           angleBetweenThem: angle,
           edgeIdOfMyFace: b2EdgeId,
-          edgeIdOfOtherFace: a1EdgeId
+          edgeIdOfOtherFace: a2EdgeId
         }
       );
     }
@@ -1266,8 +1277,7 @@ function getProblemEdgeRecord(pairingToLookFor: string, allProblemEdges: Problem
   console.log("PE", allProblemEdges);
   for(const item of Array.from(allProblemEdges)) {
     const thisHash = item.sideA.faceIdOfMyFaceA + "-" + item.sideB.faceIdOfMyFaceB;
-    const thisHash2 =  item.sideB.faceIdOfMyFaceB + "-" + item.sideA.faceIdOfMyFaceA;
-    if (pairingToLookFor === thisHash || pairingToLookFor === thisHash2) {
+    if (pairingToLookFor === thisHash) {
       return item;
     }
   }
@@ -1279,11 +1289,18 @@ const CLOSE_ENOUGH_SO_POINTS_ARE_SAME = 0.02
 
 function areEdgesTheSame(faceObj1: Face2D, edgeIdForFace1: bigint, faceObj2: Face2D, edgeIdForFace2: bigint) {
   // to get "edge", just get edgeId vertex and edgeID + 1 vertex
+
   const edge1Point1: Point2D = faceObj1.getPoint(edgeIdForFace1);
   const edge1Point2: Point2D = faceObj1.getPoint((edgeIdForFace1 + 1n) % faceObj1.N);
 
+  console.log("point 1 a ", edge1Point1);
+  console.log("point 1 b ", edge1Point2);
+
   const edge2Point1: Point2D = faceObj2.getPoint(edgeIdForFace2);
   const edge2Point2: Point2D = faceObj2.getPoint((edgeIdForFace2 + 1n) % faceObj2.N);
+
+  console.log("point 2 a ", edge2Point1);
+  console.log("point 2 b ", edge2Point2);
 
   const case1: boolean = distance(edge1Point1, edge2Point1) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME &&
                          distance(edge1Point2, edge2Point2) < CLOSE_ENOUGH_SO_POINTS_ARE_SAME;
