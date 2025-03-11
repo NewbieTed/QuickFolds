@@ -57,6 +57,22 @@ async function playNextStep() {
     }
 }
 
+const pauseButton = document.getElementById('pause');
+if (pauseButton !== null) {
+  pauseButton.addEventListener('click', pauseAction)
+}
+async function pauseAction() {
+
+}
+
+const sliderButton = document.getElementById('pause');
+if (sliderButton !== null) {
+  pauseButton.addEventListener('click', pauseAction)
+}
+sliderButton.addEventListener("input", function() {
+  // this.value gives u the playback speed: [0.1 to 1] as a string
+});
+
 function animate() {
 	SceneManager.updateAnimations();
 
