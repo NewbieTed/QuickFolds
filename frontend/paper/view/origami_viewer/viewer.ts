@@ -76,10 +76,9 @@ async function pauseAction() {
 
 const sliderButton = document.getElementById('playbackSpeed');
 if (sliderButton !== null) {
-  sliderButton.addEventListener("input", changePlaybackSpeed);
-}
-async function changePlaybackSpeed() {
-  // this.value gives u the playback speed: [0.1 to 1] as a string
+  sliderButton.addEventListener("input", function() {
+     // this.value gives u the playback speed: [0.1 to 1] as a string
+  });
 }
 
 
