@@ -195,7 +195,10 @@ We need to activate both frontend server and backend server to use the editor/co
 #### Backend - Being able to create the database and set up support for saving creations
 
 
-To Start up backend, we have unique steps for the different OS:
+To Start up backend locally, we have unique steps for the different OS:
+
+__Note: if you want to run the application on the website. Go to "http:quickfolds.org", if online, and follow the same
+log in/sign up steps as as below under how to use this softare. Sign up/in, go to community board, click new or clickon an origami from there.__
 
 #### Windows:
 
@@ -287,7 +290,7 @@ User can create points and lines. Annotation points are a point on the piece of 
 
 + Delete Annotation Line: Click the "delete annotation line" button, the click the 2 nearest point, or vertex, you want to remove the annotation line from.
 
-+ [Not Available] Fold Button: You can either create a new fold, or edit an existing fold. To create a new fold, click the two closest points on seperate edges to cause a line to form. Then click the part of the face that should not move during a rotation, then provide the amount in degrees that should rotate. To edit an existing fold, click the two faces, with the first one that shouldn't move. We currently have a minitest of this working though. If you press 's' on the editor in the first thing, it will split the face, although nothing else beyond that works for splitting.
++ Fold Button: You can create a new foldcl. To do this, you click the two points on the face you want to cut in half, a line will now appear, you then click the point of the face that should stay stationary during the rotation. After this, you then pick an angle, where positive values corresponding to the "upper" part of the face moving closer together, then provide the amount in degrees that should rotate. Keep in mind all paper stacked together in a group will be fold.
 
 ### Known bugs
 
