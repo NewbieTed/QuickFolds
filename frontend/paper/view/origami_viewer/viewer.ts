@@ -41,6 +41,9 @@ if (nextStepButton !== null) {
   });
 }
 
+/**
+ * plays the previous step of an animation
+ */
 async function playPrevStep() {
     console.log("playPrevStep");
     const result : string | true = await displayAnnotations(curStep, curStep - 1n, isForward);
@@ -49,6 +52,9 @@ async function playPrevStep() {
     }
 }
 
+/**
+ * plays the next step in the animation
+ */
 async function playNextStep() {
     console.log("playNextStep");
     const result : string | true = await displayAnnotations(curStep, curStep + 1n, isForward);
@@ -61,18 +67,23 @@ const pauseButton = document.getElementById('pause');
 if (pauseButton !== null) {
   pauseButton.addEventListener('click', pauseAction)
 }
+/**
+ * stops/reactivates the faces when called
+ */
 async function pauseAction() {
 
 }
 
-const sliderButton = document.getElementById('pause');
+const sliderButton = document.getElementById('playbackSpeed');
 if (sliderButton !== null) {
-  pauseButton.addEventListener('click', pauseAction)
+  sliderButton.addEventListener("input", changePlaybackSpeed);
 }
-sliderButton.addEventListener("input", function() {
+async function changePlaybackSpeed() {
   // this.value gives u the playback speed: [0.1 to 1] as a string
-});
+}
 
+
+// animates faces
 function animate() {
 	SceneManager.updateAnimations();
 

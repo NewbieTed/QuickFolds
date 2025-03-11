@@ -744,7 +744,12 @@ function  findPointsOnEdgeOfStackedFace(p1: Point2D,  p2: Point2D, faceIdToUpdat
   throw new Error("you make diff number of collisions that you should have: " + retList.length);
 }
 
-
+/**
+ * intMin returns min of a and b, but as a bigint
+ * @param a - a value
+ * @param b - b value
+ * @returns min(a, b)
+ */
 function intMin(a: bigint, b: bigint) {
   if(a < b) {
     return a;
@@ -752,6 +757,12 @@ function intMin(a: bigint, b: bigint) {
   return b;
 }
 
+/**
+ * intMax returns max of a and b, but as a bigint
+ * @param a - a value
+ * @param b - b value
+ * @returns max(a, b)
+ */
 function intMax(a: bigint, b: bigint) {
   if(a > b) {
     return a;
@@ -759,7 +770,7 @@ function intMax(a: bigint, b: bigint) {
   return b;
 }
 
-// multifold udpate; final boss split method
+
 /**
  * takes 2 pointids, and a faceid for said points, and cuts thru everything in said face
  * and any paper that is stacked on top of it, going thru the cut line
@@ -1273,7 +1284,6 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 }
 
 
-// goal of this method is to get the oppsite record
 /**
  *
  * @param pairingToLookFor - hash combo to look for in format "FaceId1-FaceId2"
@@ -1293,6 +1303,14 @@ function getProblemEdgeRecord(pairingToLookFor: string, allProblemEdges: Problem
 
 const CLOSE_ENOUGH_SO_POINTS_ARE_SAME = 0.02
 
+/**
+ * returns if the face and edges are the same
+ * @param faceObj1 - obj 1
+ * @param edgeIdForFace1 - edge of obj 1
+ * @param faceObj2  - obj 2
+ * @param edgeIdForFace2 - edge of obj 2
+ * @returns - booelan
+ */
 function areEdgesTheSame(faceObj1: Face2D, edgeIdForFace1: bigint, faceObj2: Face2D, edgeIdForFace2: bigint) {
   // to get "edge", just get edgeId vertex and edgeID + 1 vertex
   const edge1Point1: Point2D = faceObj1.getPoint(edgeIdForFace1);
@@ -1889,30 +1907,6 @@ function solve2dSystemForScalars(
   return [alpha, beta];
 }
 
-// /**
-//  This is an old, outdated method
-//  * Returns a boolean as to whether a given line exists
-//  * @param point1Id - the id of point 1 in the line to check
-//  * @param point2Id  - the id of point 2 in the line to check
-//  * @param faceId - the face id this occurs in
-//  * @returns Returns a boolean as to whether a given line exists
-//  */
-// function doesLineAlreadyExist(point1Id : bigint, point2Id : bigint, faceId : bigint) : boolean {
-//   let face3d: Face3D | undefined = getFace3DByID(faceId);
-//   if (face3d === undefined) {
-//     console.error("face 3d id doesn't exists");
-//     return false;
-//   }
-
-//   const lineIdMap : Map<bigint, AnnotatedLine> = face3d.annotatedLines; // fine, add map access
-//   for (let lineObj of lineIdMap.values()) {
-//     if ((lineObj.startPointID == point1Id || lineObj.startPointID == point2Id) &&
-//         (lineObj.endPointID == point1Id || lineObj.endPointID == point2Id)) {
-//       return true;
-//     }
-//   }
-//   return false;
-// }
 
 /**
  * Given a provided point (ie you can provided the layered shot, no need to
@@ -2042,7 +2036,12 @@ export async function processAnnotationStep(result: any) : Promise<string | true
   }
 }
 
-
+/**
+ * deals with doing the viewer for the fold
+ * @param result - the backend code
+ * @param stepId - the new step id of the action
+ * @returns
+ */
 export async function processFoldStep(result: any, stepId: number) : Promise<string | true> {
   const origamiId: number = Number(localStorage.getItem("currentOrigamiIdForViewer"));
 
@@ -2119,6 +2118,12 @@ export async function processFoldStep(result: any, stepId: number) : Promise<str
   // return true;
 }
 
+/**
+ * returns the edge connection of th eface
+ * @param faceObject - the backend data
+ * @param faceId2 - the id of the face
+ * @returns
+ */
 function findEdgeConnection(faceObject: any, faceId2: bigint) {
   for(const edge of faceObject.edges) {
     if (edge.otherFaceIdInOrigami == Number(faceId2)) {

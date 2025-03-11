@@ -698,9 +698,13 @@ export class Face2D {
     }
 
 
-    public
 
-
+    /**
+     * find closed point on edge of the face
+     * @param p
+     * @param edgeId
+     * @returns
+     */
     public findClosestPointOnEdge(p: pt.Point2D, edgeId: bigint) {
         let minId: bigint = edgeId;
         let minDistance: number = pt.distance(p, this.vertices[Number(edgeId)]);
@@ -730,6 +734,11 @@ export class Face2D {
 
 
 
+    /**
+     * find closet point in general
+     * @param p
+     * @returns
+     */
     public findClosestPoint(p: pt.Point2D) {
         let minId: bigint = -1n;
         let minDistance: number = Number.POSITIVE_INFINITY;
@@ -753,7 +762,10 @@ export class Face2D {
     }
 
 
-
+    /**
+     *
+     * @returns get the centroid of the face
+     */
     public getAveragePoint() : pt.Point2D {
             let xValue = 0.0;
             let yValue = 0.0;

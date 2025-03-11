@@ -581,12 +581,22 @@ export function updateAdjListForSplitGraph(
   return problemEdgesToReturnTo;
 }
 
-
+/**
+ * return if the two points are close together (at the same point in space)
+ * @param p1
+ * @param p2
+ * @returns
+ */
 function pseudoEquals(p1: Point2D, p2: Point2D) {
   return distance(p1, p2) < 0.01;
 }
 
-
+/**
+ * returns the edge ids if the two faces share an edge
+ * @param leftChildObj
+ * @param rightChildObj
+ * @returns
+ */
 function getEdgeThatSharesBetweenTheTwoFaces(leftChildObj: Face2D, rightChildObj: Face2D) {
   console.log(leftChildObj);
   console.log(rightChildObj);
@@ -686,6 +696,16 @@ function mergeTheTwoEdgesTogether(face1: Face2D, [edge1V1, edge1V2]: [bigint, bi
   throw new Error("no matching")
 }
 
+/**
+ * finds the connection between an original face, and the edges childs
+ * @param ogFaceObj
+ * @param leftChildObj
+ * @param rightChildObj
+ * @param edgeIdThatsTroubleInOg - the edges of the original face that are split
+ * @param problemEdgesToReturnTo - the edges of the child object that are connected
+ * @param currentItem - the current list to list the current edges
+ * @returns
+ */
 function manuallyFindTheConnectionBetweenTheSplitFace(ogFaceObj: Face2D, leftChildObj: Face2D, rightChildObj: Face2D, edgeIdThatsTroubleInOg:bigint, problemEdgesToReturnTo: ProblemEdgeInfo[], currentItem: EdgesAdjList) {
 
   const faceEdgePoint1 = ogFaceObj.getPoint(edgeIdThatsTroubleInOg);
@@ -1174,7 +1194,12 @@ export function printAdjList() {
 }
 
 
-
+/**
+ * returns the connection between the two faces
+ * @param faceId1
+ * @param faceId2
+ * @returns
+ */
 export function findValueBasedOnIds(faceId1: bigint, faceId2: bigint) {
   const valueList = adjList.get(faceId1);
   if (valueList === undefined) {
