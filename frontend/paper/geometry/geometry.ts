@@ -1,5 +1,5 @@
 /**
- * @fileoverview Implementation of useful geometric operations, 
+ * @fileoverview Implementation of useful geometric operations,
  * such as solving linear systems or change of basis.
  */
 
@@ -45,7 +45,7 @@ export type PlaneBasis2D = {
  * @param face The Face3D to get a basis for.
  * @returns The plane basis whose:
  *            - origin is the given face's pivot (centroid),
- *            - normal is the principal normal, 
+ *            - normal is the principal normal,
  *            - first axis is from the pivot to vertex 0 of the face,
  *            - second axis is orthogonal to the first and the normal
  *              via the Right Hand Rule.
@@ -89,7 +89,7 @@ export function getPlaneBasis(face: Face3D): PlaneBasis3D {
  * @param face The Face3D to get a basis for.
  * @returns The plane basis whose:
  *            - origin is the given face's pivot (centroid),
- *            - normal is the principal normal, 
+ *            - normal is the principal normal,
  *            - first axis is from the pivot to vertex 0 of the face,
  *            - second axis is orthogonal to the first and the normal
  *              via the Right Hand Rule.
@@ -151,7 +151,7 @@ export function basisToWorld(basis: PlaneBasis3D, coord: pt.Point3D): pt.Point3D
  * @returns The list of projected points, in 2D coordinates on the plane.
  */
 export function projectToPlane(
-            basis: PlaneBasis3D, 
+            basis: PlaneBasis3D,
             ...points: pt.Point3D[]
             ): pt.Point2D[] {
 
@@ -165,20 +165,48 @@ export function projectToPlane(
             pt.dotProduct(basis.axis2, pt.subtract(point, basis.origin))
         ));
     }
-    
+
+    return result;
+}
+
+/**
+ * Given the orthonormal basis for a plane, projects a list of
+ * 2D points onto that plane and gives each of their coordinates
+ * with respect to this new basis.
+ * @param basis The othonormal basis of the plane to project onto.
+ * @param points The list of points to project.
+ * @returns The list of projected points, in 3D coordinates on the plane.
+ */
+export function projectToPlane2D(
+    basis: PlaneBasis2D,
+    ...points: pt.Point2D[]
+    ): pt.Point3D[] {
+
+    // Use the fact that the basis is orthonormal.
+    // The change of basis is very simple, because the
+    // inverse of an orthogonal matrix is its transpose.
+    const result: pt.Point3D[] = [];
+    for (const point of points) {
+        result.push(pt.createPoint3D(
+            pt.dotProduct(basis.axis1, pt.subtract(point, basis.origin)),
+            0,
+            pt.dotProduct(basis.axis2, pt.subtract(point, basis.origin))
+        ));
+    }
+
     return result;
 }
 
 
 /**
  * Projects two sets of points onto a line through the origin with given
- * direction, and then checks whether the bounding intervals of each set 
+ * direction, and then checks whether the bounding intervals of each set
  * on that line overlap. Intuitively, consider a wall with the given
  * direction through the origin, and shine a light perpendicular to that
  * wall. Consider the convex hulls of the two given sets of points. These
  * will cast shadows onto the wall; the question is whether their shadows
  * are overlapping or not.
- * 
+ *
  * @param setA The first set of points.
  * @param setB The second set of points.
  * @param line The direction vector of the line to project onto.
@@ -187,11 +215,11 @@ export function projectToPlane(
  * @throws Error if one of the given sets is empty.
  */
 export function computeShadowOverlap(
-            setA: pt.Point2D[], 
-            setB: pt.Point2D[], 
+            setA: pt.Point2D[],
+            setB: pt.Point2D[],
             line: pt.Point2D
             ): boolean {
-    
+
     if (setA.length === 0 || setB.length === 0) {
         throw new Error("Cannot compute shadow overlap with no points!");
     }
@@ -215,7 +243,7 @@ export function computeShadowOverlap(
         const coord = pt.dotProduct(point, direction);
         minB = Math.min(minB, coord);
         maxB = Math.max(maxB, coord);
-    }    
+    }
 
     // There are two scenarios in which the shadows overlap:
     // minA < maxB < maxA   (Set B's right end is bounded by set A)
@@ -235,7 +263,7 @@ export function computeShadowOverlap(
  * faces intersect, and false otherwise.
  */
 export function computeFaceIntersection(
-            faceA: Face3D, 
+            faceA: Face3D,
             faceB: Face3D
         ): boolean {
 
@@ -301,7 +329,7 @@ export function computeFaceIntersection(
 
 /**
  * Finds the axis for the crease line specified by the ID of the anchored
- * face during some fold and the ID of the edge in the anchored face which 
+ * face during some fold and the ID of the edge in the anchored face which
  * is being folded.
  * @param anchoredFaceID The ID of the face that doesn't move.
  * @param foldEdgeID The ID of the edge in the anchored face being folded.
@@ -442,7 +470,7 @@ export function getPlaneBasisFromVertices(
  * ___
  */
 export function faceIntersectionByVertices(
-            setA: pt.Point2D[], 
+            setA: pt.Point2D[],
             setB: pt.Point2D[]
             ): boolean {
 

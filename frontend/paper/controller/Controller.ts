@@ -19,6 +19,7 @@ import { EditorStatus, EditorStatusType } from '../view/EditorMessage.js';
 import { graphCreateNewFoldSplit, mergeFaces, ProblemEdgeInfo, ProblemEdgeInfoMerge } from '../model/PaperManager.js';
 import { faceMutatingFold, getOverlappingFaces } from '../model/PaperStack.js';
 import { off } from 'process';
+import { basisToWorld, basisToWorld2D, getPlaneBasis, getPlaneBasis2D, PlaneBasis2D, PlaneBasis3D, projectToPlane, projectToPlane2D } from '../geometry/geometry.js';
 
 
 const USE_EXISTING_POINT_IN_GREEN_LINE = 0.5;
@@ -769,7 +770,10 @@ function intMax(a: bigint, b: bigint) {
  * @param angle - the new angle of the faces
  * @returns
  */
-export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint) {
+export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint, isViewer=false) {
+  localStorage.setItem(SceneManager.getOrigamiID() + " " + SceneManager.getStepID(), JSON.stringify([Number(point1Id), Number(point2Id), Number(faceId), vertexOfFaceStationary, Number(angle)]));
+
+
   const smallestPointId = intMin(point1Id, point2Id);
   const largestPointId = intMax(point1Id, point2Id);
   point1Id = smallestPointId;
@@ -785,7 +789,7 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
   const p2: Point3D = startFaceObj.getPoint(point2Id);
 
   let faceIdToUpdate: bigint[] = getOverlappingFaces(faceId); // basically, get the connect component from the LUG from faceid
-  faceIdToUpdate.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+  // faceIdToUpdate.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 
   //faceIdToUpdate sort
   const allProblemEdges: ProblemEdgeInfo[] = []; // pairs i need to add to adj list
@@ -1248,11 +1252,14 @@ export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: big
 
   console.log("FINAL RESULT OF OFFSETS", offsets);
 
-  // update backend
-  let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);
-  if (result === false) {
-    throw new Error("error with db");
+  if(!isViewer) {
+    // update backend
+    let result: boolean = await addSplitFacesToDB(allCreatedFaces, allDeletedFaces, firstDescendentFaceIdThatStationary);
+    if (result === false) {
+      throw new Error("error with db");
+    }
   }
+
 
 
   // debug info
@@ -1780,60 +1787,69 @@ export function translate2dTo3d(point: Point2D, faceId: bigint) : Point3D | null
  * @returns - the translated 2d point, or null if there is an error
  */
 export function processTranslate2dTo3d(point: Point2D, face3d : Face3D, face2d: Face2D) : Point3D | null {
-  let points : Point2D[] = [];
-  for (let i = 0; i < 3; i++) {
-    points.push(face2d.vertices[i]);
-  }
+  // bak
+   const othroBasis = getPlaneBasis2D(face2d);
+    const translatedPoint3d: Point3D[] = projectToPlane2D(othroBasis, point);
 
-  const basis1 : Point2D = createPoint2D(
-    points[1].x - points[0].x,
-    points[1].y - points[0].y,
-  );
+    const getPlaneBasisFor3d: PlaneBasis3D = getPlaneBasis(face3d);
+    const translatedPoint: Point3D = basisToWorld(getPlaneBasisFor3d, translatedPoint3d[0]);
 
+    return translatedPoint;
 
-  const basis2 : Point2D = createPoint2D(
-    points[2].x - points[0].x,
-    points[2].y - points[0].y,
-  );
+  // let points : Point2D[] = [];
+  // for (let i = 0; i < 3; i++) {
+  //   points.push(face2d.vertices[i]);
+  // }
 
-  let basisResult = solve2dSystemForScalars(
-    [basis1.x, basis1.y],
-    [basis2.x, basis2.y],
-    [point.x, point.y]
-  );
+  // const basis1 : Point2D = createPoint2D(
+  //   points[1].x - points[0].x,
+  //   points[1].y - points[0].y,
+  // );
 
 
-  if (basisResult == null) {
-    console.log("NO SOLUTION");
-    return null;
-  }
+  // const basis2 : Point2D = createPoint2D(
+  //   points[2].x - points[0].x,
+  //   points[2].y - points[0].y,
+  // );
+
+  // let basisResult = solve2dSystemForScalars(
+  //   [basis1.x, basis1.y],
+  //   [basis2.x, basis2.y],
+  //   [point.x, point.y]
+  // );
 
 
-  // because our problem is isometric, use the same coordinates for our
-  // new basis vectors rotated on the 2d plane
-  const point0in3D : Point3D = face3d.vertices[0];
-  const point1in3D : Point3D = face3d.vertices[1];
-  const point2in3D : Point3D = face3d.vertices[2];
+  // if (basisResult == null) {
+  //   console.log("NO SOLUTION");
+  //   return null;
+  // }
 
-  const basis1in3d : Point3D = createPoint3D(
-    point1in3D.x - point0in3D.x,
-    point1in3D.y - point0in3D.y,
-    point1in3D.z - point0in3D.z
-  );
 
-  const basis2in3d : Point3D = createPoint3D(
-    point2in3D.x - point0in3D.x,
-    point2in3D.y - point0in3D.y,
-    point2in3D.z - point0in3D.z
-  );
+  // // because our problem is isometric, use the same coordinates for our
+  // // new basis vectors rotated on the 2d plane
+  // const point0in3D : Point3D = face3d.vertices[0];
+  // const point1in3D : Point3D = face3d.vertices[1];
+  // const point2in3D : Point3D = face3d.vertices[2];
 
-  const coverted3dPoint = createPoint3D(
-    basis1in3d.x * basisResult[0] +  basis2in3d.x * basisResult[1],
-    basis1in3d.y * basisResult[0] +  basis2in3d.y * basisResult[1],
-    basis1in3d.z * basisResult[0] +  basis2in3d.z * basisResult[1]
-  );
+  // const basis1in3d : Point3D = createPoint3D(
+  //   point1in3D.x - point0in3D.x,
+  //   point1in3D.y - point0in3D.y,
+  //   point1in3D.z - point0in3D.z
+  // );
 
-  return coverted3dPoint;
+  // const basis2in3d : Point3D = createPoint3D(
+  //   point2in3D.x - point0in3D.x,
+  //   point2in3D.y - point0in3D.y,
+  //   point2in3D.z - point0in3D.z
+  // );
+
+  // const coverted3dPoint = createPoint3D(
+  //   basis1in3d.x * basisResult[0] +  basis2in3d.x * basisResult[1],
+  //   basis1in3d.y * basisResult[0] +  basis2in3d.y * basisResult[1],
+  //   basis1in3d.z * basisResult[0] +  basis2in3d.z * basisResult[1]
+  // );
+
+  // return coverted3dPoint;
 }
 
 
@@ -2027,58 +2043,80 @@ export async function processAnnotationStep(result: any) : Promise<string | true
 }
 
 
-export async function processFoldStep(result: any) : Promise<string | true> {
-  console.log("result", result);
-  console.log("we got here!");
+export async function processFoldStep(result: any, stepId: number) : Promise<string | true> {
+  const origamiId: number = Number(localStorage.getItem("currentOrigamiIdForViewer"));
 
-
-  const facesJsonList: any[] = result.foldForward.faces;
   console.log(result);
-  // algorithm
-  // get all of the added faces id, and sort them
-  const mappingOfFaceIdToIndexInBackendArray: Map<bigint, number> = new Map<bigint, number>();
-  const allFacesCreated: bigint[] = [];
-  for(let i = 0; i < facesJsonList.length; i++) {
-    allFacesCreated.push(facesJsonList[i].idInOrigami);
-    mappingOfFaceIdToIndexInBackendArray.set(BigInt(facesJsonList[i].idInOrigami), i);
-  }
-  // sort the faces
-  allFacesCreated.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+  const parameter = localStorage.getItem(origamiId + " " + stepId);
 
+  const parameterJson = JSON.parse(parameter);
+  // localStorage.setItem(SceneManager.getOrigamiID() + " " + SceneManager.getStepID(), JSON.stringify([point1Id, point2Id, faceId, vertexOfFaceStationary, angle]));
 
+  //  bak
+  const pointId1: bigint = BigInt(parameterJson[0]);
+  const pointId2: bigint = BigInt(parameterJson[1]);
 
-  // get all of the deleted faces id, and sort them
-  const allFacesDeleted = result.foldForward.deletedFaces;
-  allFacesDeleted.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+  const faceId: bigint = BigInt(parameterJson[2]);
 
-  // now find the edge that connection smallestChild1 to smallestChild2
-  const originalFace: Face2D = getFace2dFromId(BigInt(allFacesDeleted[0]));
-  console.log("id of deleted", originalFace);
-  const smallestFace = facesJsonList[mappingOfFaceIdToIndexInBackendArray.get(BigInt(allFacesCreated[0]))];
-  const smallestFaceRight = facesJsonList[mappingOfFaceIdToIndexInBackendArray.get(BigInt(allFacesCreated[1]))];
+  const vertexOfFaceStationary: any = parameterJson[3];
+  const angle: bigint = BigInt(parameterJson[4]);
 
-  // find points to split edge in og face
-  const pointId1 = findEdgeConnection(smallestFace, smallestFaceRight.idInOrigami);
+  createMultiFoldBySplitting(pointId1, pointId2, faceId, vertexOfFaceStationary, angle, true);
 
-  const pointId2 = Number(BigInt(pointId1 + 1) % BigInt(smallestFace.vertices.length));
-
-  const point1Json = smallestFace.vertices[pointId1];
-  const point1Obj = createPoint2D(point1Json.x, point1Json.y);
-  const point2Json = smallestFace.vertices[pointId2];
-  const point2Obj = createPoint2D(point2Json.x, point2Json.y);
-
-  const pointId1OnOgFace = originalFace.findClosestPoint(point1Obj);
-  const pointId2OnOgFace = originalFace.findClosestPoint(point2Obj);
-
-  const anchoredFaceId = result.foldForward.anchoredFaceIdInOrigami;
-  // now we need to find the moving face
-  // run the editor split method
-  // bak
-
-
-
-  //createMultiFoldBySplitting(pointId1OnOgFace, pointId2OnOgFace, originalFace.ID, )
   return true;
+
+
+  // console.log("result", result);
+  // console.log("we got here!");
+
+
+  // const facesJsonList: any[] = result.foldForward.faces;
+  // console.log(result);
+  // // algorithm
+  // // get all of the added faces id, and sort them
+  // const mappingOfFaceIdToIndexInBackendArray: Map<bigint, number> = new Map<bigint, number>();
+  // const allFacesCreated: bigint[] = [];
+  // for(let i = 0; i < facesJsonList.length; i++) {
+  //   allFacesCreated.push(facesJsonList[i].idInOrigami);
+  //   mappingOfFaceIdToIndexInBackendArray.set(BigInt(facesJsonList[i].idInOrigami), i);
+  // }
+  // // sort the faces
+  // allFacesCreated.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+
+
+
+  // // get all of the deleted faces id, and sort them
+  // const allFacesDeleted = result.foldForward.deletedFaces;
+  // allFacesDeleted.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+
+  // // now find the edge that connection smallestChild1 to smallestChild2
+  // const originalFace: Face2D = getFace2dFromId(BigInt(allFacesDeleted[0]));
+  // console.log("id of deleted", originalFace);
+  // const smallestFace = facesJsonList[mappingOfFaceIdToIndexInBackendArray.get(BigInt(allFacesCreated[0]))];
+  // const smallestFaceRight = facesJsonList[mappingOfFaceIdToIndexInBackendArray.get(BigInt(allFacesCreated[1]))];
+
+  // // find points to split edge in og face
+  // const pointId1 = findEdgeConnection(smallestFace, smallestFaceRight.idInOrigami);
+
+  // const pointId2 = Number(BigInt(pointId1 + 1) % BigInt(smallestFace.vertices.length));
+
+  // const point1Json = smallestFace.vertices[pointId1];
+  // const point1Obj = createPoint2D(point1Json.x, point1Json.y);
+  // const point2Json = smallestFace.vertices[pointId2];
+  // const point2Obj = createPoint2D(point2Json.x, point2Json.y);
+
+  // const pointId1OnOgFace = originalFace.findClosestPoint(point1Obj);
+  // const pointId2OnOgFace = originalFace.findClosestPoint(point2Obj);
+
+  // const anchoredFaceId = result.foldForward.anchoredFaceIdInOrigami;
+  // // now we need to find the moving face
+  // // run the editor split method
+  // // bak
+
+
+
+  // //createMultiFoldBySplitting(pointId1OnOgFace, pointId2OnOgFace, originalFace.ID, )
+  // return true;
 }
 
 function findEdgeConnection(faceObject: any, faceId2: bigint) {

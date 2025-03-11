@@ -65,7 +65,12 @@ export function initialize(renderer: THREE.WebGLRenderer) {
 
     // Create visual axes/grid.
     const grid = new THREE.GridHelper(10, 10);
+    const axis = new THREE.AxesHelper(3);
     scene.add(grid);
+
+    axis.position.set(0, 1, 0);
+    scene.add(axis);
+
 
     // Add a point light to be able to see things.
     const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);

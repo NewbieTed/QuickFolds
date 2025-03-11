@@ -284,7 +284,7 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
         processAnnotationStep(result.data);
       }
     } else if (result.data.stepType === "fold") {
-      processFoldStep(result.data);
+      processFoldStep(result.data, Number(endStep));
     }
 
     return Promise.resolve(true);
