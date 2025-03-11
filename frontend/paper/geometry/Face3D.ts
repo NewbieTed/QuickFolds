@@ -310,22 +310,22 @@ export class Face3D {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const fontSize = 100;
-        
+
         canvas.width = 512;
         canvas.height = 256;
-        
+
         ctx.font = `${fontSize}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${this.ID}`, canvas.width / 2, canvas.height / 2);
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
-        
+
         const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
         const sprite = new THREE.Sprite(material);
-    
+
         sprite.scale.set(2, 1, 1); // Adjust scale for better readability
         sprite.renderOrder = 2;  // Ensures it's drawn last (always visible)
 
