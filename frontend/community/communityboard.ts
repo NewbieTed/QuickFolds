@@ -187,10 +187,10 @@ function createProfile(profile: OrigamiProfile): HTMLElement {
  */
 function openOrigamiViewer(origamiId: number) {
   console.log(`Opening origami viewer for origami ID: ${origamiId}`);
-  
+
   // Store the origami ID in localStorage for the viewer to access
   localStorage.setItem("currentOrigamiIdForViewer", origamiId.toString());
-  
+
   // Redirect to the viewer page
   redirectTo("http://localhost:5173/frontend/paper/view/origami_viewer/viewer.html");
 }
@@ -250,7 +250,7 @@ if (searchInput) {
 
     // Filter the global list of origami profiles by author
     const filteredProfiles = origamiProfiles.filter(profile =>
-        profile.author.toLowerCase().includes(query)
+        profile.origamiName.toLowerCase().includes(query)
     );
 
     // Re-render the cards based on the filtered list
