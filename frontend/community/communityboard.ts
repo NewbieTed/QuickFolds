@@ -67,8 +67,6 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
       return;
     }
     const result = await response.json();
-    console.log(result);
-    console.log("Data fetched successfully:", result.data.origamiId);
 
     // store id of origami to edit in editor
     localStorage.setItem("currentOrigamiIdForEditor", result.data.origamiId);
@@ -107,7 +105,6 @@ const getAllPublicOrigami = async () => {
       return;
     }
     const result = await response.json();
-    console.log(result);
 
     // Store the list in the global variable
     origamiProfiles = result.data.origamis;
@@ -187,10 +184,10 @@ function createProfile(profile: OrigamiProfile): HTMLElement {
  */
 function openOrigamiViewer(origamiId: number) {
   console.log(`Opening origami viewer for origami ID: ${origamiId}`);
-  
+
   // Store the origami ID in localStorage for the viewer to access
   localStorage.setItem("currentOrigamiIdForViewer", origamiId.toString());
-  
+
   // Redirect to the viewer page
   redirectTo("http://localhost:5173/frontend/paper/view/origami_viewer/viewer.html");
 }
@@ -250,7 +247,7 @@ if (searchInput) {
 
     // Filter the global list of origami profiles by author
     const filteredProfiles = origamiProfiles.filter(profile =>
-        profile.author.toLowerCase().includes(query)
+        profile.origamiName.toLowerCase().includes(query)
     );
 
     // Re-render the cards based on the filtered list
