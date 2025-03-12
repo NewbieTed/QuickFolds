@@ -5,6 +5,7 @@
 import * as pt from "../../geometry/Point.js";
 import {Face3D} from "../../geometry/Face3D.js";
 import {Animation} from "./Animation.js";
+import { playbackSpeed } from "../origami_viewer/viewer.js";
 
 
 export class FoldAnimation implements Animation {
@@ -29,7 +30,7 @@ export class FoldAnimation implements Animation {
         this.deltaAngle = deltaAngle * Math.PI / 180; // convert to radians
         this.faces = faces;
         this.time = 0;
-        this.totalTime = 5; // (In roughly seconds)
+        this.totalTime = 5 / playbackSpeed; // (In roughly seconds)
         this.steepness = 15; // A measure of how fast the speed
         // of the paper is near the middle of the animation.
 

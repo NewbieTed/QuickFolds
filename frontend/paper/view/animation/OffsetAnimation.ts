@@ -2,6 +2,7 @@
  * @fileoverview The animation that folds the paper. Essentially a rotation.
  */
 
+import { playbackSpeed } from "../origami_viewer/viewer.js";
 import * as SceneManager from "../SceneManager.js";
 import {Animation} from "./Animation.js";
 
@@ -16,7 +17,7 @@ export class OffsetAnimation implements Animation {
 
         this.offsets = offsets;
         this.time = 0;
-        this.totalTime = 5; // (In roughly seconds)
+        this.totalTime = 5 / playbackSpeed; // (In roughly seconds)
 
         for (const faceID of this.offsets.keys()) {
             // Get the change in offset for one step, and

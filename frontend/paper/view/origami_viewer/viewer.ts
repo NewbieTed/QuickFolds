@@ -5,6 +5,8 @@ import { displayAnnotations } from '../../controller/Controller.js';
 
 let curStep = 0n;
 let isForward = true;
+let isPaused = false;
+export let playbackSpeed = 1;
 
 
 
@@ -71,7 +73,7 @@ if (pauseButton !== null) {
  * stops/reactivates the faces when called
  */
 async function pauseAction() {
-
+  isPaused = !isPaused;
 }
 
 const sliderButton = document.getElementById('playbackSpeed');
@@ -84,7 +86,10 @@ if (sliderButton !== null) {
 
 // animates faces
 function animate() {
-	SceneManager.updateAnimations();
+
+  if (!isPaused) {
+    SceneManager.updateAnimations();
+  }
 
   renderer.render(
     SceneManager.getScene(),
