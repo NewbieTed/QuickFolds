@@ -2,6 +2,10 @@
 
 Welcome to **QuickFolds**, an innovative web application designed for origami enthusiasts! QuickFolds allows creators to animate their origami folding sequences effortlessly—no need for complex 3D software like Blender or Maya. Share your designs with the community using a sleek, step-by-step animated visualizer.
 
+
+Our current final version can be found under the `final` tag in the GitHub repository.
+
+
 ---
 
 ## 📖 Project Overview
