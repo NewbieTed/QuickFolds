@@ -7,12 +7,46 @@
  * the abstract mathematical sense, not considering any 3D rendering.
  */
 
-import { translate2dTo3d } from "../controller/Controller";
-import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D";
-import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D";
-import { add, AnnotatedLine, AnnotatedPoint2D, AnnotatedPoint3D, createPoint2D, distance, dotProduct, Point, Point2D, Point3D, scalarMult } from "../geometry/Point";
-import { addFace, deleteFace, getFace3DByID } from "../view/SceneManager";
-import { add2dFaceToPaperGraph, createNewGraph, delete2dFaceToPaperGraph, EdgesAdjList, getAdjList, getFace2dFromId, print2dGraph, updateAdjListForSplitGraph } from "./PaperGraph";
+import { translate2dTo3d } from "../controller/Controller.js";
+import { AnnotationUpdate2D, Face2D } from "../geometry/Face2D.js";
+import { AnnotationUpdate3D, Face3D } from "../geometry/Face3D.js";
+import { add, AnnotatedLine, AnnotatedPoint2D, AnnotatedPoint3D, createPoint2D, distance, dotProduct, Point, Point2D, Point3D, scalarMult } from "../geometry/Point.js";
+import { addFace, deleteFace, getFace3DByID } from "../view/SceneManager.js";
+import { add2dFaceToPaperGraph, createNewGraph, delete2dFaceToPaperGraph, EdgesAdjList, getAdjList, getFace2dFromId, print2dGraph, updateAdjListForSplitGraph } from "./PaperGraph.js";
+
+
+// contains information about edge that are created that split down the middle
+// of a face, giving the info needed to update
+export type ProblemEdgeInfo = {
+  sideA: {
+    faceIdOfMyFaceA: bigint;
+    edgeIdOfMyFaceA: bigint;
+    faceIdOfMyFaceA1: bigint;
+    edgeIdOfMyFaceA1: bigint;
+    faceIdOfMyFaceA2: bigint;
+    edgeIdOfMyFaceA2: bigint;
+  }
+  sideB: {
+    faceIdOfMyFaceB: bigint;
+    edgeIdOfMyFaceB: bigint;
+  }
+
+};
+
+
+// contains information about edge that are created that split down the middle
+// of a face, giving the info needed to update during merge
+export type ProblemEdgeInfoMerge = {
+  sideA: {
+    faceIdOfMyFaceA: bigint;
+    edgeIdOfMyFaceA: bigint;
+
+  }
+  sideB: bigint
+
+};
+
+
 
 
 const HOW_CLOSE_DO_EDGES_NEED_BE_DIRECTION_WISE_TO_MERGE = -0.97;
@@ -36,6 +70,10 @@ export function graphAddAnnotationPoint(
   face2D.addAnnotatedPoint(point2d);
   return true;
 }
+
+
+// todo: udpate merge and split step so that they don't
+// update db/add points if not wanted
 
 
 /**
@@ -64,7 +102,7 @@ export function mergeFaces(faceId1: bigint, faceId2: bigint):
   // create the annotation content for the face 2d
   // now we add the annotation points for the left face
   const listOfAnnoPointsForOgFace1: Map<bigint, AnnotatedPoint2D> = face1Obj2d.getAnnotatedPointMap();
-  // todo merge same points
+
   for (const [annoPointId, annoPointObj] of listOfAnnoPointsForOgFace1) {
     let updateEdgeId: bigint | undefined = leftFacePointIdsToNewIds.get(annoPointObj.edgeID);
     if (updateEdgeId === undefined) {
@@ -261,7 +299,7 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
   const vertexBeforeFace2StartOfFoldEdge = face2Obj2d.getPoint((face2Obj2d.N - 1n + face2EdgeMerge) % face2Obj2d.N);
   const vertexForFace1AfterStartEdgePoint = face1Obj2d.getPoint((face1EdgeMerge + 2n) % face1Obj2d.N);
 
-
+  // todo: check to make sure this is perpindicular
   const startEdgebasis1 = createPoint2D(
     vertexBeforeFace2StartOfFoldEdge.x - startEdgePoint.x,
     vertexBeforeFace2StartOfFoldEdge.y - startEdgePoint.y,
@@ -347,9 +385,10 @@ function createMergedFaceSkeleton(face1ObjId: bigint, face2ObjId: bigint) :
  * @param faceId - the id of the face this happens at
  * @param angle - the angle between the faces
  * @param pointThatShouldKeepFaceStationary - a point on the side of the face that shouldn't move
- * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary]
+ * @returns [the newleftFace, the new rightFace, id of which Face Is Stationary, leftFaceObj, rightFaceObj]
  */
-export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D): [Face2D,Face2D,bigint] | false {
+export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, faceId: bigint, angle: bigint, pointThatShouldKeepFaceStationary: Point2D)
+  : [Face2D,Face2D,bigint, ProblemEdgeInfo[], Point2D, Point2D, Face3D, Face3D] | false {
   let face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     console.log(`Cannot find face 2D ${faceId}`);
@@ -368,7 +407,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   const [[minEdgePointId, firstEdgeId], [maxEdgePointId, secondEdgeId]]: [[bigint, bigint], [bigint, bigint]] = getPointEdgeOrder(point1Id, point2Id, faceId);
 
 
-
   // now that we got rid of the annoying stuff in our split line, we can now create a line that intersects
   // the content
   // gets list of stuff that intersects
@@ -380,7 +418,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // now we delete the colinear lines and points that were potentially create by intersecting
   // the fold edge
   const dangerousLineID: bigint = face2d.addRawAnnotatedLine(point1Id, point2Id)
-
   // first we need to delete all the colinear lines between our "edge"
   const listOfLinesToDelete = getColinearLine(dangerousLineID, face2d);
   listOfLinesToDelete.forEach(lineId => face2d.delAnnotatedLine(lineId));
@@ -409,13 +446,26 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
   // now that we have the basic faces split, it's time to update the adj list with the
   // update edges of the new faces
+  let sentFirstEdgeId = firstEdgeId;
+  if (sentFirstEdgeId === minEdgePointId) {
+    sentFirstEdgeId = -1n;
+  }
 
-  updateAdjListForSplitGraph(
+  let sentSecondEdgeId = secondEdgeId;
+  if (sentSecondEdgeId === maxEdgePointId) {
+    sentSecondEdgeId = -1n;
+  }
+
+  const problemIssuesEdges: ProblemEdgeInfo[]
+  = updateAdjListForSplitGraph(
+    leftFace, rightFace,
     faceId,
     [leftFace.ID, foldEdgeIdLeft, leftFacePointIdFromOG],
     [rightFace.ID, foldEdgeIdRight, rightFacePointIdFromOG],
-    angle
-  );
+    angle, sentFirstEdgeId, sentSecondEdgeId
+  );      // feels weird putting this since it can be a annotation point id, but
+          // that's ok since we only care about matches with OG face, which means
+          // this will never triggers since pointIDs > vertex ids
 
 
   // now we need to add the points that should be duplicated on both sides
@@ -424,6 +474,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // add the points that should be on both left and right
   // add all the points on the left
   for(const id of addedLineUpdates.pointsAdded.keys()) {
+
     const pointToAdd: Point2D = face2d.getPoint(id);
     const listOfIds: Map<bigint, AnnotatedPoint2D> =  leftFace.addAnnotatedPoint(pointToAdd, foldEdgeIdLeft).pointsAdded;
     if (listOfIds.size != 1) {
@@ -432,12 +483,13 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
     // add the one new point to the mapping for lines later
     for(const newId of listOfIds.keys()) {
-      leftFacePointIdFromOG.set(id, newId);
+      leftFacePointIdFromOG.set(id, newId)
     }
 
   }
   // add all the points on the right
   for(const id of addedLineUpdates.pointsAdded.keys()) {
+
     const pointToAdd: Point2D = face2d.getPoint(id);
     const listOfIds: Map<bigint, AnnotatedPoint2D> =  rightFace.addAnnotatedPoint(pointToAdd, foldEdgeIdRight).pointsAdded;
     if (listOfIds.size != 1) {
@@ -511,8 +563,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 
   // now add all the annotationlines
   const listOfLinesOnFoldEdge: bigint[] = Array.from(addedLineUpdates.linesAdded.keys());
-  const leftFacePoints: bigint[] = Array.from(leftFacePointIdFromOG.keys());
-  const rightFacePoints: bigint[] = Array.from(rightFacePointIdFromOG.keys());
+
   for(const [lineId, lineIdObj] of face2d.getAnnotatedLinesMap()) {
     // only add line if not colinear
     if(true || !listOfLinesOnFoldEdge.includes(lineId)) {
@@ -526,8 +577,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
       const check4 = rightFacePointIdFromOG.get(lineIdObj.endPointID);
       // we do the checks here since either 1/2 or 3/4 will miss them
       // since these lines should be on one and only one face
-      if(check1 !== undefined && check2 !== undefined && leftFacePoints.includes(check1) &&
-         leftFacePoints.includes(check2)) {
+      if(check1 !== undefined && check2 !== undefined) {
 
         // left face has both points, so make a new line
         const startPointForNewFace: bigint | undefined = leftFacePointIdFromOG.get(lineIdObj.startPointID);
@@ -536,9 +586,9 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
           throw new Error("create points map for left face missed something");
         }
         leftFace.addAnnotatedLine(startPointForNewFace, endPointForNewFace);
+
       }
-      else if(check3 !== undefined && check4 !== undefined && rightFacePoints.includes(check3) &&
-         rightFacePoints.includes(check4)) {
+      else if(check3 !== undefined && check4 !== undefined) {
 
         // right face has both points, so make a new line
         const startPointForNewFace: bigint | undefined = rightFacePointIdFromOG.get(lineIdObj.startPointID);
@@ -547,6 +597,8 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
           throw new Error("create points map for right face missed something");
         }
         rightFace.addAnnotatedLine(startPointForNewFace, endPointForNewFace);
+      } else {
+        console.error("no points found for edge", lineIdObj.startPointID, lineIdObj.endPointID);
       }
     }
 
@@ -560,19 +612,15 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   const rightFace3dAnnoRes: AnnotationUpdate3D = copyAllAnnotationsFrom2dTo3d(faceId, rightFace);
   rightFace3d.updateAnnotations(rightFace3dAnnoRes);
 
-
-  // add planes to scene manager (for now, hady will do later)
-  addFace(leftFace3d);
-  addFace(rightFace3d);
-  deleteFace(faceId); // does the render deletion
-
   add2dFaceToPaperGraph(leftFace);
   add2dFaceToPaperGraph(rightFace);
   delete2dFaceToPaperGraph(faceId);
 
 
   // return the created faces back to the controller so that we can send these to backend
-  return [leftFace, rightFace, whichFaceIsStationary];
+  return [leftFace, rightFace, whichFaceIsStationary, problemIssuesEdges, vectorTowardsLeftFaceBasedOnOgPointIds, pointAtEndOfFoldLine,
+          leftFace3d, rightFace3d
+  ];
 }
 
 
@@ -585,7 +633,7 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
 function copyAllAnnotationsFrom2dTo3d(ogFaceID: bigint, face2d: Face2D): AnnotationUpdate3D {
   const pointsAdded: Map<bigint, AnnotatedPoint3D> = new Map<bigint, AnnotatedPoint3D>();
   const pointsDeleted: bigint[] = [];
-  const linesAdded: Map<bigint, AnnotatedLine> = new Map<bigint, AnnotatedLine>();
+  const linesAdded: Map<bigint, AnnotatedLine> = new Map<bigint, AnnotatedLine>(face2d.getAnnotatedLinesMap());
   const linesDeleted: bigint[] = [];
 
 
@@ -668,7 +716,7 @@ function projectPointToCustomVectorCenteredAtOrigin(vector: Point2D, target: Poi
 
             the starting point of the vector that checks for direction]
  */
-function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEdgePointId, secondEdgeId]: [bigint, bigint], face2D: Face2D, face3D: Face3D):
+export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEdgePointId, secondEdgeId]: [bigint, bigint], face2D: Face2D, face3D: Face3D):
 [[Face2D, Face3D, Map<bigint, bigint>, bigint], [Face2D, Face3D, Map<bigint, bigint>, bigint], Point2D, Point2D] {
   const listOfVertexForLeftFace: Point2D[] = [];
   const listOfVertexForLeftFace3d: Point3D[] = [];
@@ -701,23 +749,35 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
   // are on which face
 
   // one past the fold edge
+
+  // create a vector direction that point in same direction as cut line
+  const vectorOfLineSplit: Point2D = createPoint2D(
+    face2D.getPoint(maxEdgePointId).x - face2D.getPoint(minEdgePointId).x,
+    face2D.getPoint(maxEdgePointId).y - face2D.getPoint(minEdgePointId).y
+  );
+
+  // create vector that's perpindicular to face split
+  // note this automatically points to left facing direction
+  // becuase this creates perpendicular vector that rotates clockwise
+  // and left face is the face that contains the arrow pointing to the origin
+  // (or more formally, the face that comes from following the original plane
+  // in a clockwise direction, starting from vertex zero, following the split
+  // edge, and looking at the direction of the vector that comes after going to the
+  // next point in a clockwise direction)
+  const perpindicularVectorOfLineSplit: Point2D = createPoint2D(
+    vectorOfLineSplit.y,
+    -vectorOfLineSplit.x
+  );
+
   const createDirectionVectorPointEnd: Point2D = face2D.getPoint((secondEdgeId + 1n) % face2D.N);
   let createDirectionVectorPointStart: Point2D = createPoint2D(0, 0); // temp value
-  if (maxEdgePointId < face2D.ID) {
+  if (maxEdgePointId < face2D.N) {
     // turns out the end of the fold edge is on a vertex
     createDirectionVectorPointStart = face2D.getPoint(secondEdgeId % face2D.N);
   } else{
     // turns out the end of the fold edge is an annopoint
     createDirectionVectorPointStart = face2D.getAnnotatedPoint(maxEdgePointId).point;
   }
-
-  // create the vertex that will check for direction, it is centered at origin
-  const vectorTowardsLeftFaceBasedOnOgPointIds: Point2D = createPoint2D(
-    createDirectionVectorPointEnd.x - createDirectionVectorPointStart.x,
-    createDirectionVectorPointEnd.y - createDirectionVectorPointStart.y,
-  );
-
-
 
   // move on to the next vertex, since regardless of whether maxEdgeId = 2ndPointOnEdge, go to next
   for(let i = secondEdgeId + 1n; i < face2D.N; i+=1n) {
@@ -729,8 +789,6 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
   // create both 2d and 3d versions
   const leftFace = new Face2D(listOfVertexForLeftFace.slice());
   const leftFace3d = new Face3D(listOfVertexForLeftFace3d.slice(), face3D.getThickness(), face3D.getOffset(), face3D.getPrincipleNormal(), leftFace.ID);
-
-
 
   // now add the other face from the split
   const listOfVertexForRightFace: Point2D[] = [];
@@ -745,11 +803,12 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
 
   // add the og points, stopping at our new line
   for(let i = firstEdgeId + 1n; i <= secondEdgeId; i++) {
+    theEdgeInTheRightFaceThatComesFromFolding = BigInt(listOfVertexForRightFace.length);
     mapOfOgPointIdsToNewPointIdsForRightFace.set(i, BigInt(listOfVertexForRightFace.length));
     listOfVertexForRightFace.push(face2D.getPoint(i));
     listOfVertexForRightFace3d.push(face3D.getPoint(i));
-    theEdgeInTheRightFaceThatComesFromFolding = i;
   }
+
 
   // only if the end fold point isn't on the vertex do we add it
   // (since otherwise we've alreaded added it during the for loop)
@@ -770,7 +829,7 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
 
   return [[leftFace,  leftFace3d,  mapOfOgPointIdsToNewPointIdsForLeftFace,  theEdgeInTheLeftFaceThatComesFromFolding],
           [rightFace, rightFace3d, mapOfOgPointIdsToNewPointIdsForRightFace, theEdgeInTheRightFaceThatComesFromFolding],
-          vectorTowardsLeftFaceBasedOnOgPointIds, createDirectionVectorPointStart];
+          perpindicularVectorOfLineSplit, createDirectionVectorPointStart];
 }
 
 
@@ -785,7 +844,7 @@ function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint], [maxEd
  * @returns [the edge that the first fold vertex is on, the id of the point that's being folded: could be vertex or anno point],
  *          [the edge that the second fold vertex is on, the id of the point that's being folded: could be vertex or anno point]
  */
-function getPointEdgeOrder(point1Id: bigint, point2Id: bigint, faceId: bigint): [[bigint, bigint], [bigint, bigint]] {
+export function getPointEdgeOrder(point1Id: bigint, point2Id: bigint, faceId: bigint): [[bigint, bigint], [bigint, bigint]] {
   const face2d: Face2D | undefined = getFace2dFromId(faceId);
   if (face2d === undefined) {
     throw new Error("Face should be empty");
@@ -884,6 +943,9 @@ function getColinearLine(lineId: bigint, face2d: Face2D) :  bigint[] {
   const annoLines: Map<bigint, AnnotatedLine> = face2d.getAnnotatedLinesMap();
   // go thru each line, and remove if both ends of line segment are close to the cut edge
   // since that means the entire line is close enough
+
+  const dangerousLineObj = annoLines.get(lineId);
+
   for (const [id, lineObj] of annoLines) {
     const startPointOnLine: Point2D = face2d.getPoint(lineObj.startPointID);
     const endPointOnLine: Point2D = face2d.getPoint(lineObj.endPointID);
@@ -892,7 +954,6 @@ function getColinearLine(lineId: bigint, face2d: Face2D) :  bigint[] {
         face2d.isPointOnCustomLine(startPointOnLine, lineId) &&
         face2d.isPointOnCustomLine(endPointOnLine, lineId)) {
       retList.push(id);
-    } else {
     }
   }
 

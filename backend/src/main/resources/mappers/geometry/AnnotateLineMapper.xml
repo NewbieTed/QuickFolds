@@ -31,7 +31,7 @@
 
         Fields:
         - `id`: Primary key of the annotated line.
-        - `step_id`: The step associated with the annotation.
+        - `step_id`: The step associated with the annotateRequest.
         - `face_id`: The face where the line is drawn.
         - `point_1_id` / `point_2_id`: Start and end points of the line.
         - `id_in_face`: Line identifier within the face.
@@ -194,5 +194,129 @@
         </foreach>
         )
     </update>
+
+    <!--
+        Result Map for mapping database columns to the `LineAnnotationResponse` DTO fields.
+
+        Purpose:
+        - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to the corresponding Java property.
+
+        Mapped Fields:
+        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
+        - `id_in_face`: Maps to `idInFace` in the DTO.
+        - `point_1_id`: Maps to `point1IdInFace` in the DTO.
+        - `point_2_id`: Maps to `point2IdInFace` in the DTO.
+    -->
+    <resultMap id="LineAnnotationResponseMap" type="com.quickfolds.backend.geometry.model.dto.response.LineAnnotationResponse">
+        <result property="faceIdInOrigami" column="faceIdInOrigami"/>
+        <result property="idInFace" column="idInFace"/>
+        <result property="point1IdInFace" column="point_1_id"/>
+        <result property="point2IdInFace" column="point_2_id"/>
+    </resultMap>
+
+    <!--
+        Result Map for mapping database columns to the `DeletedIdInFace` DTO fields.
+
+        Purpose:
+        - Ensures MyBatis correctly maps query results to Java objects.
+        - Maps each database column to the corresponding Java property.
+
+        Mapped Fields:
+        - `id_in_origami`: Maps to `faceIdInOrigami` in the DTO.
+        - `id_in_face`: Maps to `idInFace` in the DTO.
+    -->
+    <resultMap id="DeletedIdInFaceMap" type="com.quickfolds.backend.geometry.model.dto.DeletedIdInFace">
+        <result property="faceIdInOrigami" column="faceIdInOrigami"/>
+        <result property="idInFace" column="idInFace"/>
+    </resultMap>
+
+    <!--
+        Retrieves a list of annotated lines created in a specific step
+
+        Purpose:
+        - Fetches all annotated lines created in a specific step.
+
+        Parameters:
+        - `stepId`: The ID of the step being queried.
+
+        Result:
+        - List of `LineAnnotationResponse` objects containing the line ID in face, ID in face of endpoints,
+            and face ID in origami of the face the point is in.
+    -->
+    <select id="getAnnotatedLinesByStepIdForward" resultMap="LineAnnotationResponseMap">
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami, point_1.id_in_face AS point_1_id, point_2.id_in_face AS point_2_id
+        FROM annotated_line l
+        INNER JOIN face f ON l.face_id = f.id
+        INNER JOIN origami_point AS point_1 ON l.point_1_id = point_1.id
+        INNER JOIN origami_point AS point_2 ON l.point_2_id = point_2.id
+        WHERE l.step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
+
+    <!--
+       Retrieves a list of annotated lines deleted in a specific step
+
+       Purpose:
+       - Fetches all annotated lines deleted in a specific step.
+
+       Parameters:
+       - `stepId`: The ID of the step being queried.
+
+       Result:
+       - List of `LineAnnotationResponse` objects containing the line ID in face, ID in face of endpoints,
+           and face ID in origami of the face the point is in.
+   -->
+    <select id="getAnnotatedLinesByStepIdBackward" resultMap="LineAnnotationResponseMap">
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami, point_1.id_in_face AS point_1_id, point_2.id_in_face AS point_2_id
+        FROM annotated_line l
+        INNER JOIN face f ON l.face_id = f.id
+        INNER JOIN origami_point AS point_1 ON l.point_1_id = point_1.id
+        INNER JOIN origami_point AS point_2 ON l.point_2_id = point_2.id
+        WHERE l.deleted_step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
+
+    <!--
+        Retrieves a list of annotated lines deleted in a specific step
+
+        Purpose:
+        - Fetches the IDs of all annotated lines deleted in a specific step.
+
+        Parameters:
+        - `stepId`: The ID of the step being queried.
+
+        Result:
+        - List of `DeletedIdInFace` objects containing the ID in the face of the deleted line
+            and face ID in origami of the face the line is in.
+    -->
+    <select id="getDeleteAnnotatedLinesByStepIdForward" resultMap="DeletedIdInFaceMap">
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami
+        FROM annotated_line l
+        INNER JOIN face f ON l.face_id = f.id
+        WHERE l.deleted_step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
+
+    <!--
+        Retrieves a list of annotated lines created in a specific step
+
+        Purpose:
+        - Fetches the IDs of all annotated lines created in a specific step.
+
+        Parameters:
+        - `stepId`: The ID of the step being queried.
+
+        Result:
+        - List of `DeletedIdInFace` objects containing the ID in the face of the created line
+            and face ID in origami of the face the line is in.
+    -->
+    <select id="getDeleteAnnotatedLinesByStepIdBackward" resultMap="DeletedIdInFaceMap">
+        SELECT l.id_in_face AS idInFace, f.id_in_origami AS faceIdInOrigami
+        FROM annotated_line l
+        INNER JOIN face f ON l.face_id = f.id
+        WHERE l.step_id = #{stepId}
+        ORDER BY f.id_in_origami ASC
+    </select>
 
 </mapper>

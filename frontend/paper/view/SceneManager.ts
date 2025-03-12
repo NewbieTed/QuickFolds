@@ -7,15 +7,31 @@
 
 
 import * as THREE from 'three';
-import * as pt from '../geometry/Point';
-import {Face3D} from "../geometry/Face3D";
-import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { createNewGraph } from '../model/PaperGraph';
-import { Animation } from './animation/Animation';
-import { FoldAnimation } from './animation/FoldAnimation';
+import * as pt from '../geometry/Point.js';
+import {Face3D} from "../geometry/Face3D.js";
+import { createNewGraph } from '../model/PaperGraph.js';
+import { Animation } from './animation/Animation.js';
+import { FoldAnimation } from './animation/FoldAnimation.js';
+import { OffsetAnimation } from './animation/OffsetAnimation.js';
 
 let stepID = 1n;
-const origamiID = localStorage.getItem("currentOrigamiIdForEditor");
+// Get the origami ID from localStorage based on context (editor or viewer)
+const origamiID = (() => {
+    if (typeof document === "undefined") {
+        return;
+    }
+
+  // Check if we're in the editor or viewer context
+  const path = window.location.pathname;
+  if (path.includes('origami_editor')) {
+    const editorId = localStorage.getItem("currentOrigamiIdForEditor");
+    return editorId ? BigInt(editorId) : 1n;
+  } else if (path.includes('origami_viewer')) {
+    const viewerId = localStorage.getItem("currentOrigamiIdForViewer");
+    return viewerId ? BigInt(viewerId) : 1n;
+  }
+  return 1n; // Default fallback
+})();
 
 if (origamiID === null) {
     throw new Error("The ID of the current origami is null.");
@@ -44,20 +60,27 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     idsToFaceObj.clear();
     threeIDtoFaceID.clear();
 
-    // Set up environment for proper lighting.
-    const environment = new RoomEnvironment();
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmremGenerator.fromScene(environment).texture;
-    environment.dispose();
-
-    // Create visual axes/grid.
-    const grid = new THREE.GridHelper(10, 10);
-    scene.add(grid);
+    // FOR DEBUGGING
+    // const axis = new THREE.AxesHelper(3);
+    // axis.position.set(0, 1, 0);
+    // scene.add(axis);
 
     // Add a point light to be able to see things.
-    const pointLight = new THREE.PointLight(0xffffff, 0.25, 0, 1);
-    pointLight.position.set(10, 10, 10);
+    const pointLight = new THREE.PointLight(0xffffff, 5, 0, 0);
+    pointLight.position.set(3, 10, 3);
+    pointLight.castShadow = true;
+    pointLight.shadow.mapSize.width = 8192;
+    pointLight.shadow.mapSize.height = 8192;
+    pointLight.shadow.bias = -0.000025;
     scene.add(pointLight);
+
+    // Ambient Light to provide overall illumination
+    const ambientLight = new THREE.AmbientLight(0x222222, 15);
+    scene.add(ambientLight);
+
+    // Light Helper (FOR DEBUGGING)
+    // const lightHelper = new THREE.PointLightHelper(pointLight, 0.5);
+    // scene.add(lightHelper);
 
     // Create a Face3D to begin manipulating.
     const vertices3D = [
@@ -67,13 +90,15 @@ export function initialize(renderer: THREE.WebGLRenderer) {
         pt.createPoint3D(3, 0, -3, "Vertex"),
     ]
     const principalNormal = pt.createPoint3D(0, 1, 0);
-    const plane = new Face3D(vertices3D, 0.05, 0, principalNormal, 0n);
+    // Paper thickness: 0.01
+    const plane = new Face3D(vertices3D, 0.01, 0, principalNormal, 0n);
     scene.add(plane.getPivot());
 
     idsToFace3D.set(plane.ID, plane);
     idsToFaceObj.set(plane.ID, plane.getFaceObject());
     threeIDtoFaceID.set(plane.getFaceObject().id, plane.ID);
     createNewGraph(0n);
+
 }
 
 /**
@@ -88,6 +113,7 @@ export function getScene(): THREE.Scene {
  * This does not include annotation geometry - only the polygon meshes.
  */
 export function getFaceObjects(): THREE.Object3D[] {
+    console.log("face objects", idsToFaceObj.values());
     return Array.from(idsToFaceObj.values());
 }
 
@@ -278,5 +304,13 @@ export function animateFold(
 
     // Now create the animation and run it!
     const anim = new FoldAnimation(axisPoint1, axisPoint2, deltaAngle, ...faces);
+    animations.push(anim);
+}
+
+
+// Animates the offset of several faces given a map of face ids to the change in offset.
+export function animateOffset(offsets: Map<bigint, number>): void {
+
+    const anim = new OffsetAnimation(offsets);
     animations.push(anim);
 }

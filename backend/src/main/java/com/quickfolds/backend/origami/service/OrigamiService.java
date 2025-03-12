@@ -122,12 +122,13 @@ public class OrigamiService {
      */
     private Origami createOrigami(NewOrigamiRequest request, Long userId) {
         String origamiName = request.getOrigamiName();
+        Boolean isPublic = request.getIsPublic();
 
         // Create and initialize a new Origami entity.
         Origami origami = new Origami();
         origami.setUserId(userId);
         origami.setOrigamiName(origamiName == null ? "Untitled" : origamiName);
-        origami.setPublic(true);
+        origami.setPublic(isPublic != null && isPublic);
         origami.setRatings(0.0);
 
         return origami;

@@ -29,7 +29,7 @@ docker compose up -d
 # Build and run Spring Boot app
 mvn clean install
 
-mvn spring-boot:run -D
+mvn spring-boot:run
 
 # Get container ID for the PostgreSQL container
 CONTAINER_ID=$(docker ps --filter "name=quickfolds-db-local" --format "{{.ID}}")
@@ -46,3 +46,4 @@ docker exec -i "$CONTAINER_ID" psql -U local_user -d quickfolds_local -f /file.s
 
 # Navigate to setup equivalent folder
 cd setup
+

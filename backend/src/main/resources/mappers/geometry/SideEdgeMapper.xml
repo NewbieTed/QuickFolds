@@ -76,4 +76,70 @@
         );
     </update>
 
+    <!--
+       Retrieves the id in face of a specified edge.
+
+       Purpose:
+       - Retrieve the ID in face of a side edge.
+
+       Parameters:
+       - `edgeId`: The ID of the edge being queried.
+
+       Result:
+       - The ID (`Integer`) of the edge in the face its on.
+   -->
+    <select id="getEdgeIdInFace" resultType="java.lang.Integer">
+        SELECT id_in_face
+        FROM side_edge
+        WHERE edge_id = #{edgeId}
+    </select>
+
+    <!--
+        Get side edges for a face
+
+        Purpose:
+        - Retrieve all side edges associated with a specific face in the origami model.
+
+        Parameters:
+        - `faceId`: The ID of the face to retrieve side edges for.
+
+        Result:
+        - A list of `EdgeResponse` objects representing the side edges in the specified face.
+    -->
+    <select id="getSideEdgesByFaceId" resultType="com.quickfolds.backend.geometry.model.dto.response.EdgeResponse">
+        SELECT
+            se.id_in_face as idInFace,
+            'side' as edgeType,
+            op1.id_in_face as vertex1IdInFace,
+            op2.id_in_face as vertex2IdInFace,
+            null as otherFaceIdInOrigami,
+            null as idInOtherFace,
+            null as angle
+        FROM side_edge se
+                 INNER JOIN edge e ON se.edge_id = e.id
+                 INNER JOIN origami_point op1 ON se.vertex_1_id = op1.id
+                 INNER JOIN origami_point op2 ON se.vertex_2_id = op2.id
+        WHERE se.face_id = #{faceId}
+          AND e.deleted_step_id IS NULL
+        ORDER BY se.id_in_face
+    </select>
+
+    <!-- Get side edges for a face that was deleted -->
+    <select id="getSideEdgesForDeletedFace" resultType="com.quickfolds.backend.geometry.model.dto.response.EdgeResponse">
+        SELECT
+            se.id_in_face as idInFace,
+            'side' as edgeType,
+            op1.id_in_face as vertex1IdInFace,
+            op2.id_in_face as vertex2IdInFace,
+            null as otherFaceIdInOrigami,
+            null as idInOtherFace,
+            null as angle
+        FROM side_edge se
+                 INNER JOIN edge e ON se.edge_id = e.id
+                 INNER JOIN origami_point op1 ON se.vertex_1_id = op1.id
+                 INNER JOIN origami_point op2 ON se.vertex_2_id = op2.id
+        WHERE se.face_id = #{faceId}
+        ORDER BY se.id_in_face
+    </select>
+
 </mapper>

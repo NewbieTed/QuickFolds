@@ -1,4 +1,4 @@
-package com.quickfolds.backend.geometry.model.dto;
+package com.quickfolds.backend.geometry.model.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -40,5 +40,5 @@ public class FaceAnnotateRequest {
      * - Can be null if no annotations are provided.
      */
     @Valid
-    private Annotation annotations;
+    private AnnotateRequest annotations;
 }

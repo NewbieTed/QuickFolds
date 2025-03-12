@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.FoldEdge;
+import com.quickfolds.backend.geometry.model.dto.response.EdgeResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -21,6 +22,8 @@ public interface FoldEdgeMapper {
 
     Long getIdByFaceIdPair(@Param("face1Id") Long face1Id, @Param("face2Id") Long face2Id);
 
+    FoldEdge getObjByFaceIdPair(@Param("face1Id") Long face1Id, @Param("face2Id") Long face2Id);
+
     /**
      * Inserts a new fold edge into the database.
      * <p>
@@ -35,7 +38,39 @@ public interface FoldEdgeMapper {
      */
     Long addByObj(@Param("foldEdge") FoldEdge foldEdge);
 
+    int deleteById(@Param("id") Long id,
+                   @Param("deletedStepId") long deletedStepId);
+
+    int deleteByFaceId(@Param("faceId") Long faceId,
+                       @Param("deletedStepId") long deletedStepId);
 
     int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
                         @Param("deletedStepId") long deletedStepId);
+
+    /**
+     * Retrieves the ID in the specified face of a fold edge
+     *
+     * @param edgeId the specific edge to get the id in face of.
+     * @param faceId the face the edge is in.
+     * @return the Integer value of the edge's id in face, or Null if could not be found.
+     */
+    Integer getEdgeIdInFace(@Param("edgeId") long edgeId, @Param("faceId") long faceId);
+
+    /**
+     * Gets all fold edges for a specific face
+     *
+     * @param faceId The ID of the face
+     * @param origamiId The ID of the origami model
+     * @return List of edge responses containing fold edge details
+     */
+    List<EdgeResponse> getFoldEdgesByFaceId(@Param("faceId") Long faceId,
+                                            @Param("origamiId") long origamiId);
+
+    /**
+     * Gets all fold edges for a specific face that are not connected to any other face
+     * @param faceId The ID of the face
+     * @param origamiId The ID of the origami model
+     * @return List of edge responses containing fold edge details
+     */
+    List<EdgeResponse> getFoldEdgesForDeletedFace(@Param("faceId") Long faceId, @Param("origamiId") long origamiId);
 }

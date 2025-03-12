@@ -4,7 +4,7 @@
 
 
 import * as THREE from 'three';
-import * as input from './origami_editor/editorInputCapture';
+import * as input from './origami_editor/editorInputCapture.js';
 
 
 /**
@@ -28,7 +28,7 @@ export class CameraManager {
     private aspect: number;
     private initialDistance: number;
     private locked: boolean;
-    
+
     // For tracking mouse click-drag and camera rotation.
     private prevX: number | null;
     private prevY: number | null;
@@ -88,7 +88,13 @@ export class CameraManager {
         this.initialDistance = 10;
         this.azimuth = Math.PI / 4;
         this.altitude = Math.PI / 4;
-        
+
+
+        // allow camera to see all layers in scene
+        this.ORTHOGRAPHIC_CAMERA.layers.enableAll();
+        this.PERSPECTIVE_CAMERA.layers.enableAll();
+
+
         // Whether movement of the camera is locked (disabled).
         this.locked = false;
 
@@ -131,7 +137,7 @@ export class CameraManager {
     public toggleFocalPointVisible() {
         this.focalPointObj.visible = !this.focalPointObj.visible;
     }
-    
+
     /**
      * Updates the camera to the current window size.
      */
@@ -162,14 +168,14 @@ export class CameraManager {
         if (this.cameraType === "PERSP") {
 
             this.ORTHOGRAPHIC_CAMERA.position.set(
-                this.camera.position.x, 
-                this.camera.position.y, 
+                this.camera.position.x,
+                this.camera.position.y,
                 this.camera.position.z
             );
             this.ORTHOGRAPHIC_CAMERA.setRotationFromEuler(
                 this.camera.rotation
             );
-            
+
             this.camera = this.ORTHOGRAPHIC_CAMERA;
             this.updateOrthographic();
 
@@ -178,8 +184,8 @@ export class CameraManager {
         } else { // this.cameraTYPE === "ORTHO"
 
             this.PERSPECTIVE_CAMERA.position.set(
-                this.camera.position.x, 
-                this.camera.position.y, 
+                this.camera.position.x,
+                this.camera.position.y,
                 this.camera.position.z
             );
             this.PERSPECTIVE_CAMERA.setRotationFromEuler(
@@ -203,7 +209,7 @@ export class CameraManager {
         this.focalPoint = new THREE.Vector3(0, 0, 0);
         this.focalPointObj.position.copy(this.focalPoint);
         this.camera.position.copy(this.focalPoint).add(radius);
-        
+
     }
 
     /**
@@ -226,15 +232,15 @@ export class CameraManager {
      * @param diffY The mouse position delta Y.
      */
     private cameraShift(diffX: number, diffY: number): void {
-        
+
         // Calculate radial vector from camera towards focal point.
         const forwardDirection = new THREE.Vector3();
         this.camera.getWorldDirection(forwardDirection);
 
         // Project radial vector down onto the xz plane and normalize.
         let xzProjectNormalized = new THREE.Vector3(
-            forwardDirection.x, 
-            0, 
+            forwardDirection.x,
+            0,
             forwardDirection.z
         ).normalize();
 
@@ -320,7 +326,7 @@ export class CameraManager {
         if (this.camera === this.ORTHOGRAPHIC_CAMERA) {
             this.updateOrthographic();
         }
-        
+
     }
 
 

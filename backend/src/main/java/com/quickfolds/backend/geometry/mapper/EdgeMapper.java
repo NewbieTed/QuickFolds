@@ -55,6 +55,9 @@ public interface EdgeMapper {
      */
     Long addByObj(@Param("edge") Edge edge);
 
+    int deleteById(@Param("id") Long id,
+                   @Param("deletedStepId") long deletedStepId);
+
     int deleteByIds(@Param("ids") List<Long> ids,
                     @Param("deletedStepId") long deletedStepId);
 

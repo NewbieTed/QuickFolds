@@ -31,11 +31,7 @@ jobs:
         run: |
           echo "Running Test locally on all *.test.ts files in ./unit_test/"
 
-          cd frontend
-
-          cd unit_test
-
-          npx mocha -r ts-node/register setup.ts general/**.test.ts
+          npx tsx ./node_modules/mocha/bin/mocha --require frontend/unit_test/setup.ts "**/*.test.ts"
 
           TESTING_EXIT_CODE=$?
           if [ $TESTING_EXIT_CODE -ne 0 ]; then

@@ -29,4 +29,12 @@ public interface FoldStepMapper {
      * @return The generated database ID of the newly inserted fold step.
      */
     Long addByObj(@Param("foldStep") FoldStep foldStep);
+
+    /**
+     * Gets the ID of the anchored face for a specific fold step
+     *
+     * @param stepId The ID of the fold step
+     * @return The ID of the anchored face
+     */
+    Long getAnchoredFaceIdByStepId(@Param("stepId") Long stepId);
 }

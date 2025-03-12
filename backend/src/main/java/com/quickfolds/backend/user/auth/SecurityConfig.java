@@ -21,7 +21,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * This configuration is active only in the `local` profile.
  */
 @Configuration
-@Profile("local")
 public class SecurityConfig {
     // Custom JWT authentication filter for validating tokens in requests.
     private final JwtAuthenticationFilter jwtAuthenticationFilter;

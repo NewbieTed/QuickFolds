@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.OrigamiPoint;
+import com.quickfolds.backend.geometry.model.dto.response.VertexResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -84,4 +85,19 @@ public interface OrigamiPointMapper {
                           @Param("deletedStepId") long deletedStepId);
 
 
+    /**
+     * Gets all vertices for a specific face
+     *
+     * @param faceId The ID of the face
+     * @return List of vertex responses with coordinates
+     */
+    List<VertexResponse> getVerticesByFaceId(@Param("faceId") Long faceId);
+
+    /**
+     * Gets all vertices for a specific face that was deleted in a specific step
+     *
+     * @param faceId The ID of the face
+     * @return List of vertex responses with coordinates
+     */
+    List<VertexResponse> getVerticesForDeletedFace(@Param("faceId") Long faceId);
 }

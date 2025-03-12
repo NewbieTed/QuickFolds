@@ -130,4 +130,38 @@
         )
     </update>
 
+    <!-- Get the id_in_origami for a face ID -->
+    <select id="getIdInOrigamiByFaceId" resultType="java.lang.Integer">
+        SELECT id_in_origami
+        FROM face
+        WHERE id = #{faceId}
+    </select>
+
+    <!-- Get faces that were deleted in a specific step -->
+    <select id="getDeletedFaceIdsByStepId" resultType="java.lang.Integer">
+        SELECT id_in_origami
+        FROM face
+        WHERE deleted_step_id = #{stepId}
+    </select>
+
+    <!-- Get faces created in a specific step -->
+    <select id="getFacesCreatedInStep" resultType="com.quickfolds.backend.geometry.model.dto.response.FaceWithDetailsDTO">
+        SELECT id as faceId, id_in_origami as idInOrigami
+        FROM face
+        WHERE step_id = #{stepId}
+    </select>
+
+    <!-- Get faces that were deleted in a specific step -->
+    <select id="getFacesDeletedInStep" resultType="com.quickfolds.backend.geometry.model.dto.response.FaceWithDetailsDTO">
+        SELECT id as faceId, id_in_origami as idInOrigami
+        FROM face
+        WHERE deleted_step_id = #{stepId}
+    </select>
+
+    <!-- Get IDs of faces created in a specific step -->
+    <select id="getFaceIdsInOrigamiCreatedInStep" resultType="java.lang.Integer">
+        SELECT id_in_origami
+        FROM face
+        WHERE step_id = #{stepId}
+    </select>
 </mapper>

@@ -4,9 +4,9 @@
  */
 
 
-import {getNextFaceID} from "../view/SceneManager"
+import {getNextFaceID} from "../view/SceneManager.js"
 import * as THREE from 'three';
-import * as pt from "./Point";
+import * as pt from "./Point.js";
 
 
 /**
@@ -35,15 +35,20 @@ export class Face3D {
      * offset - the number of half-paper-thicknesses away from the underlying
      *          plane, positive is in the direction of the principal normal
      * faceObject -  the three JS object which appears in this scene.
+     * faceObjectCenter - the center of the three JS object for the face
      * pivot - the parent three JS object to all objects of this Face3D
      * nextLineID - the integer to be used as the id of the next created line
      * nextPointID - the integer to be used as the id of the next created point
      * principalNormal - a unit vector which shows the principal normal of the
      *                  paper, which is pointing out from the same side of the
      *                  paper that was originally face-up in the crease pattern
+     * localNormal - like the principal normal but in relative coordinates to
+     *               to the pivot of this face. This remains constant, while the
+     *               principal normal updates to reflect the true current normal.
      * startPosition - caches the position of this object if a rotation starts
      * startRotation - caches the rotation of this object if a rotation starts
      * startNormal - caches the principal normal vector if a rotation starts
+     * startOffset - caches the offset if a rotation starts.
      */
     public readonly ID: bigint;
     public readonly vertices: pt.Point3D[];
@@ -54,12 +59,14 @@ export class Face3D {
     private lineObjects: Map<bigint, THREE.Mesh>;
     private faceObject: THREE.Mesh;
     private pivot: THREE.Object3D;
+    private faceObjectCenter: THREE.Object3D;
     private paperThickness: number;
     private offset: number;
     private principalNormal: pt.Point3D;
+    private readonly localNormal: pt.Point3D;
     private startPosition: THREE.Vector3;
     private startRotation: THREE.Quaternion;
-    private startNormal: pt.Point3D;
+    private startOffset: number;
 
     public constructor(
                 vertices: pt.Point3D[],
@@ -83,24 +90,39 @@ export class Face3D {
         this.paperThickness = paperThickness;
         this.offset = offset;
         this.principalNormal = pt.normalize(principalNormal);
+        this.localNormal = pt.copyPoint(this.principalNormal);
 
         // Create the initial face object and pivot.
         this.faceObject = this.createFaceObject();
+        this.faceObject.layers.set(0);
         this.pivot = new THREE.Object3D();
+
+        this.faceObjectCenter = new THREE.Object3D();
         const center: pt.Point3D = pt.average(this.vertices);
         // Crucially: the pivot lies in the true plane, not with the
         // face object mesh which could be offset from the true plane.
         this.pivot.position.copy(new THREE.Vector3(
             center.x, center.y, center.z
         ));
-        this.pivot.attach(this.faceObject);
+        const offsetVector = new THREE.Vector3(
+            this.principalNormal.x * this.offset * this.paperThickness,
+            this.principalNormal.y * this.offset * this.paperThickness,
+            this.principalNormal.z * this.offset * this.paperThickness
+        );
+        this.faceObjectCenter.position.copy(offsetVector.add(this.pivot.position));
+        this.pivot.attach(this.faceObjectCenter);
+        this.faceObjectCenter.attach(this.faceObject);
 
-        // Set initial rotation/position.
+        // Set initial rotation/position and offset.
         this.startPosition = new THREE.Vector3();
         this.startPosition.copy(this.pivot.position);
         this.startRotation = new THREE.Quaternion();
         this.startRotation.copy(this.pivot.quaternion);
-        this.startNormal = pt.copyPoint(this.principalNormal);
+        this.startOffset = this.offset;
+
+        // DEBUG MODE
+        // this.createFaceIDText();
+
     }
 
     public getThickness(): number {
@@ -129,7 +151,7 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, this.paperThickness * this.offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset
         );
         // The centroid of the slab.
         const centroid: pt.Point3D = pt.add(
@@ -193,17 +215,20 @@ export class Face3D {
 
         // Create the mesh.
         const faceMaterial = new THREE.MeshPhysicalMaterial({
-            color: 0xc036e0,
+            color: 0xdeb531,
             side: THREE.DoubleSide,
-            roughness: 0.8,
+            roughness: 0.95,
             metalness: 0,
-            clearcoat: 0.1,
-            reflectivity: 0.1,
+            clearcoat: 0.01,
+            reflectivity: 0.05,
             opacity: 1,
             flatShading: true
         });
 
-        return new THREE.Mesh(faceGeometry, faceMaterial);
+        const mesh = new THREE.Mesh(faceGeometry, faceMaterial);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
     }
 
     /**
@@ -215,13 +240,13 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, this.paperThickness * this.offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset
         );
         const pos: pt.Point3D = pt.add(point, principalOffset);
 
         // Create a glowing point.
         const glowingMaterial = new THREE.PointsMaterial({
-            color: 0x0000ff,
+            color: 0x662217,
             size: 0.1,
             opacity: 1,
             sizeAttenuation: true,
@@ -231,10 +256,9 @@ export class Face3D {
             [new THREE.Vector3(pos.x, pos.y, pos.z)]
         );
         const glowingPoint = new THREE.Points(pointGeometry, glowingMaterial);
-
         // Render this point last (to get X-ray vision).
         glowingPoint.renderOrder = 2;
-
+        console.log("Created point object:", glowingPoint);
         return glowingPoint;
     }
 
@@ -252,14 +276,14 @@ export class Face3D {
 
         // Vector for translating the slab off of the underlying plane.
         const principalOffset: pt.Point3D = pt.scalarMult(
-            this.principalNormal, this.paperThickness * this.offset * 0.5
+            this.principalNormal, this.paperThickness * this.offset
         );
         const pos1: pt.Point3D = pt.add(start, principalOffset);
         const pos2: pt.Point3D = pt.add(end, principalOffset);
 
         // Create a glowing line.
         const glowingMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00aa22,
+            color: 0xff8c00,
             opacity: 1,
             side: THREE.DoubleSide,
             depthTest: false
@@ -277,7 +301,33 @@ export class Face3D {
         return glowingLine;
     }
 
-    // TODO: create constructor from Face2D + 3D annotations.
+    // DEBUG MODE: SHOW ID OF THIS FACE.
+    public createFaceIDText() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const fontSize = 100;
+
+        canvas.width = 512;
+        canvas.height = 256;
+
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${this.ID}`, canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+
+        const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+        const sprite = new THREE.Sprite(material);
+
+        sprite.scale.set(2, 1, 1); // Adjust scale for better readability
+        sprite.renderOrder = 2;  // Ensures it's drawn last (always visible)
+
+        this.faceObjectCenter.attach(sprite);
+        sprite.position.copy(new THREE.Vector3(0, 0, 0));
+    }
 
     /**
      * Gets the main parent object of all the geometry/meshes of this Face3D.
@@ -314,7 +364,7 @@ export class Face3D {
             const lineObject = this.lineObjects.get(lineID);
             if (lineObject !== undefined) {
                 // Dispose of the object.
-                this.pivot.remove(lineObject);
+                this.faceObject.remove(lineObject);
                 lineObject.geometry.dispose();
                 if (Array.isArray(lineObject.material)) {
                     lineObject.material.forEach(mat => mat.dispose());
@@ -333,7 +383,7 @@ export class Face3D {
             const pointObject = this.pointObjects.get(pointID);
             if (pointObject !== undefined) {
                 // Dispose of the object.
-                this.pivot.remove(pointObject);
+                this.faceObject.remove(pointObject);
                 pointObject.geometry.dispose();
                 if (Array.isArray(pointObject.material)) {
                     pointObject.material.forEach(mat => mat.dispose());
@@ -350,8 +400,9 @@ export class Face3D {
             if (point !== undefined) {
                 this.annotatedPoints.set(pointID, point);
                 const pointObject = this.createPointObject(point.point);
+                pointObject.layers.set(1);
                 this.pointObjects.set(pointID, pointObject);
-                this.pivot.attach(pointObject);
+                this.faceObject.attach(pointObject);
             }
         }
 
@@ -363,8 +414,9 @@ export class Face3D {
                 const endPoint = this.getPoint(line.endPointID);
                 this.annotatedLines.set(lineID, line);
                 const lineObject = this.createLineObject(startPoint, endPoint);
+                lineObject.layers.set(1);
                 this.lineObjects.set(lineID, lineObject);
-                this.pivot.attach(lineObject);
+                this.faceObject.attach(lineObject);
             }
         }
 
@@ -587,6 +639,43 @@ export class Face3D {
         this.startRotation.copy(this.pivot.quaternion);
     }
 
+
+    // Saves the offset of this Face3D so that it can be re-loaded with a call
+    // to resetOffset().
+    public saveOffset() {
+        this.startOffset = this.offset;
+    }
+
+
+    // Changes the offset position of this Face3D's mesh objects.
+    // ___
+    public offsetObjects(deltaOffset: number) {
+
+        this.offset += deltaOffset;
+        const offsetVector = new THREE.Vector3(
+            this.localNormal.x * this.offset * this.paperThickness,
+            this.localNormal.y * this.offset * this.paperThickness,
+            this.localNormal.z * this.offset * this.paperThickness
+        );
+
+        this.faceObjectCenter.position.copy(offsetVector);
+    }
+
+    // Changes the offset position of this Face3D overall,
+    // Starting from the last offset saved by saveOffset().
+    // ___
+    public offsetFace(deltaOffset: number) {
+
+        this.offset = this.startOffset + deltaOffset;
+        const offsetVector = new THREE.Vector3(
+            this.localNormal.x * this.offset * this.paperThickness,
+            this.localNormal.y * this.offset * this.paperThickness,
+            this.localNormal.z * this.offset * this.paperThickness
+        );
+
+        this.faceObjectCenter.position.copy(offsetVector);
+    }
+
     /**
      * Rotates the underlying objects in this Face3D without changing the
      * vertices of the Face3D yet. Useful for animation. Rotates this Face3D's
@@ -596,7 +685,7 @@ export class Face3D {
      * @param deltaAngle The change in angle (radians)
      */
     public rotateObjects(
-                axisPoint1: pt.Point3D, 
+                axisPoint1: pt.Point3D,
                 axisPoint2: pt.Point3D,
                 deltaAngle: number
                 ): void {
@@ -614,47 +703,33 @@ export class Face3D {
         q.setFromAxisAngle(
             new THREE.Vector3(axis.x, axis.y, axis.z), deltaAngle
         );
-        
+
         // Apply the rotation to the parent object.
         this.pivot.position.sub(shift);
         this.pivot.position.applyQuaternion(q);
         this.pivot.position.add(shift);
         this.pivot.quaternion.premultiply(q);
 
-        // Adjust the principle normal vector.
-        const principVec: THREE.Vector3 = new THREE.Vector3(
-            this.principalNormal.x, 
-            this.principalNormal.y, 
-            this.principalNormal.z
-        );
-        principVec.applyQuaternion(q);
-        this.principalNormal = pt.createPoint3D(
-            principVec.x,
-            principVec.y,
-            principVec.z
-        );
-
     }
 
     /**
      * Rotates the whole face 3D including both vertices and mesh objects
      * starting from the last position saved by savePosition().
-     * Rotates this Face3D about the specified axis CCW 
+     * Rotates this Face3D about the specified axis CCW
      * (right-hand rule) by deltaAngle.
      * @param axisPoint1 The start of the rotation axis
      * @param axisPoint2 The end of the rotation axis.
      * @param deltaAngle The change in angle (radians)
      */
     public rotateFace(
-                axisPoint1: pt.Point3D, 
+                axisPoint1: pt.Point3D,
                 axisPoint2: pt.Point3D,
                 deltaAngle: number
                 ): void {
 
-        // Revert to the previous position.
+        // Revert to the previous position/rotation.
         this.pivot.position.copy(this.startPosition);
         this.pivot.quaternion.copy(this.startRotation);
-        this.principalNormal = this.startNormal;
 
         // Compute the normalized direction vector of the axis.
         const axis: pt.Point3D = pt.normalize(
@@ -678,8 +753,8 @@ export class Face3D {
 
         // Adjust the principle normal vector.
         const principVec: THREE.Vector3 = new THREE.Vector3(
-            this.principalNormal.x, 
-            this.principalNormal.y, 
+            this.principalNormal.x,
+            this.principalNormal.y,
             this.principalNormal.z
         );
         principVec.applyQuaternion(q);
@@ -690,10 +765,11 @@ export class Face3D {
         // Rotate the vertices similarly.
         for (let i = 0n; i < this.N; i++) {
 
+            const oldVertex = this.vertices[Number(i)];
             const vertexVec = new THREE.Vector3(
-                this.vertices[Number(i)].x,
-                this.vertices[Number(i)].y,
-                this.vertices[Number(i)].z,
+                oldVertex.x,
+                oldVertex.y,
+                oldVertex.z,
             )
 
             vertexVec.sub(shift);
@@ -701,15 +777,52 @@ export class Face3D {
             vertexVec.add(shift);
 
             this.vertices[Number(i)] = pt.createPoint3D(
-                vertexVec.x, vertexVec.y, vertexVec.z
+                vertexVec.x, vertexVec.y, vertexVec.z, "Vertex"
             );
 
         }
-        
+
+        // Rotate the annotations similarly.
+        for (const pointID of this.annotatedPoints.keys()) {
+
+            const oldAnnotation = this.annotatedPoints.get(pointID);
+            const annotationVec = new THREE.Vector3(
+                oldAnnotation.point.x,
+                oldAnnotation.point.y,
+                oldAnnotation.point.z,
+            )
+
+            annotationVec.sub(shift);
+            annotationVec.applyQuaternion(q);
+            annotationVec.add(shift);
+
+            const newAnnotation: pt.AnnotatedPoint3D = {
+                point: pt.createPoint3D(
+                    annotationVec.x, annotationVec.y, annotationVec.z
+                ),
+                edgeID: oldAnnotation.edgeID
+            }
+            this.annotatedPoints.set(pointID, newAnnotation);
+
+        }
+
     }
 
 
+    public getAveragePoint() : pt.Point3D {
+        let xValue = 0.0;
+        let yValue = 0.0;
+        let zValue = 0.0;
 
-    // TODO: methods to change visibility and disable/enable raycasting thru this face.
 
+        for(let i = 0; i < this.N; i++) {
+            xValue += this.vertices[i].x;
+            yValue += this.vertices[i].y;
+            zValue += this.vertices[i].z;
+        }
+
+
+        return pt.createPoint3D(xValue/Number(this.N), yValue/Number(this.N), zValue/Number(this.N));
+
+    }
 }

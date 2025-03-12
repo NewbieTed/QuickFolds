@@ -1,6 +1,7 @@
 package com.quickfolds.backend.geometry.mapper;
 
 import com.quickfolds.backend.geometry.model.database.SideEdge;
+import com.quickfolds.backend.geometry.model.dto.response.EdgeResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -34,4 +35,28 @@ public interface SideEdgeMapper {
 
     int deleteByFaceIds(@Param("faceIds") List<Long> faceIds,
                         @Param("deletedStepId") long deletedStepId);
+
+    /**
+     * Retreives the ID in face of a side edge
+     *
+     * @param edgeId the specifc edge to get the id in face of.
+     * @return the Integer value of the edge's id in face, or Null if could not be found.
+     */
+    Integer getEdgeIdInFace(@Param("edgeId") long edgeId);
+
+    /**
+     * Gets all side edges for a specific face
+     *
+     * @param faceId The ID of the face
+     * @return List of edge responses containing side edge details
+     */
+    List<EdgeResponse> getSideEdgesByFaceId(@Param("faceId") Long faceId);
+
+    /**
+     * Gets all side edges for a specific face that are not connected to any other face
+     *
+     * @param faceId The ID of the face
+     * @return List of edge responses containing side edge details
+     */
+    List<EdgeResponse> getSideEdgesForDeletedFace(@Param("faceId") Long faceId);
 }

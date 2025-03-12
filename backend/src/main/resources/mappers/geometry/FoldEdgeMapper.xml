@@ -19,12 +19,39 @@
 -->
 <mapper namespace="com.quickfolds.backend.geometry.mapper.FoldEdgeMapper">
 
-    <select id="getIdByFaceIdPair">
-        SELECT id from fold_edge
+    <resultMap id="FoldEdgeMap" type="com.quickfolds.backend.geometry.model.database.FoldEdge">
+        <result property="edgeId" column="edge_id"/>
+        <result property="face1Id" column="face_1_id"/>
+        <result property="face2Id" column="face_2_id"/>
+        <result property="angle" column="angle"/>
+        <result property="idInFace1" column="id_in_face_1"/>
+        <result property="idInFace2" column="id_in_face_2"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="getIdByFaceIdPair" resultType="java.lang.Long">
+        SELECT edge_id from fold_edge
         WHERE face_1_id = #{face1Id}
-        AND face_2_id = #{face2Id}
-        ORDER BY ID DESC
+          AND face_2_id = #{face2Id}
+        ORDER BY edge_id DESC
         LIMIT 1;
+    </select>
+
+    <select id="getObjByFaceIdPair" resultMap="FoldEdgeMap">
+        SELECT
+        edge_id, face_1_id, face_2_id, angle,
+        id_in_face_1, id_in_face_2,
+        created_by, updated_by, created_at, updated_at
+        from fold_edge
+        WHERE (face_1_id = #{face1Id}
+        AND face_2_id = #{face2Id})
+        OR (face_1_id = #{face2Id}
+        AND face_2_id = #{face1Id})
+        ORDER BY edge_id DESC
+        LIMIT 1
     </select>
 
     <!--
@@ -72,6 +99,19 @@
     </insert>
 
 
+    <update id="deleteByFaceId">
+        UPDATE edge e
+        SET deleted_step_id = #{deletedStepId}
+        FROM fold_edge fe
+        WHERE
+        fe.edge_id = e.id
+        AND e.deleted_step_id IS NULL
+        AND (
+        fe.face_1_id = #{faceId}
+        OR fe.face_2_id = #{faceId}
+        );
+    </update>
+
     <update id="deleteByFaceIds">
         UPDATE edge e
         SET deleted_step_id = #{deletedStepId}
@@ -92,5 +132,103 @@
         )
         );
     </update>
+
+    <!--
+      Retrieves the id in a specified face of a specified edge.
+
+      Purpose:
+      - Retrieve the ID in face of a fold edge.
+
+      Parameters:
+      - `edgeId`: The ID of the edge being queried.
+      - `faceId`: the ID of the face the edge is in.
+
+      Result:
+      - The ID (`Integer`) of the edge in the face its on.
+  -->
+    <select id="getEdgeIdInFace" resultType="java.lang.Integer">
+        SELECT
+            CASE
+                WHEN face_1_id = #{faceId} THEN id_in_face_1
+                WHEN face_2_id = #{faceId} THEN id_in_face_2
+                ELSE NULL
+                END as id_in_face
+        FROM fold_edge
+        WHERE edge_id = #{edgeId}
+    </select>
+
+    <!--
+        Get fold edges for a face
+
+        Purpose:
+        - Retrieves all fold edges for a given face.
+        - Ensures that only fold edges are returned by filtering on edge type.
+
+        Parameters:
+        - `faceId`: The ID of the face containing the fold edges.
+        - `origamiId`: The ID of the origami structure containing the face.
+
+        Result:
+        - Returns a list of fold edges for the specified face.
+    -->
+    <select id="getFoldEdgesByFaceId" resultType="com.quickfolds.backend.geometry.model.dto.response.EdgeResponse">
+        SELECT
+            CASE
+                WHEN fe.face_1_id = #{faceId} THEN fe.id_in_face_1
+                ELSE fe.id_in_face_2
+                END as idInFace,
+            'fold' as edgeType,
+            null as vertex1IdInFace,
+            null as vertex2IdInFace,
+            CASE
+                WHEN fe.face_1_id = #{faceId} THEN f2.id_in_origami
+                ELSE f1.id_in_origami
+                END as otherFaceIdInOrigami,
+            CASE
+                WHEN fe.face_1_id = #{faceId} THEN fe.id_in_face_2
+                ELSE fe.id_in_face_1
+                END as idInOtherFace,
+            fe.angle as angle
+        FROM fold_edge fe
+                 INNER JOIN edge e ON fe.edge_id = e.id
+                 INNER JOIN face f1 ON fe.face_1_id = f1.id
+                 INNER JOIN face f2 ON fe.face_2_id = f2.id
+                 INNER JOIN step s1 ON f1.step_id = s1.id
+                 INNER JOIN step s2 ON f2.step_id = s2.id
+        WHERE (fe.face_1_id = #{faceId} OR fe.face_2_id = #{faceId})
+          AND e.deleted_step_id IS NULL
+          AND s1.origami_id = #{origamiId}
+          AND s2.origami_id = #{origamiId}
+    </select>
+
+    <!-- Get fold edges for a face that was deleted -->
+    <select id="getFoldEdgesForDeletedFace" resultType="com.quickfolds.backend.geometry.model.dto.response.EdgeResponse">
+        SELECT
+            CASE
+                WHEN fe.face_1_id = #{faceId} THEN fe.id_in_face_1
+                ELSE fe.id_in_face_2
+                END as idInFace,
+            'fold' as edgeType,
+            null as vertex1IdInFace,
+            null as vertex2IdInFace,
+            CASE
+                WHEN fe.face_1_id = #{faceId} THEN f2.id_in_origami
+                ELSE f1.id_in_origami
+                END as otherFaceIdInOrigami,
+            CASE
+                WHEN fe.face_1_id = #{faceId} THEN fe.id_in_face_2
+                ELSE fe.id_in_face_1
+                END as idInOtherFace,
+            fe.angle as angle
+        FROM fold_edge fe
+                 INNER JOIN edge e ON fe.edge_id = e.id
+                 INNER JOIN face f1 ON fe.face_1_id = f1.id
+                 INNER JOIN face f2 ON fe.face_2_id = f2.id
+                 INNER JOIN step s1 ON f1.step_id = s1.id
+                 INNER JOIN step s2 ON f2.step_id = s2.id
+        WHERE (fe.face_1_id = #{faceId} OR fe.face_2_id = #{faceId})
+          AND s1.origami_id = #{origamiId}
+          AND s2.origami_id = #{origamiId}
+    </select>
 
 </mapper>
