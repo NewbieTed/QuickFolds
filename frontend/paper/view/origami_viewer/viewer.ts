@@ -2,11 +2,11 @@ import * as THREE from 'three';
 import * as SceneManager from "../SceneManager.js";
 import {CameraManager} from "../CameraManager.js";
 import { displayAnnotations } from '../../controller/Controller.js';
+import { setPlaybackspeed } from '../origami_editor/editorInputCapture.js';
 
 let curStep = 0n;
 let isForward = true;
 let isPaused = false;
-export let playbackSpeed = 1;
 
 
 
@@ -76,10 +76,11 @@ async function pauseAction() {
   isPaused = !isPaused;
 }
 
-const sliderButton = document.getElementById('playbackSpeed');
+const sliderButton = document.getElementById('playbackSpeed') as HTMLInputElement;
 if (sliderButton !== null) {
   sliderButton.addEventListener("input", function() {
-     // this.value gives u the playback speed: [0.1 to 1] as a string
+     // this.value gives you the playback speed: [0.1 to 1] as a string
+     setPlaybackspeed(Number(this.value))
   });
 }
 

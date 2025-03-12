@@ -7,6 +7,7 @@ import { Point3D } from "../../geometry/Point.js";
 import * as SceneManager from "../SceneManager.js";
 import * as THREE from 'three';
 
+let playbackSpeed = 1;
 let isFoldingInsteadOfMerging = true;
 let isFocalPointVisible = true;
 let isShiftKeyPressed = false;
@@ -127,6 +128,14 @@ if (foldButtonMerge !== null) {
 
 let addLineState = false;
 let deleteLineState = false;
+
+export function getPlaybackSpeed() {
+  return playbackSpeed;
+}
+
+export function setPlaybackspeed(speed: number) {
+  playbackSpeed = speed;
+}
 
 export function getIsSplittingInsteadOfMerging() {
   return isFoldingInsteadOfMerging;
