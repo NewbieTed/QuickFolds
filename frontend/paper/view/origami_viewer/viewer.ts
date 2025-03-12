@@ -12,6 +12,8 @@ let isPaused = false;
 
 // Create the renderer.
 const renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -67,13 +69,10 @@ async function playNextStep() {
 
 const pauseButton = document.getElementById('pause');
 if (pauseButton !== null) {
-  pauseButton.addEventListener('click', pauseAction)
-}
-/**
- * stops/reactivates the faces when called
- */
-async function pauseAction() {
-  isPaused = !isPaused;
+  pauseButton.addEventListener('click', function() {
+    isPaused = !isPaused;
+    this.textContent = isPaused ? "▶" : "❚❚";
+  });
 }
 
 const sliderButton = document.getElementById('playbackSpeed') as HTMLInputElement;
