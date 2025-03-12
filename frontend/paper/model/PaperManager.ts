@@ -405,8 +405,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // get the ids so that we get the first edge first so that way we can create a new face
   // in the right order
   const [[minEdgePointId, firstEdgeId], [maxEdgePointId, secondEdgeId]]: [[bigint, bigint], [bigint, bigint]] = getPointEdgeOrder(point1Id, point2Id, faceId);
-  console.log("FE", firstEdgeId);
-  console.log("SE", secondEdgeId);
 
 
   // now that we got rid of the annoying stuff in our split line, we can now create a line that intersects
@@ -420,7 +418,6 @@ export function graphCreateNewFoldSplit(point1Id: bigint, point2Id: bigint, face
   // now we delete the colinear lines and points that were potentially create by intersecting
   // the fold edge
   const dangerousLineID: bigint = face2d.addRawAnnotatedLine(point1Id, point2Id)
-  console.log("dangerout lineid", dangerousLineID);
   // first we need to delete all the colinear lines between our "edge"
   const listOfLinesToDelete = getColinearLine(dangerousLineID, face2d);
   listOfLinesToDelete.forEach(lineId => face2d.delAnnotatedLine(lineId));
@@ -735,11 +732,6 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
     theEdgeInTheLeftFaceThatComesFromFolding = i;
   }
 
-
-  console.log("____ __");
-  console.log(face2D);
-  console.log(face3D);
-
   // we've gotten to the first split, so include this point if we aren't at a vertex
   if (minEdgePointId !==  firstEdgeId) {
     theEdgeInTheLeftFaceThatComesFromFolding = BigInt(listOfVertexForLeftFace.length);
@@ -798,9 +790,6 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   const leftFace = new Face2D(listOfVertexForLeftFace.slice());
   const leftFace3d = new Face3D(listOfVertexForLeftFace3d.slice(), face3D.getThickness(), face3D.getOffset(), face3D.getPrincipleNormal(), leftFace.ID);
 
-  console.log(leftFace);
-
-
   // now add the other face from the split
   const listOfVertexForRightFace: Point2D[] = [];
   const listOfVertexForRightFace3d: Point3D[] = [];
@@ -837,11 +826,6 @@ export function createSplitFace([minEdgePointId, firstEdgeId]: [bigint, bigint],
   if (rightFace.getAnnotatedPointMap().size  > 0) {
     throw new Error("SHOULD E");
   }
-
-  console.log(rightFace);
-
-  console.log("UPDATE FLEAS",  theEdgeInTheLeftFaceThatComesFromFolding);
-  console.log("UPDATE FLEAS",  theEdgeInTheRightFaceThatComesFromFolding);
 
   return [[leftFace,  leftFace3d,  mapOfOgPointIdsToNewPointIdsForLeftFace,  theEdgeInTheLeftFaceThatComesFromFolding],
           [rightFace, rightFace3d, mapOfOgPointIdsToNewPointIdsForRightFace, theEdgeInTheRightFaceThatComesFromFolding],
@@ -965,10 +949,6 @@ function getColinearLine(lineId: bigint, face2d: Face2D) :  bigint[] {
   for (const [id, lineObj] of annoLines) {
     const startPointOnLine: Point2D = face2d.getPoint(lineObj.startPointID);
     const endPointOnLine: Point2D = face2d.getPoint(lineObj.endPointID);
-
-    console.log("line id", lineId);
-    console.log("face", face2d);
-
 
     if (id != lineId &&
         face2d.isPointOnCustomLine(startPointOnLine, lineId) &&

@@ -24,45 +24,6 @@ export async function addRotationListToDB(listOfAllMovingFacesInDsSet: {moveFace
 }
 
 
-/**
- * Sends the backend a fold request to merge the faces, no rotation
- * @param leftFaceId - the first face to merge
- * @param rightFaceId - the id of the second face to merge
- * @param mergedFace - the new Face object that comes from merging
- * @returns a boolean as to the result of the action
- */
-// export async function addMergeFoldToDB(facesToAdd: Face2D[], facesToDelete: bigint[], stationaryNewFaceID: bigint): Promise<boolean> {
-//   // note: for now, put stationaryNewFaceID as stationaryNewFaceID, and frontend can rederive it by matching up point ids
-//   // since either the left face or the right face must match
-//   // add points locally
-//   const url = FOLDER_EDITOR_URL;
-//   // const data = serializeMergeFold(leftFaceId, rightFaceId, mergedFace);
-
-//   console.log(data);
-
-//   try {
-//     const response = await fetch(url, {
-//       method: 'POST',
-//       headers: {
-//         "Content-Type" : "application/json"
-//       },
-//       body: JSON.stringify(data)
-//     });
-
-//     if (!response.ok) {
-//       throw new Error('Request failed');
-//     }
-
-//     const result = await response.json();
-//     console.log('Response:', result);
-//     return Promise.resolve(true);
-//   } catch (error) {
-//     console.error('Error:', error);
-//   }
-
-//   return Promise.resolve(false);
-// }
-
 
 
 /**
@@ -178,107 +139,10 @@ export async function getStepFromDB(startStep: bigint, endStep: bigint, isForwar
     }
 
     const result = await response.json();
-    console.log('Step Response:', result.data);
-
-
-
-    // const result = {
-    //   "stepType": "ANNOTATE",
-    //   "annotations": [
-    //     {
-    //       "idInOrigami": 0, // Face ID in the origami model
-    //       "points": [{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 4,
-    //         "x": 1.5,
-    //         "y": -1,
-    //         "onEdgeIdInFace": -1n
-    //       },],
-    //       "lines": [],
-    //       "deletedPoints": [], // IDs of points to delete
-    //       "deletedLines": []      // IDs of lines to delete
-    //     },
-    //   ]
-    // }
-
-    // const result2 = {
-    //   "stepType": "ANNOTATE",
-    //   "annotations": [
-    //     {
-    //       "idInOrigami": 0, // Face ID in the origami model
-    //       "points": [{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 5,
-    //         "x": 1.5,
-    //         "y": 0,
-    //         "onEdgeIdInFace": -1n
-    //       },],
-    //       "lines": [],
-    //       "deletedPoints": [], // IDs of points to delete
-    //       "deletedLines": []      // IDs of lines to delete
-    //     },
-    //   ]
-    // }
-
-    // const result3 = {
-    //   "stepType": "ANNOTATE",
-    //   "annotations": [
-    //     {
-    //       "idInOrigami": 0, // Face ID in the origami model
-    //       "points": [{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 4,
-    //         "x": 1.5,
-    //         "y": -1,
-    //         "onEdgeIdInFace": 6n
-    //       },{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 5,
-    //         "x": 1.5,
-    //         "y": 0,
-    //         "onEdgeIdInFace": 6n
-    //       },],
-    //       "lines": [{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 6,
-    //         "point1IdInFace": 4n,
-    //         "point2IdInFace": 5n
-    //       },],
-    //       "deletedPoints": [], // IDs of points to delete
-    //       "deletedLines": []      // IDs of lines to delete
-    //     },
-    //   ]
-    // }
-
-    // const result4 = {
-    //   "stepType": "ANNOTATE",
-    //   "annotations": [
-    //     {
-    //       "idInOrigami": 0, // Face ID in the origami model
-    //       "points": [{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 4,
-    //         "x": 1.5,
-    //         "y": -1,
-    //         "onEdgeIdInFace": -1n
-    //       },{
-    //         "faceIdInOrigami": 0,
-    //         "idInFace": 5,
-    //         "x": 1.5,
-    //         "y": 0,
-    //         "onEdgeIdInFace": -1n
-    //       },],
-    //       "lines": [],
-    //       "deletedPoints": [], // IDs of points to delete
-    //       "deletedLines": [6]      // IDs of lines to delete
-    //     },
-    //   ]
-    // }
 
     // if we did annotation step, we need to process the step
     if (result.data.stepType === "annotate") {
       if (result.data.annotations.length === 0) {
-        console.log("No annotations found");
         return false;
       } else {
         processAnnotationStep(result.data);
