@@ -18,7 +18,7 @@ document.body.appendChild(renderer.domElement);
 // Create the scene
 SceneManager.initialize(renderer);
 const cameraManager = new CameraManager(SceneManager.getScene());
-
+cameraManager.toggleFocalPointVisible();
 
 const prevStepButton = document.getElementById('prev-step-button');
 if (prevStepButton !== null) {
