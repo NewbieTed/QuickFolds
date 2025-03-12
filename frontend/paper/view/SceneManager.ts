@@ -17,6 +17,10 @@ import { OffsetAnimation } from './animation/OffsetAnimation.js';
 let stepID = 1n;
 // Get the origami ID from localStorage based on context (editor or viewer)
 const origamiID = (() => {
+    if (typeof document === "undefined") {
+        return;
+    }
+
   // Check if we're in the editor or viewer context
   const path = window.location.pathname;
   if (path.includes('origami_editor')) {

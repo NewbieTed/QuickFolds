@@ -26,66 +26,104 @@ let foldState = {
 let isFoldAngleConfirmed = false;
 let foldAngleValue = 0n;
 
+if (typeof document !== "undefined") {
+  // Set up event listeners for buttons and other actions.
+  document.addEventListener('mouseup', onMouseUp);
+  document.addEventListener('mousedown', onMouseDown);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
 
-// Set up event listeners for buttons and other actions.
-document.addEventListener('mouseup', onMouseUp);
-document.addEventListener('mousedown', onMouseDown);
-document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', onKeyUp);
-
-const pickPointButton = document.getElementById('pick-point-button');
-if (pickPointButton !== null) {
-  pickPointButton.addEventListener('click', () => {
-    isPickPointButtonPressed = true;
-  });
-}
-
-const deletePointButton = document.getElementById('delete-point-button');
-if (deletePointButton !== null) {
-  deletePointButton.addEventListener('click', () => {
-    isDeletePointButtonPressed = true;
-  });
-}
-
-const confirmFoldButton = document.getElementById('confirm-fold');
-if (confirmFoldButton) {
-    confirmFoldButton.addEventListener('click', () => {
-        const angleInput = document.getElementById('fold-angle') as HTMLInputElement;
-        if (angleInput) {
-            const angleValue = angleInput.value || '0';
-            foldAngleValue = BigInt(Math.round(Number(angleValue))); // Round to nearest integer
-            isFoldAngleConfirmed = true;
-
-            console.log("Getting fold angle state immediately after click:", {
-              isConfirmed: isFoldAngleConfirmed,
-              angle: foldAngleValue
-            });
-
-            // Hide the angle popup
-            const anglePopup = document.querySelector('.angle-popup');
-            if (anglePopup) {
-                (anglePopup as HTMLElement).style.display = 'none';
-            }
-
-            // remove the illustration line
-            // const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
-            // if (existingLine) {
-            //     SceneManager.getScene().remove(existingLine);
-            //     (existingLine as THREE.Line).geometry.dispose();
-            //     if (Array.isArray((existingLine as THREE.Line).material)) {
-            //         ((existingLine as THREE.Line).material as THREE.Material[]).forEach(mat => mat.dispose());
-            //     } else {
-            //         ((existingLine as THREE.Line).material as THREE.Material).dispose();
-            //     }
-            // }
-
-            // confirmButtonPressed(foldAngleValue);
-
-            // Debug log after state is updated
-            console.log("State updated - Angle:", foldAngleValue, "Confirmed:", isFoldAngleConfirmed);
-        }
+  const pickPointButton = document.getElementById('pick-point-button');
+  if (pickPointButton !== null) {
+    pickPointButton.addEventListener('click', () => {
+      isPickPointButtonPressed = true;
     });
+  }
+
+
+  const deletePointButton = document.getElementById('delete-point-button');
+  if (deletePointButton !== null) {
+    deletePointButton.addEventListener('click', () => {
+      isDeletePointButtonPressed = true;
+    });
+  }
+
+  const confirmFoldButton = document.getElementById('confirm-fold');
+  if (confirmFoldButton) {
+      confirmFoldButton.addEventListener('click', () => {
+          const angleInput = document.getElementById('fold-angle') as HTMLInputElement;
+          if (angleInput) {
+              const angleValue = angleInput.value || '0';
+              foldAngleValue = BigInt(Math.round(Number(angleValue))); // Round to nearest integer
+              isFoldAngleConfirmed = true;
+
+              console.log("Getting fold angle state immediately after click:", {
+                isConfirmed: isFoldAngleConfirmed,
+                angle: foldAngleValue
+              });
+
+              // Hide the angle popup
+              const anglePopup = document.querySelector('.angle-popup');
+              if (anglePopup) {
+                  (anglePopup as HTMLElement).style.display = 'none';
+              }
+
+              // remove the illustration line
+              // const existingLine = SceneManager.getScene().getObjectByName('foldIllustrationLine');
+              // if (existingLine) {
+              //     SceneManager.getScene().remove(existingLine);
+              //     (existingLine as THREE.Line).geometry.dispose();
+              //     if (Array.isArray((existingLine as THREE.Line).material)) {
+              //         ((existingLine as THREE.Line).material as THREE.Material[]).forEach(mat => mat.dispose());
+              //     } else {
+              //         ((existingLine as THREE.Line).material as THREE.Material).dispose();
+              //     }
+              // }
+
+              // confirmButtonPressed(foldAngleValue);
+
+              // Debug log after state is updated
+              console.log("State updated - Angle:", foldAngleValue, "Confirmed:", isFoldAngleConfirmed);
+          }
+      });
+  }
+
+
+  document.getElementById('add-line-button')?.addEventListener('click', () => {
+    doubleButtonPressedVar = true;
+    secondPressVar = false;
+    addLineState = true;
+  });
+
+  document.getElementById('del-line-button')?.addEventListener('click', () => {
+    doubleButtonPressedVar = true;
+    secondPressVar = false;
+    deleteLineState = true;
+  });
+
+  const foldButton = document.getElementById('fold-button');
+  if (foldButton !== null) {
+    foldButton.addEventListener('click', () => {
+      isFoldingInsteadOfMerging = true;
+      isFoldButtonPressed = true;
+      foldState.step = 1;
+    });
+  }
+
+
+  const foldButtonMerge = document.getElementById('fold-split-faces-button');
+  if (foldButtonMerge !== null) {
+    foldButtonMerge.addEventListener('click', () => {
+      isFoldingInsteadOfMerging = false;
+      isFoldButtonPressed = true;
+      foldState.step = 1;
+    });
+  }
+
 }
+
+
+
 
 //--------------------------- Event Listener Implementations ------------------------------------//
 
@@ -95,36 +133,6 @@ if (confirmFoldButton) {
 let doubleButtonPressedVar = false;
 let secondPressVar = false;
 
-document.getElementById('add-line-button')?.addEventListener('click', () => {
-  doubleButtonPressedVar = true;
-  secondPressVar = false;
-  addLineState = true;
-});
-
-document.getElementById('del-line-button')?.addEventListener('click', () => {
-  doubleButtonPressedVar = true;
-  secondPressVar = false;
-  deleteLineState = true;
-});
-
-const foldButton = document.getElementById('fold-button');
-if (foldButton !== null) {
-  foldButton.addEventListener('click', () => {
-    isFoldingInsteadOfMerging = true;
-    isFoldButtonPressed = true;
-    foldState.step = 1;
-  });
-}
-
-
-const foldButtonMerge = document.getElementById('fold-split-faces-button');
-if (foldButtonMerge !== null) {
-  foldButtonMerge.addEventListener('click', () => {
-    isFoldingInsteadOfMerging = false;
-    isFoldButtonPressed = true;
-    foldState.step = 1;
-  });
-}
 
 let addLineState = false;
 let deleteLineState = false;
