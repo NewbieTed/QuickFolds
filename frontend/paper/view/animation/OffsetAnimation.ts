@@ -18,7 +18,7 @@ export class OffsetAnimation implements Animation {
         this.offsets = offsets;
         this.time = 0;
         this.totalTime = 5 / getPlaybackSpeed(); // (In roughly seconds)
-
+        console.log("TOTAL TIME", this.totalTime);
         for (const faceID of this.offsets.keys()) {
             // Get the change in offset for one step, and
             // save the current offsets of the faces.

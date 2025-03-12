@@ -2043,10 +2043,10 @@ export async function processAnnotationStep(result: any) : Promise<string | true
  * @returns
  */
 export async function processFoldStep(result: any, stepId: number) : Promise<string | true> {
-  const origamiId: number = Number(getCookie("currentOrigamiIdForViewer"));
+  const origamiId: number = Number(localStorage.getItem("currentOrigamiIdForViewer"));
 
   console.log(result);
-  const parameter = localStorage.getItem(origamiId + " " + stepId);
+  const parameter = getCookie(origamiId + " " + stepId);
 
   const parameterJson = JSON.parse(parameter);
   // localStorage.setItem(SceneManager.getOrigamiID() + " " + SceneManager.getStepID(), JSON.stringify([point1Id, point2Id, faceId, vertexOfFaceStationary, angle]));

@@ -31,6 +31,7 @@ export class FoldAnimation implements Animation {
         this.faces = faces;
         this.time = 0;
         this.totalTime = 5 / getPlaybackSpeed(); // (In roughly seconds)
+        console.log("TOTAL TIME", this.totalTime);
         this.steepness = 15; // A measure of how fast the speed
         // of the paper is near the middle of the animation.
 
