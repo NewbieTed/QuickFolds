@@ -57,13 +57,10 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     idsToFaceObj.clear();
     threeIDtoFaceID.clear();
 
-    // Create visual axes/grid.
-    const grid = new THREE.GridHelper(10, 10);
-    const axis = new THREE.AxesHelper(3);
-    scene.add(grid);
-
-    axis.position.set(0, 1, 0);
-    scene.add(axis);
+    // FOR DEBUGGING
+    // const axis = new THREE.AxesHelper(3);
+    // axis.position.set(0, 1, 0);
+    // scene.add(axis);
 
     // Add a point light to be able to see things.
     const pointLight = new THREE.PointLight(0xffffff, 5, 0, 0);
@@ -78,9 +75,9 @@ export function initialize(renderer: THREE.WebGLRenderer) {
     const ambientLight = new THREE.AmbientLight(0x222222, 15);
     scene.add(ambientLight);
 
-    // Light Helper (Optional)
-    const lightHelper = new THREE.PointLightHelper(pointLight, 0.5);
-    scene.add(lightHelper);
+    // Light Helper (FOR DEBUGGING)
+    // const lightHelper = new THREE.PointLightHelper(pointLight, 0.5);
+    // scene.add(lightHelper);
 
     // Create a Face3D to begin manipulating.
     const vertices3D = [

@@ -121,7 +121,7 @@ export class Face3D {
         this.startOffset = this.offset;
 
         // DEBUG MODE
-        this.createFaceIDText();
+        // this.createFaceIDText();
 
     }
 

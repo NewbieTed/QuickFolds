@@ -56,6 +56,10 @@ const raySphere = new THREE.Mesh(raycastSphere, redMaterial);
 raySphere.visible = true;
 SceneManager.getScene().add(raySphere);
 
+// Create visual axes/grid.
+const grid = new THREE.GridHelper(10, 10);
+SceneManager.getScene().add(grid);
+
 
 // Handle key pressing.
 function onKeyDown(event: KeyboardEvent) {
@@ -66,6 +70,8 @@ function onKeyDown(event: KeyboardEvent) {
     	cameraManager.swapCameraType();
   	} else if (event.key === settings.TOGGLE_FOCAL_PT_KEY) {
 		cameraManager.toggleFocalPointVisible();
+		grid.visible = !grid.visible;
+		raySphere.visible = !raySphere.visible;
 	}
 }
 
