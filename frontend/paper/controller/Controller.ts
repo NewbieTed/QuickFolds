@@ -782,7 +782,7 @@ function intMax(a: bigint, b: bigint) {
  * @returns
  */
 export async function createMultiFoldBySplitting(point1Id: bigint, point2Id: bigint, faceId:bigint, vertexOfFaceStationary: Point3D, angle: bigint, isViewer=false) {
-  localStorage.setItem(SceneManager.getOrigamiID() + " " + SceneManager.getStepID(), JSON.stringify([Number(point1Id), Number(point2Id), Number(faceId), vertexOfFaceStationary, Number(angle)]));
+  setCookie(SceneManager.getOrigamiID() + " " + SceneManager.getStepID(), JSON.stringify([Number(point1Id), Number(point2Id), Number(faceId), vertexOfFaceStationary, Number(angle)]));
 
 
   const smallestPointId = intMin(point1Id, point2Id);
@@ -2043,7 +2043,7 @@ export async function processAnnotationStep(result: any) : Promise<string | true
  * @returns
  */
 export async function processFoldStep(result: any, stepId: number) : Promise<string | true> {
-  const origamiId: number = Number(localStorage.getItem("currentOrigamiIdForViewer"));
+  const origamiId: number = Number(getCookie("currentOrigamiIdForViewer"));
 
   console.log(result);
   const parameter = localStorage.getItem(origamiId + " " + stepId);
@@ -2130,4 +2130,32 @@ function findEdgeConnection(faceObject: any, faceId2: bigint) {
       return edge.idInFace;
     }
   }
+}
+
+/**
+ * set a cookie for the step
+ * @param name - name of cookie
+ * @param value - value of cookie
+ * @param days - how many days it lasts
+ */
+export function setCookie(name: string, value: string, days: number = 3650) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/`;
+}
+
+/**
+ * gets value of cookie
+ * @param name - name of cookie to get
+ * @returns
+ */
+export function getCookie(name: string): string | null {
+  const cookies = document.cookie.split("; ");
+  for (const cookie of cookies) {
+      const [cookieName, cookieValue] = cookie.split("=");
+      if (cookieName === name) {
+          return decodeURIComponent(cookieValue);
+      }
+  }
+  return null;
 }
