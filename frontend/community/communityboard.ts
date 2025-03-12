@@ -67,8 +67,6 @@ const fetchCreatingOrigamiAndGoToEditor = async () => {
       return;
     }
     const result = await response.json();
-    console.log(result);
-    console.log("Data fetched successfully:", result.data.origamiId);
 
     // store id of origami to edit in editor
     localStorage.setItem("currentOrigamiIdForEditor", result.data.origamiId);
@@ -107,7 +105,6 @@ const getAllPublicOrigami = async () => {
       return;
     }
     const result = await response.json();
-    console.log(result);
 
     // Store the list in the global variable
     origamiProfiles = result.data.origamis;
