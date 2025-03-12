@@ -90,9 +90,9 @@ Not thate
 
 For Mac Users:
 
-    ```sh
-    brew install maven
-    ```
+```sh
+brew install maven
+```
 
 For mac users, the DMG installer should set up for you.
 
@@ -147,7 +147,6 @@ Run
 ```
 sudo apt install openjdk-21-jdk -y
 sudo apt install maven -y
-
 ```
 If WSL cannot find JDK or MAVEN when running the steps.
 
@@ -197,7 +196,7 @@ We need to activate both frontend server and backend server to use the editor/co
 
 To Start up backend locally, we have unique steps for the different OS:
 
-__Note: if you want to run the application on the website. Go to "http:quickfolds.org", if online, and follow the same
+__Note: if you want to run the application on the website. Go to "http://quickfolds.org", if online, and follow the same
 log in/sign up steps as as below under how to use this softare. Sign up/in, go to community board, click new or clickon an origami from there.__
 
 #### Windows:
@@ -262,15 +261,15 @@ The editor is a place where you can edit your origami.
 
 Here are the current things you can do to navigate the editor:
 
-+ Pressing Left Mouse Button: Let's You rotate the camera around a center point
++ Pressing Left Mouse Button: Lets you rotate the camera around a center point
 
 + Pressing Left Mouse Button + Pressing Shift: Allows you to move the point/camera itself in space
 
-+ Pressing 'p': hides the center point the camera rotates from
++ Pressing 'p': hides the focal point the camera rotates from, the cursor, and the gridlines
 
-+ Presssing 'r': resets the rotating point back to origin
++ Presssing 'r': resets the camera focal point back to origin
 
-+ Pressing 'c': swpas between a perspectie and orthographic camera
++ Pressing 'c': swpas between a perspective and orthographic camera
 
 + Use the mouse scroll wheel to zoom in and out.
 
@@ -290,42 +289,7 @@ User can create points and lines. Annotation points are a point on the piece of 
 
 + Delete Annotation Line: Click the "delete annotation line" button, the click the 2 nearest point, or vertex, you want to remove the annotation line from.
 
-+ Fold Button: You can create a new foldcl. To do this, you click the two points on the face you want to cut in half, a line will now appear, you then click the point of the face that should stay stationary during the rotation. After this, you then pick an angle, where positive values corresponding to the "upper" part of the face moving closer together, then provide the amount in degrees that should rotate. Keep in mind all paper stacked together in a group will be fold.
-
-### Known bugs
-
-+ Community Board Doesn't have search bar working [this isn't implemented yet]
-
-+ If you are in the middle of one button action in the editor, then swap to another, it crashes. For example, say I click "Add Point", then I click "Delete Point", it breaks.
-
-+ Error Creating annotation line to connect two vertex. This is intended, but we don't notify the user and allow them to continue.
-
-
-
-### Report and issue to the Project
-
-Please go to the `https://github.com/NewbieTed/QuickFolds/issues` to report an issue.
-
-We have loose guides for reporting an issue.
-
-Here is the desired structure:
-
-```
-Title: Few Words About Issue
-
-Description: A more details description (~3-6 sentences) about what is problem is
-
-Web browser: Provide which browser you are on (ex: Google Chrome)
-
-Concrete Steps to Produce the Bug:
-
-1. Step 1 to see bug
-2. Step 2 to see the bug
-...
-```
-
-For general guidence on writing good reports, see: `https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html`
-and `https://www.browserstack.com/guide/how-to-write-a-bug-report`.
++ Fold Button: You can create a new fold. To do this, you click the two points on the face you want to cut in half, a line will now appear, you then click the point of the face that should stay stationary during the rotation. After this, you then pick an angle, where positive values corresponding to the "upper" part of the face moving closer together, then provide the amount in degrees that should rotate. Keep in mind all layers of the paper will be stacked together in a group and folded.
 
 ### Repository Structure
 
@@ -359,18 +323,6 @@ We currently are using these modules:
 
 + _Mocha_ - a library used for Unit testing
 
-
-#### Editor Settings
-
-Here are the current things you can do in the editor when looking around
-
-+ Pressing Left Mouse Button: Let's You rotate the camera around a center point
-
-+ Pressing Left Mouse Button + Pressing Shift: Allows you to move the point/camera itself in space
-
-+ Pressing 'p': hides the center point the camera rotates from
-
-+ Presssing 'r': resets the rotating point back to origin
 
 ## Backend
 
@@ -458,105 +410,3 @@ Execute the schema SQL file in `<Quickfolds/backend/database>`.
 
 
 ---
-
-# MANUAL FOR TROUBLING SHOOTING SETTING UP REPOSITORY
-
-# Backend Installation
-
-Guide for all things backend
-
-# Set up
-
-The current backend structure is set up for
-Here is the structure to set up backend for _windows_ users:
-
-## Step 1: Set up env files
-
-The first thing to do is to add all of the env files.
-These contain all the usernames and passwords for all the backend services. For obvious reasons, we haven't put these files in the respository. Please email one of the current dev team members to get these files.
-
-For windows users, we need to add the proper enviroment variables for these env files:
-
-Run this command
-
-`
-Get-ChildItem -Path "path\to\env" -Filter "*.env" | ForEach-Object { Get-Content $_ | ForEach-Object { if ($_ -notmatch "^\s*#|^\s*$") { $parts = $_ -split '=', 2; [System.Environment]::SetEnvironmentVariable($parts[0].Trim(), $parts[1].Trim(), "Process") } } }
-`
-
-For most people, the backend path should be `".\backend\env"`
-
-## Step 2: add docker
-
-Download docker for windows:
-https://www.docker.com/products/docker-desktop/
-
-Docker is used to build, test, and deploy our application within an isolated "containers" that package an application with all its dependencies.
-
-Unfortnately, windows doesn't have direct support for docker, so we need to set up support to the commands:
-
-First is to download wsl (windows subservice for linux):
-think of it like a mini linux kernel to run commands, such as docker, that aren't native to PowerShell.
-
-+ **ON POWERSHELL RUN**:
-`
-wsl --install
-`
-
-This will not work with other terminals on windows, it needs to be the native one.
-
-Now we need to install the acutal distribution of linux:
-Install a Linux distribution (e.g., Ubuntu) from the Microsoft Store:
-
-+ Open the Microsoft Store and search for “Ubuntu” (or your preferred Linux distribution) and install it.
-
-
-Now we need docker to connect to wsl:
-
-+ Open Docker Desktop, go to Settings → General → Enable WSL 2.
-+ Make sure to enable the option for "Use the WSL 2 based engine."
-
-+ Click Apply & Restart on docker to apply changes
-
-Now we can set up docker with our project:
-
-Open up a WSL terminal (NOT POWERSHELL):
-
-If you open up a WSL terminal directly via the windows search bar, WSL will start at the root. We need to go to the quickfolds project folder (wherever you have saved it).
-
-+ Note: Most IDEs let you specify the type of terminal you want to open [VSCode is a good example of this], you can click the `v` button to selected a specific terminal.
-
-+ Note: you can tell it's wsl terminal with user@host:~$
-
-Now we run our commands:
-
-
-+ run `docker --version`. This should return a version (use this as a test to make sure docker is connected)
-You should see docker on you
-
-+ run docker compose
-
-
-Set up Maven:
-
-We use maven as a build automation tool for managing and building Java projects.
-
-
-To set up maven on this, follow this tutorial: https://phoenixnap.com/kb/install-maven-windows
-
-From your terminal, run:
-
-+ `mvn clean install`
-
-+ `mvn spring-boot:run`
-
-Congrats! you build is done.
-
-# Testing
-To start the tests for the backend, run:
-
-+ `mvn clean test`
-
-And the test should automatically run
-
-
-

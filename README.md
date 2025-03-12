@@ -1,13 +1,13 @@
 # 🌟 QuickFolds
 
-Welcome to **QuickFolds**, an innovative web application designed for origami enthusiasts! QuickFolds allows creators to animate their origami folding sequences effortlessly—no need for complex 3D software like Blender or Maya. Share your designs with the community using a sleek, step-by-step visualization process.
+Welcome to **QuickFolds**, an innovative web application designed for origami enthusiasts! QuickFolds allows creators to animate their origami folding sequences effortlessly—no need for complex 3D software like Blender or Maya. Share your designs with the community using a sleek, step-by-step animated visualizer.
 
 ---
 
 ## 📖 Project Overview
 
 ### ✨ What is QuickFolds?
-QuickFolds is a web-based platform tailored for origami artists who want to create and share folding animations. Instead of relying on static paper instructions or obstructed video tutorials, users can generate smooth digital animations with simple Mountain and Valley folds. The intuitive interface ensures that anyone can get started with minimal learning curve.
+QuickFolds is a web-based platform tailored for origami artists who want to create and share folding animations. Instead of relying on static paper instructions or obstructed video tutorials, users can generate smooth digital animations with simple Mountain and Valley folds. The intuitive interface ensures that anyone can get started with a minimal learning curve.
 
 ### 🏗️ Core Technologies
 - **Frontend:** HTML, CSS, JavaScript, Three.js, Vite
@@ -34,24 +34,28 @@ If you are a developer looking to contribute, our repository structure and setup
 
 ## 🎯 Features
 ✅ **Origami Animation Editor** – Easily create and edit folding sequences.
+
 ✅ **Step-by-Step Folding** – Show every move with precision.
+
 ✅ **Community Board** – Share and explore origami designs.
+
 ✅ **3D Viewing & Manipulation** – Rotate, zoom, and interact with your model.
+
 ✅ **Web-Based, No Extra Software Needed!**
 
 ---
 
 ### Current List of Known bugs
 
-+ Fold method breaks if folding over an annotation line
++ Folding does not always correctly split an annotation line crossing the crease line.
 
-+ Fold method breaks if folding/interacting with a very small face
++ Folding breaks if the user is interacting with a very small face.
 
-+ If you are in the middle of one button action in the editor, then swap to another, it crashes. For example, say I click "Add Point", then I click "Delete Point", it breaks.
++ If the user is in the middle of one button action in the editor, then swap sto another, it crashes. For example, clicking "Add Point", followed by "Delete Point", without having first completed the add point action, may break the editor.
 
-+ Error Creating annotation line to connect two vertex. This is intended, but we don't notify the user and allow them to continue.
++ Creating annotation lines that connect two vertices. The user should be disallowed from doing this, but currently they can, and it may cause issues with subsequent folds.
 
-+ Viewing fails if looking at a different user's community board origami or on a different local computer.
++ Viewing an origami model fails if the user views a different user's created origami or is on a different local computer.
 
 
 ## 🐛 Found a Bug?
@@ -82,3 +86,21 @@ For best practices, refer to [Bugzilla’s Guide](https://bugzilla.mozilla.org/p
 This project is open-source under the [MIT License](./LICENSE).
 
 💡 Happy Folding! 🦢🎨✨
+
+```
+        _____                   /|
+        |   \      ____        / |
+  __    |    \    /\   |      /  ;
+ /\  \  |     \  /  \  |     /  ;
+/,'\  \ |      \/  : \ |    /   ;
+~  ;   \|      /   :  \|   /   ;
+   |    \     /   :'  |   /    ;
+   |     \   /    :   |  /    ;
+   |      \ /    :'   | /     ;
+   |       /     :    |/     ;
+   |      /     :'    |      ;
+    \    /      :     |     ;
+     \  /      :'     |     ;
+      \       :'      |    ;
+       \______:_______|___;
+```
